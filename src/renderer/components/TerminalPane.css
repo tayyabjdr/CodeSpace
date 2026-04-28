@@ -1,0 +1,83 @@
+.pane {
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.pane-header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #111;
+  border-bottom: 1px solid #333;
+  font-size: 12px;
+  color: #888;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.pane-header.exited {
+  background: #3a1a1a;
+  color: #f88;
+}
+
+.pane-shell {
+  font-family: inherit;
+  font-weight: 600;
+  color: #aaa;
+}
+
+.exit-label {
+  color: #f66;
+  font-size: 11px;
+}
+
+.pane-header .close-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.pane-header .close-btn:hover {
+  color: #f66;
+}
+
+.xterm-container {
+  flex: 1;
+  min-height: 0;
+  padding: 4px;
+}
+
+.pane-error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #f66;
+  font-size: 13px;
+}
+
+.pane-error button {
+  background: #2a2a2a;
+  color: #ccc;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.pane-error button:hover {
+  background: #3a3a3a;
+}
