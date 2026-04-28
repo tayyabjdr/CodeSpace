@@ -1,0 +1,43 @@
+{
+  "name": "codespace",
+  "version": "1.0.0",
+  "description": "Vibecoding terminal workspace",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "package": "electron-builder",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "electron-rebuild -f -w node-pty"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^16.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^5.5.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.0",
+    "electron-rebuild": "^3.2.9",
+    "electron-vite": "^2.3.0",
+    "jsdom": "^24.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "vitest": "^2.0.0"
+  },
+  "build": {
+    "appId": "com.controlDeck.codespace",
+    "productName": "CodeSpace",
+    "win": {
+      "target": "nsis"
+    },
+    "files": ["out/**/*"],
+    "extraResources": []
+  }
+}
