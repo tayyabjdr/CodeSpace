@@ -39,9 +39,16 @@ export default function useTerminal(id, shell, containerRef) {
 
     let cleanupData
     let cleanupExit
+    let dataDisposable
+    let cancelled = false
 
     window.electronAPI.createPty(shell)
       .then(({ ptyId }) => {
+        if (cancelled) {
+          window.electronAPI.killPty(ptyId)
+          return
+        }
+
         ptyIdRef.current = ptyId
 
         cleanupData = window.electronAPI.onPtyData(ptyId, data => {
@@ -52,14 +59,14 @@ export default function useTerminal(id, shell, containerRef) {
           setExitCode(code)
         })
 
-        term.onData(data => {
+        dataDisposable = term.onData(data => {
           window.electronAPI.writePty(ptyId, data)
         })
 
         window.electronAPI.resizePty(ptyId, term.cols, term.rows)
       })
       .catch(err => {
-        setError(err.message ?? 'Failed to start shell')
+        if (!cancelled) setError(err.message ?? 'Failed to start shell')
       })
 
     const ro = new ResizeObserver(() => {
@@ -71,8 +78,10 @@ export default function useTerminal(id, shell, containerRef) {
     ro.observe(containerRef.current)
 
     return () => {
+      cancelled = true
       cleanupData?.()
       cleanupExit?.()
+      dataDisposable?.dispose()
       ro.disconnect()
       if (ptyIdRef.current) window.electronAPI.killPty(ptyIdRef.current)
       term.dispose()
