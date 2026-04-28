@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
+import { registerHandlers } from './ipc-handlers.js'
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -19,6 +20,7 @@ function createWindow() {
     win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
+  registerHandlers(win)
   return win
 }
 
