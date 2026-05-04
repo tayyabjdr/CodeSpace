@@ -1,54 +1,104 @@
 .pane {
   display: flex;
   flex-direction: column;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius);
   overflow: hidden;
   min-height: 0;
+  transition: border-color var(--cs-transition);
+  animation: scaleIn 0.2s ease both;
+}
+
+.pane.focused {
+  border-color: var(--cs-border-focus);
+}
+
+.pane.exited {
+  border-color: var(--cs-border-mid);
+}
+
+/* Done state — subtle green pulse */
+@keyframes donePulse {
+  0%, 100% { border-color: rgba(134, 239, 172, 0.25); }
+  50%       { border-color: rgba(134, 239, 172, 0.55); }
+}
+
+.pane.done {
+  animation: donePulse 2.5s ease-in-out infinite;
 }
 
 .pane-header {
+  height: var(--cs-header-h);
   display: flex;
   align-items: center;
-  padding: 4px 8px;
-  background: #111;
-  border-bottom: 1px solid #333;
-  font-size: 12px;
-  color: #888;
+  padding: 0 10px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
-  gap: 6px;
 }
 
-.pane-header.exited {
-  background: #3a1a1a;
-  color: #f88;
+.pane.focused .pane-header {
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.pane-shell {
-  font-family: inherit;
-  font-weight: 600;
-  color: #aaa;
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.exit-label {
-  color: #f66;
+.status-dot.status-running { background: var(--cs-status-live); }
+.status-dot.status-exited  { background: var(--cs-status-amber); }
+
+.pane-label {
+  font-family: var(--cs-font-mono);
   font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--cs-text-muted);
+  transition: color var(--cs-transition);
 }
 
-.pane-header .close-btn {
+.pane.focused .pane-label {
+  color: var(--cs-text-secondary);
+}
+
+/* Done badge */
+.done-badge {
+  font-family: var(--cs-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--cs-green-border, rgba(134,239,172,0.6));
+  background: var(--cs-green-bg);
+  border: 1px solid var(--cs-green-border);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.close-btn {
   margin-left: auto;
   background: none;
   border: none;
-  color: #555;
+  color: var(--cs-text-dim);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
-  padding: 0 2px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color var(--cs-transition), background var(--cs-transition);
+  font-family: var(--cs-font-mono);
 }
 
-.pane-header .close-btn:hover {
-  color: #f66;
+.close-btn:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
 }
 
 .xterm-container {
@@ -63,21 +113,27 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  color: #f66;
-  font-size: 13px;
+  gap: 14px;
+  color: var(--cs-text-tertiary);
+  font-size: 12px;
+  font-family: var(--cs-font-mono);
+  padding: 20px;
+  text-align: center;
 }
 
 .pane-error button {
-  background: #2a2a2a;
-  color: #ccc;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 6px 16px;
+  background: transparent;
+  color: var(--cs-text-tertiary);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 6px;
+  padding: 5px 16px;
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  transition: border-color var(--cs-transition), color var(--cs-transition);
 }
 
 .pane-error button:hover {
-  background: #3a3a3a;
+  border-color: var(--cs-border-focus);
+  color: var(--cs-text-primary);
 }

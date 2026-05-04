@@ -2,8 +2,8 @@ import { ipcMain } from 'electron'
 import { createSession, writeSession, resizeSession, killSession } from './pty-manager.js'
 
 export function registerHandlers(mainWindow) {
-  ipcMain.handle('pty:create', async (_event, { shell }) => {
-    const { id, proc } = createSession(shell)
+  ipcMain.handle('pty:create', async (_event, { shell, cwd }) => {
+    const { id, proc } = createSession(shell, cwd)
     proc.onData(data => {
       mainWindow.webContents.send(`pty:data:${id}`, data)
     })

@@ -1,0 +1,246 @@
+.onboarding {
+  position: fixed;
+  inset: 0;
+  background: var(--cs-bg-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.3s ease both;
+  -webkit-app-region: drag;
+}
+
+.onboarding.ob-exit {
+  animation: fadeOut 0.35s ease forwards;
+}
+
+.ob-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+  width: 100%;
+  max-width: 460px;
+  padding: 48px 32px;
+  -webkit-app-region: no-drag;
+}
+
+/* Brand */
+
+.ob-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: slideUp 0.5s ease both;
+  animation-delay: 0ms;
+}
+
+.ob-mark {
+  font-size: 0.85rem;
+  color: var(--cs-text-dim);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.ob-wordmark {
+  font-family: var(--cs-font-ui);
+  font-size: 2.2rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--cs-text-primary);
+  line-height: 1;
+}
+
+.ob-tagline {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--cs-text-tertiary);
+}
+
+/* Selector */
+
+.ob-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  animation: slideUp 0.5s ease both;
+  animation-delay: 80ms;
+}
+
+.ob-selector-label {
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--cs-text-tertiary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+.ob-cards {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.ob-card {
+  border: 1px solid var(--cs-border);
+  background: hsl(0 0% 6%);
+  border-radius: 8px;
+  cursor: pointer;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--cs-transition), border-color var(--cs-transition);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.ob-card:hover {
+  background: hsl(0 0% 8%);
+  border-color: var(--cs-border-hover);
+}
+
+.ob-card.active {
+  background: hsl(0 0% 9%);
+  border-color: var(--cs-border-focus);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.ob-card-num {
+  font-family: var(--cs-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cs-text-muted);
+  transition: color var(--cs-transition);
+}
+
+.ob-card.active .ob-card-num {
+  color: var(--cs-text-primary);
+}
+
+/* Directory section */
+
+.ob-dir-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  animation: slideUp 0.5s ease both;
+  animation-delay: 130ms;
+}
+
+.ob-dir-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.ob-dir-display {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: hsl(0 0% 6%);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 0;
+  cursor: default;
+}
+
+.ob-dir-folder {
+  font-size: 13px;
+  color: var(--cs-text-muted);
+  flex-shrink: 0;
+}
+
+.ob-dir-name {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cs-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 120px;
+}
+
+.ob-dir-path {
+  font-family: var(--cs-font-mono);
+  font-size: 10.5px;
+  color: var(--cs-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.ob-browse-btn {
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--cs-text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.ob-browse-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.18);
+  color: var(--cs-text-primary);
+}
+
+/* Launch button */
+
+.ob-launch {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 36px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--cs-text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+  animation: slideUp 0.5s ease both;
+  animation-delay: 200ms;
+}
+
+.ob-launch:hover:not(:disabled) {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.18);
+  color: var(--cs-text-primary);
+}
+
+.ob-launch:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Hint */
+
+.ob-hint {
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  color: var(--cs-text-dim);
+  letter-spacing: 0.02em;
+  animation: slideUp 0.5s ease both;
+  animation-delay: 260ms;
+}

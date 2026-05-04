@@ -1,21 +1,9 @@
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: #1a1a1a;
-  color: #fff;
-  font-family: 'Consolas', 'Cascadia Code', monospace;
-  overflow: hidden;
-}
-
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100vw;
+  background: var(--cs-bg-base);
 }
 
 .grid {
@@ -24,4 +12,5 @@ body {
   gap: 4px;
   padding: 4px;
   min-height: 0;
+  animation: fadeIn 0.25s ease both;
 }

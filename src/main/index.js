@@ -1,12 +1,14 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import { homedir } from 'os'
 import { registerHandlers } from './ipc-handlers.js'
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
-    backgroundColor: '#1a1a1a',
+    frame: false,
+    backgroundColor: '#0a0a0a',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -21,10 +23,23 @@ function createWindow() {
   }
 
   registerHandlers(win)
+
+  ipcMain.on('win:minimize', () => win.minimize())
+  ipcMain.on('win:maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize())
+  ipcMain.on('win:close', () => win.close())
+
+  ipcMain.handle('dialog:selectDirectory', async () => {
+    const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+    return result.canceled ? null : result.filePaths[0]
+  })
+
+  ipcMain.handle('app:getDesktopPath', () => join(homedir(), 'Desktop'))
+
   return win
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
   createWindow()
 })
 

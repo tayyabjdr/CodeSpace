@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { WebglAddon } from '@xterm/addon-webgl'
 
-export default function useTerminal(id, shell, containerRef) {
+export default function useTerminal(id, shell, cwd, containerRef, onActivity) {
   const [error, setError] = useState(null)
   const [exitCode, setExitCode] = useState(null)
   const ptyIdRef = useRef(null)
@@ -11,38 +10,60 @@ export default function useTerminal(id, shell, containerRef) {
   const fitRef = useRef(null)
 
   useEffect(() => {
-    const term = new Terminal({
-      cursorBlink: true,
-      fontSize: 14,
-      fontFamily: '"Cascadia Code", "Consolas", monospace',
-      theme: {
-        background: '#1a1a1a',
-        foreground: '#d4d4d4',
-        cursor: '#d4d4d4'
-      }
-    })
+    if (!containerRef.current) return
 
-    const fitAddon = new FitAddon()
-    term.loadAddon(fitAddon)
-
-    try {
-      const webglAddon = new WebglAddon()
-      term.loadAddon(webglAddon)
-    } catch {
-      // WebGL not available — xterm.js falls back to canvas renderer
-    }
-
-    term.open(containerRef.current)
-    fitAddon.fit()
-    termRef.current = term
-    fitRef.current = fitAddon
-
+    let term
+    let fitAddon
     let cleanupData
     let cleanupExit
     let dataDisposable
     let cancelled = false
+    let ro
 
-    window.electronAPI.createPty(shell)
+    try {
+      term = new Terminal({
+        cursorBlink: true,
+        cursorStyle: 'bar',
+        fontSize: 13,
+        fontFamily: '"Geist Mono Variable", "Geist Mono", "Cascadia Code", monospace',
+        lineHeight: 1.5,
+        theme: {
+          background: '#0f0f0f',
+          foreground: 'rgba(255,255,255,0.85)',
+          cursor: 'rgba(255,255,255,0.8)',
+          cursorAccent: '#0f0f0f',
+          selectionBackground: 'rgba(255,255,255,0.12)',
+          black: '#0a0a0a',
+          brightBlack: '#3f3f3f',
+          red: '#f87171',
+          brightRed: '#fca5a5',
+          green: '#86efac',
+          brightGreen: '#bbf7d0',
+          yellow: '#fcd34d',
+          brightYellow: '#fde68a',
+          blue: '#93c5fd',
+          brightBlue: '#bfdbfe',
+          magenta: '#c4b5fd',
+          brightMagenta: '#ddd6fe',
+          cyan: '#67e8f9',
+          brightCyan: '#a5f3fc',
+          white: 'rgba(255,255,255,0.78)',
+          brightWhite: 'rgba(255,255,255,0.92)'
+        }
+      })
+
+      fitAddon = new FitAddon()
+      term.loadAddon(fitAddon)
+      term.open(containerRef.current)
+      fitAddon.fit()
+      termRef.current = term
+      fitRef.current = fitAddon
+    } catch (err) {
+      setError(err.message ?? 'Failed to initialise terminal')
+      return
+    }
+
+    window.electronAPI.createPty(shell, cwd)
       .then(({ ptyId }) => {
         if (cancelled) {
           window.electronAPI.killPty(ptyId)
@@ -53,6 +74,7 @@ export default function useTerminal(id, shell, containerRef) {
 
         cleanupData = window.electronAPI.onPtyData(ptyId, data => {
           term.write(data)
+          onActivity?.()
         })
 
         cleanupExit = window.electronAPI.onPtyExit(ptyId, code => {
@@ -69,7 +91,7 @@ export default function useTerminal(id, shell, containerRef) {
         if (!cancelled) setError(err.message ?? 'Failed to start shell')
       })
 
-    const ro = new ResizeObserver(() => {
+    ro = new ResizeObserver(() => {
       fitAddon.fit()
       if (ptyIdRef.current) {
         window.electronAPI.resizePty(ptyIdRef.current, term.cols, term.rows)
@@ -82,11 +104,11 @@ export default function useTerminal(id, shell, containerRef) {
       cleanupData?.()
       cleanupExit?.()
       dataDisposable?.dispose()
-      ro.disconnect()
+      ro?.disconnect()
       if (ptyIdRef.current) window.electronAPI.killPty(ptyIdRef.current)
-      term.dispose()
+      term?.dispose()
     }
-  }, []) // intentionally empty — runs once on mount, id/shell are stable
+  }, []) // intentionally empty — runs once on mount
 
   return { error, exitCode }
 }

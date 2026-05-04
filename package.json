@@ -16,6 +16,8 @@
     "node-pty": "^1.0.0"
   },
   "devDependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource-variable/geist-mono": "^5.2.7",
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^16.0.0",
     "@vitejs/plugin-react": "^4.3.0",
@@ -37,7 +39,9 @@
     "win": {
       "target": "nsis"
     },
-    "files": ["out/**/*"],
+    "files": [
+      "out/**/*"
+    ],
     "extraResources": []
   }
 }
