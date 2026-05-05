@@ -27,12 +27,23 @@ import { createSession, writeSession, resizeSession, killSession } from '../src/
 import { registerHandlers } from '../src/main/ipc-handlers.js'
 import * as editorFs from '../src/main/editor-fs.js'
 
+function makeMockWindow() {
+  return {
+    webContents: {
+      send: vi.fn(),
+      on: vi.fn(),
+      isDestroyed: vi.fn(() => false)
+    },
+    isDestroyed: vi.fn(() => false)
+  }
+}
+
 describe('ipc-handlers', () => {
   let mockWindow
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockWindow = { webContents: { send: vi.fn(), on: vi.fn(), isDestroyed: vi.fn(() => false) }, isDestroyed: vi.fn(() => false) }
+    mockWindow = makeMockWindow()
   })
 
   function getHandler(method, channel) {
@@ -112,7 +123,7 @@ describe('editor IPC channels', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockWindow = { webContents: { send: vi.fn(), on: vi.fn(), isDestroyed: vi.fn(() => false) }, isDestroyed: vi.fn(() => false) }
+    mockWindow = makeMockWindow()
   })
 
   function getHandler(method, channel) {
@@ -151,5 +162,25 @@ describe('editor IPC channels', () => {
     const handler = getHandler('handle', 'editor:pathExists')
     const result = await handler({}, 'C:\\file.txt')
     expect(result).toBe(true)
+    expect(editorFs.pathExists).toHaveBeenCalledWith('C:\\file.txt')
+  })
+
+  it('editor:readFile rejects non-absolute paths', async () => {
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:readFile')
+    await expect(handler({}, 'relative/path.txt')).rejects.toThrow(/must be absolute/)
+    await expect(handler({}, null)).rejects.toThrow(/must be absolute/)
+  })
+
+  it('editor:writeFile rejects non-absolute paths', async () => {
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:writeFile')
+    await expect(handler({}, 'relative.txt', 'content')).rejects.toThrow(/must be absolute/)
+  })
+
+  it('editor:pathExists rejects non-absolute paths', async () => {
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:pathExists')
+    await expect(handler({}, 'relative.txt')).rejects.toThrow(/must be absolute/)
   })
 })

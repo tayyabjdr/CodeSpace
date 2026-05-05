@@ -14,6 +14,12 @@ function isValidCwd(cwd) {
   }
 }
 
+function assertAbsPath(p) {
+  if (typeof p !== 'string' || !isAbsolute(p)) {
+    throw new Error(`editor: path must be absolute, got: ${p}`)
+  }
+}
+
 export function registerHandlers(mainWindow) {
   // ptyId -> [data-disposable, exit-disposable]
   const ptyDisposables = new Map()
@@ -66,11 +72,16 @@ export function registerHandlers(mainWindow) {
     killSession(ptyId)
   })
 
-  ipcMain.handle('editor:readFile',   (_event, absPath) => editorFs.readFile(absPath))
-  ipcMain.handle('editor:writeFile',  (_event, absPath, content) => editorFs.writeFile(absPath, content))
-  ipcMain.handle('editor:pathExists', (_event, absPath) => editorFs.pathExists(absPath))
+  ipcMain.handle('editor:readFile',   async (_event, absPath) => { assertAbsPath(absPath); return editorFs.readFile(absPath) })
+  ipcMain.handle('editor:writeFile',  async (_event, absPath, content) => { assertAbsPath(absPath); return editorFs.writeFile(absPath, content) })
+  ipcMain.handle('editor:pathExists', async (_event, absPath) => { assertAbsPath(absPath); return editorFs.pathExists(absPath) })
   ipcMain.on('editor:revealInFolder', (_event, absPath) => {
-    try { shell.showItemInFolder(absPath) } catch {}
+    try { shell.showItemInFolder(absPath) }
+    catch (err) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[ipc] revealInFolder failed:', err)
+      }
+    }
   })
 
   // If the renderer goes away (window close, devtools reload, crash) drop
