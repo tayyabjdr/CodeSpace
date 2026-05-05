@@ -5,7 +5,14 @@ vi.mock('electron', () => ({
   ipcMain: {
     handle: vi.fn(),
     on: vi.fn()
-  }
+  },
+  shell: { showItemInFolder: vi.fn() }
+}))
+
+vi.mock('../src/main/editor-fs.js', () => ({
+  readFile:   vi.fn(),
+  writeFile:  vi.fn(),
+  pathExists: vi.fn()
 }))
 
 vi.mock('../src/main/pty-manager.js', () => ({
@@ -18,13 +25,14 @@ vi.mock('../src/main/pty-manager.js', () => ({
 import { ipcMain } from 'electron'
 import { createSession, writeSession, resizeSession, killSession } from '../src/main/pty-manager.js'
 import { registerHandlers } from '../src/main/ipc-handlers.js'
+import * as editorFs from '../src/main/editor-fs.js'
 
 describe('ipc-handlers', () => {
   let mockWindow
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockWindow = { webContents: { send: vi.fn() } }
+    mockWindow = { webContents: { send: vi.fn(), on: vi.fn(), isDestroyed: vi.fn(() => false) }, isDestroyed: vi.fn(() => false) }
   })
 
   function getHandler(method, channel) {
@@ -47,7 +55,7 @@ describe('ipc-handlers', () => {
     const handler = getHandler('handle', 'pty:create')
     const result = await handler({}, { shell: 'powershell' })
 
-    expect(createSession).toHaveBeenCalledWith('powershell')
+    expect(createSession).toHaveBeenCalledWith('powershell', undefined, undefined, undefined)
     expect(result).toEqual({ ptyId: 'abc-123' })
   })
 
@@ -96,5 +104,52 @@ describe('ipc-handlers', () => {
     const handler = getHandler('on', 'pty:kill')
     handler({}, { ptyId: 'abc-123' })
     expect(killSession).toHaveBeenCalledWith('abc-123')
+  })
+})
+
+describe('editor IPC channels', () => {
+  let mockWindow
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockWindow = { webContents: { send: vi.fn(), on: vi.fn(), isDestroyed: vi.fn(() => false) }, isDestroyed: vi.fn(() => false) }
+  })
+
+  function getHandler(method, channel) {
+    return ipcMain[method].mock.calls.find(c => c[0] === channel)?.[1]
+  }
+
+  it('registers editor:readFile, writeFile, pathExists, revealInFolder', () => {
+    registerHandlers(mockWindow)
+    expect(ipcMain.handle).toHaveBeenCalledWith('editor:readFile', expect.any(Function))
+    expect(ipcMain.handle).toHaveBeenCalledWith('editor:writeFile', expect.any(Function))
+    expect(ipcMain.handle).toHaveBeenCalledWith('editor:pathExists', expect.any(Function))
+    expect(ipcMain.on).toHaveBeenCalledWith('editor:revealInFolder', expect.any(Function))
+  })
+
+  it('editor:readFile delegates to editor-fs.readFile', async () => {
+    editorFs.readFile.mockResolvedValue({ ok: true, content: 'x', encoding: 'utf8' })
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:readFile')
+    const result = await handler({}, 'C:\\path\\file.txt')
+    expect(editorFs.readFile).toHaveBeenCalledWith('C:\\path\\file.txt')
+    expect(result).toEqual({ ok: true, content: 'x', encoding: 'utf8' })
+  })
+
+  it('editor:writeFile delegates to editor-fs.writeFile', async () => {
+    editorFs.writeFile.mockResolvedValue({ ok: true })
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:writeFile')
+    const result = await handler({}, 'C:\\file.txt', 'content')
+    expect(editorFs.writeFile).toHaveBeenCalledWith('C:\\file.txt', 'content')
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('editor:pathExists delegates to editor-fs.pathExists', async () => {
+    editorFs.pathExists.mockResolvedValue(true)
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:pathExists')
+    const result = await handler({}, 'C:\\file.txt')
+    expect(result).toBe(true)
   })
 })

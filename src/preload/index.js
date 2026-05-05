@@ -41,6 +41,13 @@ const api = {
   saveWorkspaces:    (state) => ipcRenderer.invoke('workspaces:save', state),
   readClipboardText: () => ipcRenderer.invoke('clipboard:readText'),
   writeClipboardText:(text) => ipcRenderer.send('clipboard:writeText', text),
+
+  editor: {
+    readFile:       (absPath) => ipcRenderer.invoke('editor:readFile', absPath),
+    writeFile:      (absPath, content) => ipcRenderer.invoke('editor:writeFile', absPath, content),
+    pathExists:     (absPath) => ipcRenderer.invoke('editor:pathExists', absPath),
+    revealInFolder: (absPath) => ipcRenderer.send('editor:revealInFolder', absPath),
+  },
 }
 
 try {

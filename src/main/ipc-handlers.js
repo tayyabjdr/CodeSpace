@@ -1,7 +1,8 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import { statSync } from 'fs'
 import { isAbsolute } from 'path'
 import { createSession, writeSession, resizeSession, killSession, isClaudeAvailable } from './pty-manager.js'
+import * as editorFs from './editor-fs.js'
 
 function isValidCwd(cwd) {
   if (typeof cwd !== 'string' || cwd.length === 0) return false
@@ -63,6 +64,13 @@ export function registerHandlers(mainWindow) {
   ipcMain.on('pty:kill', (_event, { ptyId }) => {
     disposeFor(ptyId)
     killSession(ptyId)
+  })
+
+  ipcMain.handle('editor:readFile',   (_event, absPath) => editorFs.readFile(absPath))
+  ipcMain.handle('editor:writeFile',  (_event, absPath, content) => editorFs.writeFile(absPath, content))
+  ipcMain.handle('editor:pathExists', (_event, absPath) => editorFs.pathExists(absPath))
+  ipcMain.on('editor:revealInFolder', (_event, absPath) => {
+    try { shell.showItemInFolder(absPath) } catch {}
   })
 
   // If the renderer goes away (window close, devtools reload, crash) drop
