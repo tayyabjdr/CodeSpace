@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import VolumeControl from './VolumeControl.jsx'
 import './Toolbar.css'
 
 const MinusIcon = () => (
@@ -30,11 +31,10 @@ const CloseIcon = () => (
 export default function Toolbar({ onAdd, agentCount }) {
   const [isMaximized, setIsMaximized] = useState(false)
 
+  useEffect(() => window.electronAPI.onMaximizeChanged(setIsMaximized), [])
+
   const handleMinimize = () => window.electronAPI.windowMinimize()
-  const handleMaximize = () => {
-    window.electronAPI.windowMaximize()
-    setIsMaximized(p => !p)
-  }
+  const handleMaximize = () => window.electronAPI.windowMaximize()
   const handleClose = () => window.electronAPI.windowClose()
 
   return (
@@ -49,9 +49,8 @@ export default function Toolbar({ onAdd, agentCount }) {
         <span className="titlebar-name">CodeSpace</span>
       </div>
 
-      <div className="titlebar-actions" />
-
       <div className="titlebar-controls">
+        <VolumeControl />
         <button className="titlebar-btn" onClick={handleMinimize} title="Minimize">
           <MinusIcon />
         </button>

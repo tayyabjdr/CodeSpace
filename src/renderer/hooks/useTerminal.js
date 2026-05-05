@@ -2,8 +2,9 @@ import { useEffect, useState, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import * as ptyPool from '../pty-pool.js'
+import { FONT_RESIZE_DEBOUNCE_MS } from '../constants.js'
 
-export default function useTerminal(ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange) {
+export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange) {
   const [error, setError] = useState(null)
   const [exitCode, setExitCode] = useState(null)
   const ptyIdRef = useRef(ptyId)
@@ -32,7 +33,7 @@ export default function useTerminal(ptyId, shell, cwd, containerRef, onActivity,
         ptyPool.resizePty(ptyIdRef.current, term.cols, term.rows)
       }
       term.scrollToBottom()
-    }, 180)
+    }, FONT_RESIZE_DEBOUNCE_MS)
 
     return () => clearTimeout(fontResizeTimerRef.current)
   }, [fontSize])
@@ -108,14 +109,19 @@ export default function useTerminal(ptyId, shell, cwd, containerRef, onActivity,
         return false
       }
 
-      // Copy selection: Ctrl+Shift+C (so Ctrl+C still sends SIGINT to the shell)
-      if (e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+      // Copy: Ctrl+C with an active selection copies (and clears the selection
+      // so the next Ctrl+C falls through to SIGINT). With no selection, Ctrl+C
+      // passes through to the shell as interrupt. Ctrl+Shift+C is preserved as
+      // an always-explicit copy shortcut for muscle memory.
+      if (e.key === 'c' || e.key === 'C') {
         const sel = term.getSelection()
         if (sel) {
           window.electronAPI.writeClipboardText(sel)
+          term.clearSelection()
           e.preventDefault()
           return false
         }
+        // No selection — let Ctrl+C through to the PTY as SIGINT.
       }
       return true
     })
@@ -124,7 +130,9 @@ export default function useTerminal(ptyId, shell, cwd, containerRef, onActivity,
       let id = ptyIdRef.current
       try {
         if (!id) {
-          id = await ptyPool.createPty(shell, cwd)
+          // Spawn at the renderer's measured size so Claude's banner doesn't
+          // wrap to 80 cols on first paint.
+          id = await ptyPool.createPty(shell, cwd, termId, term.cols, term.rows)
           ptyIdRef.current = id
           onPtyReadyRef.current?.(id)
         }
@@ -145,7 +153,23 @@ export default function useTerminal(ptyId, shell, cwd, containerRef, onActivity,
 
         ptyPool.resizePty(id, term.cols, term.rows)
       } catch (err) {
-        if (!cancelled) setError(err.message ?? 'Failed to start shell')
+        if (err?.cancelled) return
+        if (cancelled) return
+        if (err?.code === 'claude-missing') {
+          setError({
+            code: 'claude-missing',
+            title: 'Claude CLI not found',
+            body: 'CodeSpace runs the Claude CLI for each agent. Install it from the Anthropic docs and make sure `claude.exe` is on your PATH, then reload.'
+          })
+        } else if (err?.code === 'cwd-missing') {
+          setError({
+            code: 'cwd-missing',
+            title: 'Folder no longer exists',
+            body: `${err.detail?.cwd ?? 'The workspace folder'} can't be opened. Re-create the workspace with the correct folder.`
+          })
+        } else {
+          setError({ code: 'unknown', title: 'Failed to start shell', body: err.message ?? '' })
+        }
       }
     }
     start()
@@ -156,18 +180,29 @@ export default function useTerminal(ptyId, shell, cwd, containerRef, onActivity,
     })
     ro.observe(containerRef.current)
 
-    // Ctrl + wheel → change font size for the whole workspace
+    // Ctrl + wheel → change font size for the whole workspace.
+    // Coalesce a wheel burst into one rAF-flushed state update so we don't
+    // re-render every pane per tick.
+    let pendingStep = 0
+    let rafId = 0
     const onWheel = (e) => {
       if (!e.ctrlKey && !e.metaKey) return
       e.preventDefault()
-      const step = e.deltaY > 0 ? -1 : 1
-      onFontSizeChangeRef.current?.(step)
+      pendingStep += e.deltaY > 0 ? -1 : 1
+      if (rafId) return
+      rafId = requestAnimationFrame(() => {
+        const step = pendingStep
+        pendingStep = 0
+        rafId = 0
+        if (step !== 0) onFontSizeChangeRef.current?.(step)
+      })
     }
     const wheelTarget = containerRef.current
     wheelTarget.addEventListener('wheel', onWheel, { passive: false })
 
     return () => {
       cancelled = true
+      if (rafId) cancelAnimationFrame(rafId)
       detach?.()
       dataDisposable?.dispose()
       ro?.disconnect()

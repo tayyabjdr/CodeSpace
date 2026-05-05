@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { ONBOARDING_BOOT_DELAY_MS } from '../constants.js'
 import './Onboarding.css'
 
 const FolderIcon = () => (
@@ -70,7 +71,7 @@ export default function Onboarding({ onLaunch }) {
     if (!canLaunch) return
     setLaunching(true)
     // Allow the boot animation a beat before swapping to the workspace
-    setTimeout(() => onLaunch(selectedCount, projectDir, name.trim()), 850)
+    setTimeout(() => onLaunch(selectedCount, projectDir, name.trim()), ONBOARDING_BOOT_DELAY_MS)
   }
 
   const dirLabel = projectDir

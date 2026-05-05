@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import useFocusTrap from '../hooks/useFocusTrap.js'
 import './NewWorkspaceModal.css'
 
 export default function NewWorkspaceModal({ onCancel, onCreate, defaultDir = '' }) {
@@ -6,6 +7,9 @@ export default function NewWorkspaceModal({ onCancel, onCreate, defaultDir = '' 
   const [dir, setDir] = useState(defaultDir)
   const [count, setCount] = useState(2)
   const nameRef = useRef(null)
+  const cardRef = useRef(null)
+
+  useFocusTrap(cardRef, true)
 
   useEffect(() => {
     nameRef.current?.focus()
@@ -37,6 +41,7 @@ export default function NewWorkspaceModal({ onCancel, onCreate, defaultDir = '' 
   return (
     <div className="nwm-backdrop" onClick={onCancel}>
       <form
+        ref={cardRef}
         className="nwm-card"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}

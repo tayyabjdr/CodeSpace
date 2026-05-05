@@ -6,11 +6,45 @@ import Sidebar from './components/Sidebar.jsx'
 import NewWorkspaceModal from './components/NewWorkspaceModal.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import * as ptyPool from './pty-pool.js'
+import { PERSIST_DEBOUNCE_MS } from './constants.js'
 import './design-tokens.css'
 import './App.css'
 
 function makeId() {
   return crypto.randomUUID()
+}
+
+function BridgeMissing() {
+  // Fail-closed diagnostic — preload bridge didn't load, so no IPC works.
+  // Intentionally minimal; uses system fonts so it works without app CSS.
+  const wrap = {
+    minHeight: '100vh', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: 12,
+    background: '#0a0b0d', color: 'rgba(255,255,255,0.85)',
+    fontFamily: 'system-ui, sans-serif', textAlign: 'center', padding: '0 32px'
+  }
+  const dim = { color: 'rgba(255,255,255,0.55)', fontSize: 13, maxWidth: 460, lineHeight: 1.55 }
+  return (
+    <div style={wrap}>
+      <div style={{ fontSize: 16, fontWeight: 600 }}>CodeSpace can't reach its main process</div>
+      <div style={dim}>
+        The preload bridge failed to load. This usually means the app was launched
+        outside Electron, or the build is corrupt. Try restarting; if the problem
+        persists, reinstall.
+      </div>
+      <button
+        onClick={() => window.location.reload()}
+        style={{
+          marginTop: 8, padding: '8px 16px', borderRadius: 6,
+          background: '#11151b', border: '1px solid #2b3038',
+          color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
+          fontFamily: 'inherit', fontSize: 13
+        }}
+      >
+        Reload
+      </button>
+    </div>
+  )
 }
 
 function makeAgents(count, cwd, startNum = 1) {
@@ -24,6 +58,13 @@ function makeAgents(count, cwd, startNum = 1) {
 }
 
 export default function App() {
+  if (typeof window === 'undefined' || !window.electronAPI) {
+    return <BridgeMissing />
+  }
+  return <AppInner />
+}
+
+function AppInner() {
   const [loaded, setLoaded] = useState(false)
   const [defaultDir, setDefaultDir] = useState('')
   const [workspaces, setWorkspaces] = useState([])
@@ -75,16 +116,17 @@ export default function App() {
         })),
         activeWorkspaceId: activeId
       })
-    }, 50)
+    }, PERSIST_DEBOUNCE_MS)
   }, [workspaces, activeId, loaded])
 
   const activeWorkspace = workspaces.find(w => w.id === activeId) ?? null
 
   // Lazy-spawn terminals when a workspace becomes active for the first time.
+  // Depend only on activeId so identity churn on `workspaces` doesn't re-fire.
   useEffect(() => {
-    if (!activeWorkspace || activeWorkspace.spawned) return
+    if (!activeId) return
     setWorkspaces(prev => prev.map(w => {
-      if (w.id !== activeWorkspace.id) return w
+      if (w.id !== activeId || w.spawned) return w
       const terminals = makeAgents(w.agentCount, w.dir, 1)
       return {
         ...w,
@@ -94,7 +136,7 @@ export default function App() {
         focusedTerminalId: terminals[0]?.id ?? null
       }
     }))
-  }, [activeWorkspace])
+  }, [activeId])
 
   const handleOnboardingLaunch = useCallback((count, dir, name) => {
     const resolvedName = (name && name.trim())
@@ -166,12 +208,23 @@ export default function App() {
     }
 
     // Now kill PTYs. Even if conpty seg-faults, persistence is already on disk.
+    // Stagger the kills — node-pty's conpty subsystem on Windows can throw a
+    // CRT assertion (remove_pty_baton) when multiple PTYs are torn down in
+    // the same tick. The dialog is unrecoverable and bypasses try/catch.
+    // Cancellation of in-flight creates is fire-and-forget (no native call).
     if (target) {
+      const live = []
       for (const t of (target.terminals ?? [])) {
-        if (t.ptyId) {
-          try { ptyPool.killPty(t.ptyId) } catch {}
+        if (t.ptyId) live.push(t.ptyId)
+        else {
+          try { ptyPool.cancelCreate(t.id) } catch {}
         }
       }
+      live.forEach((ptyId, i) => {
+        setTimeout(() => {
+          try { ptyPool.killPty(ptyId) } catch {}
+        }, i * 80)
+      })
     }
   }, [pendingDelete, workspaces, activeId])
 
@@ -210,6 +263,7 @@ export default function App() {
       if (w.id !== activeId) return w
       const target = w.terminals.find(t => t.id === termId)
       if (target?.ptyId) ptyPool.killPty(target.ptyId)
+      else if (target) ptyPool.cancelCreate(target.id)
       return {
         ...w,
         terminals: w.terminals.filter(t => t.id !== termId),
@@ -251,19 +305,32 @@ export default function App() {
 
   // When a TerminalPane creates a new PTY, store the id on the terminal so
   // it survives unmount (workspace switches) and can be re-attached later.
+  // Only the active workspace owns mounted panes, so scope the search there.
   const handlePtyReady = useCallback((termId, ptyId) => {
-    setWorkspaces(prev => prev.map(w => ({
-      ...w,
-      terminals: w.terminals.map(t =>
-        t.id === termId ? { ...t, ptyId } : t
-      )
-    })))
-  }, [])
+    setWorkspaces(prev => prev.map(w => {
+      if (w.id !== activeId) return w
+      let changed = false
+      const terminals = w.terminals.map(t => {
+        if (t.id !== termId) return t
+        changed = true
+        return { ...t, ptyId }
+      })
+      return changed ? { ...w, terminals } : w
+    }))
+  }, [activeId])
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts. Skip when an editable element has focus so renaming
+  // a workspace/agent or typing in the new-workspace modal isn't swallowed.
   useEffect(() => {
     if (!activeWorkspace) return
+    const isEditable = (el) => {
+      if (!el) return false
+      const tag = el.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+      return el.isContentEditable === true
+    }
     const handleKeyDown = (e) => {
+      if (isEditable(e.target)) return
       if (e.ctrlKey && e.key === 't') {
         e.preventDefault()
         addAgent()
@@ -310,7 +377,6 @@ export default function App() {
           onDelete={handleDeleteWorkspace}
         />
         <div
-          key={activeId}
           className="grid"
           style={{
             gridTemplateColumns: `repeat(${cols}, 1fr)`,

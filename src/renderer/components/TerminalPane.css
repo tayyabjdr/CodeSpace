@@ -104,16 +104,13 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Done badge */
-.done-badge {
-  font-family: var(--cs-font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  color: var(--cs-green-border, rgba(134,239,172,0.6));
-  background: var(--cs-green-bg);
-  border: 1px solid var(--cs-green-border);
-  border-radius: 4px;
-  padding: 1px 6px;
+/* Done indicator — vibrant green check, minimal: no badge, no chrome.
+   Matches --cs-green at full opacity; the same accent the rest of the UI
+   uses for live/done status. */
+.done-tick {
+  color: var(--cs-green);
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 
 .pane-header-actions {
@@ -174,27 +171,42 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  color: var(--cs-text-tertiary);
-  font-size: 12px;
-  font-family: var(--cs-font-mono);
-  padding: 20px;
+  gap: 12px;
+  padding: 24px 32px;
   text-align: center;
 }
 
-.pane-error button {
-  background: transparent;
+.pane-error-title {
+  font-family: var(--cs-font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--cs-text-primary);
+  letter-spacing: -0.005em;
+}
+
+.pane-error-body {
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  line-height: 1.55;
   color: var(--cs-text-tertiary);
+  max-width: 420px;
+}
+
+.pane-error-btn {
+  margin-top: 4px;
+  background: transparent;
+  color: var(--cs-text-secondary);
   border: 1px solid var(--cs-border-mid);
   border-radius: 6px;
-  padding: 5px 16px;
+  padding: 6px 16px;
   cursor: pointer;
   font-family: var(--cs-font-ui);
   font-size: 12px;
-  transition: border-color var(--cs-transition), color var(--cs-transition);
+  transition: border-color var(--cs-transition), color var(--cs-transition), background var(--cs-transition);
 }
 
-.pane-error button:hover {
+.pane-error-btn:hover {
   border-color: var(--cs-border-focus);
   color: var(--cs-text-primary);
+  background: var(--cs-bg-hover);
 }

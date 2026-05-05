@@ -1,5 +1,22 @@
 import pty from 'node-pty'
 import { randomUUID } from 'crypto'
+import { execFileSync } from 'child_process'
+
+let claudeAvailable = null
+function checkClaudeAvailable() {
+  if (claudeAvailable !== null) return claudeAvailable
+  try {
+    execFileSync('where', ['claude.exe'], { stdio: 'ignore', windowsHide: true })
+    claudeAvailable = true
+  } catch {
+    claudeAvailable = false
+  }
+  return claudeAvailable
+}
+
+export function isClaudeAvailable() {
+  return checkClaudeAvailable()
+}
 
 const SHELLS = {
   powershell: { file: 'powershell.exe', args: [] },
@@ -9,17 +26,19 @@ const SHELLS = {
 
 const sessions = new Map()
 
-export function createSession(shell = 'powershell', cwd) {
+export function createSession(shell = 'powershell', cwd, cols, rows) {
   const { file, args } = SHELLS[shell] ?? SHELLS.powershell
   const id = randomUUID()
   const env = shell === 'claude'
     ? { ...process.env, CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS: '1' }
     : process.env
   const resolvedCwd = cwd || process.env.USERPROFILE || process.cwd()
+  const safeCols = Number.isFinite(cols) && cols > 0 ? Math.floor(cols) : 80
+  const safeRows = Number.isFinite(rows) && rows > 0 ? Math.floor(rows) : 24
   const proc = pty.spawn(file, args, {
     name: 'xterm-color',
-    cols: 80,
-    rows: 24,
+    cols: safeCols,
+    rows: safeRows,
     cwd: resolvedCwd,
     env
   })
@@ -65,5 +84,11 @@ export function killSession(id) {
     proc.kill()
   } catch {
     // node-pty's conpty cleanup on Windows can throw on stale consoles — ignore
+  }
+}
+
+export function killAllSessions() {
+  for (const id of Array.from(sessions.keys())) {
+    killSession(id)
   }
 }

@@ -1,25 +1,8 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import useTerminal from '../hooks/useTerminal.js'
+import { DONE_SILENCE_MS } from '../constants.js'
+import { playDoneSound } from '../done-sound.js'
 import './TerminalPane.css'
-
-function playDoneSound() {
-  try {
-    const ctx = new AudioContext()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.type = 'sine'
-    osc.frequency.setValueAtTime(660, ctx.currentTime)
-    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12)
-    gain.gain.setValueAtTime(0.001, ctx.currentTime)
-    gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45)
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + 0.45)
-    setTimeout(() => ctx.close(), 1000)
-  } catch {}
-}
 
 export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, isFocused }) {
   const containerRef = useRef(null)
@@ -90,14 +73,14 @@ export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fo
         setDone(true)
         playDoneSound()
       }
-    }, 4000)
+    }, DONE_SILENCE_MS)
   }, [])
 
   const handlePtyReady = useCallback((newPtyId) => {
     onPtyReady?.(id, newPtyId)
   }, [id, onPtyReady])
 
-  const { error, exitCode } = useTerminal(ptyId, shell, cwd, containerRef, handleActivity, handleUserInput, handlePtyReady, fontSize, onFontSizeChange)
+  const { error, exitCode } = useTerminal(id, ptyId, shell, cwd, containerRef, handleActivity, handleUserInput, handlePtyReady, fontSize, onFontSizeChange)
 
   const handleFocus = () => {
     onFocus(id)
@@ -181,7 +164,22 @@ export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fo
             {displayName}
           </span>
         )}
-        {done && !isFocused && <span className="done-badge">done</span>}
+        {done && !isFocused && (
+          <svg
+            className="done-tick"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-label="Done"
+          >
+            <polyline points="5 12.5 10 17.5 19 7.5" />
+          </svg>
+        )}
         <div className="pane-header-actions">
           <button
             className="pane-add-btn"
@@ -201,8 +199,9 @@ export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fo
       </div>
       {error ? (
         <div className="pane-error">
-          <span>{error}</span>
-          <button onClick={() => window.location.reload()}>Retry</button>
+          <div className="pane-error-title">{error.title ?? error}</div>
+          {error.body && <div className="pane-error-body">{error.body}</div>}
+          <button className="pane-error-btn" onClick={() => window.location.reload()}>Reload app</button>
         </div>
       ) : (
         <div className="xterm-container" ref={containerRef} />
