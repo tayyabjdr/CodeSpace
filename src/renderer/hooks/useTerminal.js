@@ -1,21 +1,48 @@
 import { useEffect, useState, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import * as ptyPool from '../pty-pool.js'
 
-export default function useTerminal(id, shell, cwd, containerRef, onActivity) {
+export default function useTerminal(ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange) {
   const [error, setError] = useState(null)
   const [exitCode, setExitCode] = useState(null)
-  const ptyIdRef = useRef(null)
+  const ptyIdRef = useRef(ptyId)
   const termRef = useRef(null)
   const fitRef = useRef(null)
+  const onPtyReadyRef = useRef(onPtyReady)
+  const onFontSizeChangeRef = useRef(onFontSizeChange)
+
+  // keep latest callbacks without re-running mount effect
+  useEffect(() => { onPtyReadyRef.current = onPtyReady }, [onPtyReady])
+  useEffect(() => { onFontSizeChangeRef.current = onFontSizeChange }, [onFontSizeChange])
+
+  // Sync external fontSize → xterm options.
+  // The visual font change is immediate, but fit() + PTY resize is debounced
+  // so a scroll burst sends only one SIGWINCH (TUI apps redraw on every signal).
+  const fontResizeTimerRef = useRef(null)
+  useEffect(() => {
+    if (!fontSize || !termRef.current) return
+    const term = termRef.current
+    term.options.fontSize = fontSize
+
+    clearTimeout(fontResizeTimerRef.current)
+    fontResizeTimerRef.current = setTimeout(() => {
+      fitRef.current?.fit()
+      if (ptyIdRef.current) {
+        ptyPool.resizePty(ptyIdRef.current, term.cols, term.rows)
+      }
+      term.scrollToBottom()
+    }, 180)
+
+    return () => clearTimeout(fontResizeTimerRef.current)
+  }, [fontSize])
 
   useEffect(() => {
     if (!containerRef.current) return
 
     let term
     let fitAddon
-    let cleanupData
-    let cleanupExit
+    let detach
     let dataDisposable
     let cancelled = false
     let ro
@@ -28,10 +55,10 @@ export default function useTerminal(id, shell, cwd, containerRef, onActivity) {
         fontFamily: '"Geist Mono Variable", "Geist Mono", "Cascadia Code", monospace',
         lineHeight: 1.5,
         theme: {
-          background: '#0f0f0f',
+          background: '#0d0f12',
           foreground: 'rgba(255,255,255,0.85)',
           cursor: 'rgba(255,255,255,0.8)',
-          cursorAccent: '#0f0f0f',
+          cursorAccent: '#0d0f12',
           selectionBackground: 'rgba(255,255,255,0.12)',
           black: '#0a0a0a',
           brightBlack: '#3f3f3f',
@@ -63,50 +90,90 @@ export default function useTerminal(id, shell, cwd, containerRef, onActivity) {
       return
     }
 
-    window.electronAPI.createPty(shell, cwd)
-      .then(({ ptyId }) => {
-        if (cancelled) {
-          window.electronAPI.killPty(ptyId)
-          return
+    // Intercept clipboard shortcuts before xterm processes them.
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== 'keydown') return true
+      const ctrl = e.ctrlKey || e.metaKey
+      if (!ctrl) return true
+
+      // Paste: Ctrl+V or Ctrl+Shift+V
+      if (e.key === 'v' || e.key === 'V') {
+        e.preventDefault()
+        const id = ptyIdRef.current
+        if (id) {
+          window.electronAPI.readClipboardText().then(text => {
+            if (text) ptyPool.writePty(id, text)
+          })
         }
+        return false
+      }
 
-        ptyIdRef.current = ptyId
+      // Copy selection: Ctrl+Shift+C (so Ctrl+C still sends SIGINT to the shell)
+      if (e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+        const sel = term.getSelection()
+        if (sel) {
+          window.electronAPI.writeClipboardText(sel)
+          e.preventDefault()
+          return false
+        }
+      }
+      return true
+    })
 
-        cleanupData = window.electronAPI.onPtyData(ptyId, data => {
-          term.write(data)
-          onActivity?.()
-        })
+    const start = async () => {
+      let id = ptyIdRef.current
+      try {
+        if (!id) {
+          id = await ptyPool.createPty(shell, cwd)
+          ptyIdRef.current = id
+          onPtyReadyRef.current?.(id)
+        }
+        if (cancelled) return
 
-        cleanupExit = window.electronAPI.onPtyExit(ptyId, code => {
-          setExitCode(code)
+        detach = ptyPool.attach(id, {
+          onData: data => {
+            term.write(data)
+            onActivity?.()
+          },
+          onExit: code => setExitCode(code)
         })
 
         dataDisposable = term.onData(data => {
-          window.electronAPI.writePty(ptyId, data)
+          ptyPool.writePty(id, data)
+          onUserInput?.(data)
         })
 
-        window.electronAPI.resizePty(ptyId, term.cols, term.rows)
-      })
-      .catch(err => {
+        ptyPool.resizePty(id, term.cols, term.rows)
+      } catch (err) {
         if (!cancelled) setError(err.message ?? 'Failed to start shell')
-      })
+      }
+    }
+    start()
 
     ro = new ResizeObserver(() => {
       fitAddon.fit()
-      if (ptyIdRef.current) {
-        window.electronAPI.resizePty(ptyIdRef.current, term.cols, term.rows)
-      }
+      if (ptyIdRef.current) ptyPool.resizePty(ptyIdRef.current, term.cols, term.rows)
     })
     ro.observe(containerRef.current)
 
+    // Ctrl + wheel → change font size for the whole workspace
+    const onWheel = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      const step = e.deltaY > 0 ? -1 : 1
+      onFontSizeChangeRef.current?.(step)
+    }
+    const wheelTarget = containerRef.current
+    wheelTarget.addEventListener('wheel', onWheel, { passive: false })
+
     return () => {
       cancelled = true
-      cleanupData?.()
-      cleanupExit?.()
+      detach?.()
       dataDisposable?.dispose()
       ro?.disconnect()
-      if (ptyIdRef.current) window.electronAPI.killPty(ptyIdRef.current)
+      wheelTarget?.removeEventListener('wheel', onWheel)
       term?.dispose()
+      // Note: PTY is NOT killed here. Workspace owns PTY lifecycle.
     }
   }, []) // intentionally empty — runs once on mount
 

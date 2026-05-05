@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowMinimize:    () => ipcRenderer.send('win:minimize'),
   windowMaximize:    () => ipcRenderer.send('win:maximize'),
   windowClose:       () => ipcRenderer.send('win:close'),
+  windowEnsureMaximized: () => ipcRenderer.send('win:ensureMaximized'),
+  windowEnsureRestored:  () => ipcRenderer.send('win:ensureRestored'),
   selectDirectory:   () => ipcRenderer.invoke('dialog:selectDirectory'),
   getDesktopPath:    () => ipcRenderer.invoke('app:getDesktopPath'),
+  loadWorkspaces:    () => ipcRenderer.invoke('workspaces:load'),
+  saveWorkspaces:    (state) => ipcRenderer.invoke('workspaces:save', state),
+  readClipboardText: () => ipcRenderer.invoke('clipboard:readText'),
+  writeClipboardText:(text) => ipcRenderer.send('clipboard:writeText', text),
 })

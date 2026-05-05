@@ -1,0 +1,115 @@
+.cd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 250;
+  animation: fadeIn 0.16s ease both;
+}
+
+.cd-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 12px;
+  padding: 20px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  animation: scaleIn 0.2s ease both;
+}
+
+.cd-head {
+  display: flex;
+  align-items: center;
+}
+
+.cd-title {
+  font-family: var(--cs-font-ui);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--cs-text-primary);
+}
+
+.cd-message {
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--cs-text-tertiary);
+  margin: -2px 0 4px;
+}
+
+.cd-emphasis {
+  color: var(--cs-text-primary);
+  font-weight: 600;
+}
+
+.cd-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cd-cancel {
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cs-text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--cs-transition), background var(--cs-transition);
+}
+
+.cd-cancel:hover {
+  color: var(--cs-text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cd-confirm {
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--cs-text-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: background var(--cs-transition), border-color var(--cs-transition);
+}
+
+.cd-confirm:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.cd-confirm:focus-visible {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.cd-confirm.destructive {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.cd-confirm.destructive:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: rgba(252, 165, 165, 1);
+}
+
+.cd-confirm.destructive:focus-visible {
+  border-color: rgba(239, 68, 68, 0.6);
+}

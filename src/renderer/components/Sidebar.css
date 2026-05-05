@@ -1,0 +1,233 @@
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--cs-bg-sidebar);
+  border-right: 1px solid var(--cs-border);
+  min-height: 0;
+  user-select: none;
+}
+
+/* Header */
+
+.sb-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--cs-border);
+}
+
+.sb-header-label {
+  flex: 1;
+  font-family: var(--cs-font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cs-text-tertiary);
+}
+
+.sb-header-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--cs-text-muted);
+  cursor: pointer;
+  transition: color var(--cs-transition), background var(--cs-transition), border-color var(--cs-transition);
+}
+
+.sb-header-add:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--cs-text-primary);
+}
+
+/* List */
+
+.sb-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+}
+
+.sb-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background var(--cs-transition),
+    border-color var(--cs-transition);
+  animation: sbItemIn 0.22s ease both;
+  min-height: 36px;
+}
+
+@keyframes sbItemIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sb-item:hover {
+  background: var(--cs-bg-hover);
+}
+
+.sb-item.active {
+  background: var(--cs-bg-active);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+/* Left accent bar — appears on active */
+.sb-item-bar {
+  position: absolute;
+  left: 5px;
+  top: 11px;
+  bottom: 11px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background var(--cs-transition), top var(--cs-transition), bottom var(--cs-transition);
+}
+
+.sb-item.active .sb-item-bar {
+  background: rgba(255, 255, 255, 0.85);
+  top: 8px;
+  bottom: 8px;
+}
+
+/* Name */
+
+.sb-item-name {
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--cs-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--cs-transition);
+  min-width: 0;
+}
+
+.sb-item:hover .sb-item-name {
+  color: var(--cs-text-secondary);
+}
+
+.sb-item.active .sb-item-name {
+  color: var(--cs-text-primary);
+}
+
+/* Live status — small dot + tabular count */
+
+.sb-item-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity var(--cs-transition);
+}
+
+.sb-item:hover .sb-item-status {
+  opacity: 0;
+}
+
+.sb-item-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cs-status-live);
+  box-shadow: 0 0 6px rgba(134, 239, 172, 0.45);
+}
+
+.sb-item-count {
+  font-family: var(--cs-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--cs-text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 10px;
+  text-align: right;
+}
+
+.sb-item.active .sb-item-count {
+  color: var(--cs-text-secondary);
+}
+
+/* Delete — replaces status on hover */
+
+.sb-item-delete {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--cs-text-muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity var(--cs-transition), background var(--cs-transition), color var(--cs-transition);
+}
+
+.sb-item:hover .sb-item-delete {
+  opacity: 1;
+}
+
+.sb-item-delete:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
+}
+
+/* New workspace button */
+
+.sb-new-btn {
+  margin: 8px 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  color: var(--cs-text-tertiary);
+  cursor: pointer;
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.sb-new-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--cs-text-primary);
+}
+
+.sb-new-btn:hover svg {
+  color: var(--cs-text-primary);
+}

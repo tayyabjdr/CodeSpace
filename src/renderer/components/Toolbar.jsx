@@ -46,17 +46,10 @@ export default function Toolbar({ onAdd, agentCount }) {
           <span style={{ height: '11px', opacity: 1    }} />
           <span style={{ height: '5px',  opacity: 0.65 }} />
         </div>
-        <span className="titlebar-name">codespace</span>
+        <span className="titlebar-name">CodeSpace</span>
       </div>
 
-      <div className="titlebar-actions">
-        <button className="titlebar-new-btn" onClick={onAdd}>
-          + new agent
-        </button>
-        <span className="titlebar-count">
-          {agentCount} {agentCount === 1 ? 'agent' : 'agents'} active
-        </span>
-      </div>
+      <div className="titlebar-actions" />
 
       <div className="titlebar-controls">
         <button className="titlebar-btn" onClick={handleMinimize} title="Minimize">

@@ -35,19 +35,35 @@ export function createSession(shell = 'powershell', cwd) {
     })
   }
 
+  // Track exit so subsequent write/resize/kill calls are silent no-ops.
+  proc._exited = false
+  proc.onExit(() => { proc._exited = true })
+
   sessions.set(id, proc)
   return { id, proc }
 }
 
 export function writeSession(id, data) {
-  sessions.get(id)?.write(data)
+  const proc = sessions.get(id)
+  if (!proc || proc._exited) return
+  try { proc.write(data) } catch {}
 }
 
 export function resizeSession(id, cols, rows) {
-  sessions.get(id)?.resize(cols, rows)
+  const proc = sessions.get(id)
+  if (!proc || proc._exited) return
+  try { proc.resize(cols, rows) } catch {}
 }
 
 export function killSession(id) {
-  sessions.get(id)?.kill()
+  const proc = sessions.get(id)
+  if (!proc) return
   sessions.delete(id)
+  if (proc._exited) return
+  proc._exited = true
+  try {
+    proc.kill()
+  } catch {
+    // node-pty's conpty cleanup on Windows can throw on stale consoles — ignore
+  }
 }

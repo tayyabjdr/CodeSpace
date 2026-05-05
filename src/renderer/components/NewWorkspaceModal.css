@@ -1,0 +1,245 @@
+.nwm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.18s ease both;
+}
+
+.nwm-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 12px;
+  padding: 24px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  animation: scaleIn 0.22s ease both;
+}
+
+.nwm-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--cs-border);
+  margin-bottom: 2px;
+}
+
+.nwm-mark {
+  font-size: 12px;
+  color: var(--cs-text-dim);
+}
+
+.nwm-title {
+  font-family: var(--cs-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--cs-text-primary);
+}
+
+.nwm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nwm-label {
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cs-text-tertiary);
+}
+
+.nwm-input {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  color: var(--cs-text-primary);
+  background: hsl(0 0% 6%);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 8px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color var(--cs-transition), background var(--cs-transition);
+}
+
+.nwm-input::placeholder {
+  color: var(--cs-text-dim);
+}
+
+.nwm-input:focus {
+  border-color: var(--cs-border-focus);
+  background: hsl(0 0% 7%);
+}
+
+/* Directory row — mirrors Onboarding */
+
+.nwm-dir-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nwm-dir-display {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: hsl(0 0% 6%);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 0;
+}
+
+.nwm-dir-folder {
+  font-size: 13px;
+  color: var(--cs-text-muted);
+  flex-shrink: 0;
+}
+
+.nwm-dir-name {
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--cs-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 110px;
+}
+
+.nwm-dir-path {
+  font-family: var(--cs-font-mono);
+  font-size: 10px;
+  color: var(--cs-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.nwm-browse {
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--cs-text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.nwm-browse:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.18);
+  color: var(--cs-text-primary);
+}
+
+/* Agent count grid */
+
+.nwm-count-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+}
+
+.nwm-count-card {
+  border: 1px solid var(--cs-border);
+  background: hsl(0 0% 6%);
+  border-radius: 7px;
+  cursor: pointer;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--cs-transition), border-color var(--cs-transition);
+  user-select: none;
+}
+
+.nwm-count-card:hover {
+  background: hsl(0 0% 8%);
+  border-color: var(--cs-border-hover);
+}
+
+.nwm-count-card.active {
+  background: hsl(0 0% 9%);
+  border-color: var(--cs-border-focus);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.nwm-count-num {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cs-text-muted);
+  transition: color var(--cs-transition);
+}
+
+.nwm-count-card.active .nwm-count-num {
+  color: var(--cs-text-primary);
+}
+
+/* Actions */
+
+.nwm-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.nwm-cancel {
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cs-text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--cs-transition), background var(--cs-transition);
+}
+
+.nwm-cancel:hover {
+  color: var(--cs-text-secondary);
+  background: rgba(255,255,255,0.03);
+}
+
+.nwm-submit {
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: var(--cs-text-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition);
+}
+
+.nwm-submit:hover:not(:disabled) {
+  background: rgba(255,255,255,0.11);
+  border-color: rgba(255,255,255,0.24);
+}
+
+.nwm-submit:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

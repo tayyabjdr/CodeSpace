@@ -6,11 +6,64 @@
   background: var(--cs-bg-base);
 }
 
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
 .grid {
   flex: 1;
   display: grid;
   gap: 4px;
   padding: 4px;
   min-height: 0;
+  animation: fadeIn 0.2s ease both;
+}
+
+/* Empty-workspace state — no agents in active workspace */
+
+.empty-workspace {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px;
+  border: 1px dashed var(--cs-border);
+  border-radius: var(--cs-radius);
+  background: var(--cs-bg-surface);
   animation: fadeIn 0.25s ease both;
+}
+
+.empty-mark {
+  font-size: 18px;
+  color: var(--cs-text-dim);
+}
+
+.empty-title {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  color: var(--cs-text-tertiary);
+  letter-spacing: -0.005em;
+}
+
+.empty-btn {
+  font-family: var(--cs-font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--cs-text-secondary);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 7px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.empty-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.18);
+  color: var(--cs-text-primary);
 }

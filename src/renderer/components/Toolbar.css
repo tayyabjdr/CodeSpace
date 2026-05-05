@@ -51,30 +51,60 @@
 }
 
 .titlebar-new-btn {
-  font-family: var(--cs-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--cs-text-tertiary);
-  background: rgba(255, 255, 255, 0.04);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 24px;
+  padding: 0 7px 0 9px;
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 5px;
-  padding: 3px 10px;
-  height: 22px;
+  border-radius: 6px;
   cursor: pointer;
+  color: var(--cs-text-tertiary);
   transition: color var(--cs-transition), background var(--cs-transition), border-color var(--cs-transition);
 }
 
 .titlebar-new-btn:hover {
   color: var(--cs-text-secondary);
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
-.titlebar-count {
+.titlebar-new-plus {
   font-family: var(--cs-font-mono);
-  font-size: 11px;
-  color: var(--cs-text-muted);
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--cs-text-secondary);
+}
+
+.titlebar-new-kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.titlebar-new-kbd kbd {
+  font-family: var(--cs-font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--cs-text-tertiary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom-width: 1.5px;
+  border-radius: 3px;
+  padding: 1px 5px;
+  line-height: 1;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--cs-transition), background var(--cs-transition), border-color var(--cs-transition);
+}
+
+.titlebar-new-btn:hover .titlebar-new-kbd kbd {
+  color: var(--cs-text-secondary);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 /* Right — window controls */

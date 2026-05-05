@@ -11,17 +11,19 @@
 }
 
 .onboarding.ob-exit {
-  animation: fadeOut 0.35s ease forwards;
+  animation: fadeOut 0.45s ease 0.55s forwards;
 }
 
-.ob-content {
+/* Shell */
+
+.ob-shell {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 36px;
+  align-items: stretch;
+  gap: 32px;
   width: 100%;
-  max-width: 460px;
-  padding: 48px 32px;
+  max-width: 760px;
+  padding: 48px 40px;
   -webkit-app-region: no-drag;
 }
 
@@ -33,13 +35,11 @@
   align-items: center;
   gap: 8px;
   animation: slideUp 0.5s ease both;
-  animation-delay: 0ms;
 }
 
 .ob-mark {
   font-size: 0.85rem;
   color: var(--cs-text-dim);
-  display: block;
   margin-bottom: 4px;
 }
 
@@ -59,141 +59,144 @@
   color: var(--cs-text-tertiary);
 }
 
-/* Selector */
+/* Two-column body */
 
-.ob-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
+.ob-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
   animation: slideUp 0.5s ease both;
   animation-delay: 80ms;
 }
 
-.ob-selector-label {
+.ob-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.ob-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.ob-label {
   font-family: var(--cs-font-ui);
   font-size: 10.5px;
   font-weight: 600;
-  color: var(--cs-text-tertiary);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  align-self: flex-start;
+  color: var(--cs-text-tertiary);
 }
 
-.ob-cards {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 6px;
-  width: 100%;
-}
-
-.ob-card {
-  border: 1px solid var(--cs-border);
-  background: hsl(0 0% 6%);
-  border-radius: 8px;
-  cursor: pointer;
-  aspect-ratio: 1;
+.ob-label-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: background var(--cs-transition), border-color var(--cs-transition);
-  user-select: none;
-  position: relative;
-  overflow: hidden;
+  justify-content: space-between;
 }
 
-.ob-card:hover {
-  background: hsl(0 0% 8%);
-  border-color: var(--cs-border-hover);
-}
-
-.ob-card.active {
-  background: hsl(0 0% 9%);
-  border-color: var(--cs-border-focus);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-}
-
-.ob-card-num {
-  font-family: var(--cs-font-ui);
-  font-size: 14px;
+.ob-label-meta {
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
   font-weight: 600;
-  color: var(--cs-text-muted);
-  transition: color var(--cs-transition);
+  letter-spacing: 0.08em;
+  color: var(--cs-cyan);
+  text-shadow: 0 0 12px var(--cs-cyan-glow);
+  font-variant-numeric: tabular-nums;
 }
 
-.ob-card.active .ob-card-num {
+/* Inputs */
+
+.ob-input {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
   color: var(--cs-text-primary);
-}
-
-/* Directory section */
-
-.ob-dir-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  animation: slideUp 0.5s ease both;
-  animation-delay: 130ms;
-}
-
-.ob-dir-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-}
-
-.ob-dir-display {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   background: hsl(0 0% 6%);
   border: 1px solid var(--cs-border-mid);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color var(--cs-transition), background var(--cs-transition);
+}
+
+.ob-input::placeholder {
+  color: var(--cs-text-dim);
+}
+
+.ob-input:focus {
+  border-color: var(--cs-border-focus);
+  background: hsl(0 0% 7%);
+}
+
+/* Directory display — single row with browse */
+
+.ob-dir-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: hsl(0 0% 6%);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 8px;
+  padding: 8px 8px 8px 12px;
   min-width: 0;
-  cursor: default;
 }
 
 .ob-dir-folder {
-  font-size: 13px;
-  color: var(--cs-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--cs-text-secondary);
   flex-shrink: 0;
+}
+
+.ob-dir-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
 }
 
 .ob-dir-name {
   font-family: var(--cs-font-ui);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--cs-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
-  max-width: 120px;
 }
 
 .ob-dir-path {
   font-family: var(--cs-font-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--cs-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
+  letter-spacing: 0.01em;
 }
 
 .ob-browse-btn {
   font-family: var(--cs-font-ui);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
-  padding: 8px 16px;
+  padding: 7px 14px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   color: var(--cs-text-secondary);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
@@ -206,27 +209,124 @@
   color: var(--cs-text-primary);
 }
 
-/* Launch button */
+/* Agent cards — visual previews */
+
+.ob-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.ob-card {
+  position: relative;
+  aspect-ratio: 1;
+  background: hsl(0 0% 6%);
+  border: 1px solid var(--cs-border);
+  border-radius: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  user-select: none;
+  overflow: hidden;
+  font-family: inherit;
+  transition:
+    background var(--cs-transition),
+    border-color var(--cs-transition),
+    transform 0.18s ease;
+}
+
+.ob-card:hover {
+  background: hsl(0 0% 8%);
+  border-color: var(--cs-border-hover);
+  transform: translateY(-1px);
+}
+
+.ob-card.active {
+  background: hsl(0 0% 9%);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.08),
+    0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Mini-grid preview of N terminal panes */
+
+.ob-preview {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  gap: 3px;
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+.ob-preview-cell {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  transition:
+    background var(--cs-transition),
+    border-color var(--cs-transition);
+}
+
+.ob-card:hover .ob-preview-cell {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.ob-card.active .ob-preview-cell {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Stagger the cells in active state for a subtle layered feel */
+.ob-card.active .ob-preview-cell:nth-child(1) { animation: cellPulse 1.6s ease-in-out infinite; }
+.ob-card.active .ob-preview-cell:nth-child(2) { animation: cellPulse 1.6s ease-in-out infinite 0.08s; }
+.ob-card.active .ob-preview-cell:nth-child(3) { animation: cellPulse 1.6s ease-in-out infinite 0.16s; }
+.ob-card.active .ob-preview-cell:nth-child(4) { animation: cellPulse 1.6s ease-in-out infinite 0.24s; }
+.ob-card.active .ob-preview-cell:nth-child(5) { animation: cellPulse 1.6s ease-in-out infinite 0.32s; }
+.ob-card.active .ob-preview-cell:nth-child(6) { animation: cellPulse 1.6s ease-in-out infinite 0.4s; }
+.ob-card.active .ob-preview-cell:nth-child(7) { animation: cellPulse 1.6s ease-in-out infinite 0.48s; }
+.ob-card.active .ob-preview-cell:nth-child(8) { animation: cellPulse 1.6s ease-in-out infinite 0.56s; }
+
+@keyframes cellPulse {
+  0%, 100% { background: rgba(255, 255, 255, 0.18); }
+  50%      { background: rgba(255, 255, 255, 0.28); }
+}
+
+/* Footer */
+
+.ob-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: slideUp 0.5s ease both;
+  animation-delay: 200ms;
+}
 
 .ob-launch {
   font-family: var(--cs-font-ui);
   font-size: 13px;
   font-weight: 500;
-  padding: 9px 36px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--cs-text-secondary);
+  padding: 10px 42px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--cs-text-primary);
   border-radius: 8px;
   cursor: pointer;
-  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
-  animation: slideUp 0.5s ease both;
-  animation-delay: 200ms;
+  transition:
+    background var(--cs-transition),
+    border-color var(--cs-transition),
+    transform 0.18s ease;
 }
 
 .ob-launch:hover:not(:disabled) {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.18);
-  color: var(--cs-text-primary);
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
 }
 
 .ob-launch:disabled {
@@ -234,13 +334,118 @@
   cursor: default;
 }
 
-/* Hint */
+/* === Launching / boot animation === */
+
+/* Form gently dims and the inputs/cards stop being interactive */
+.ob-shell.ob-launching .ob-grid {
+  pointer-events: none;
+  filter: brightness(0.92) saturate(0.96);
+  transition: filter 0.4s ease;
+}
+
+/* Active agent card: cells boot in sequence with cyan flashes */
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell {
+  animation: bootCell 0.85s ease forwards !important;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes bootCell {
+  0%   { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.3); box-shadow: none; }
+  35%  { background: rgba(103, 232, 249, 0.55); border-color: rgba(103, 232, 249, 0.85); box-shadow: 0 0 14px rgba(103, 232, 249, 0.45); }
+  100% { background: rgba(134, 239, 172, 0.4); border-color: rgba(134, 239, 172, 0.7); box-shadow: 0 0 10px rgba(134, 239, 172, 0.25); }
+}
+
+/* Cell stagger — first cell lights at 0ms, last cell ~400ms in */
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(1) { animation-delay: 0ms !important; }
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(2) { animation-delay: 60ms !important; }
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(3) { animation-delay: 120ms !important; }
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(4) { animation-delay: 180ms !important; }
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(5) { animation-delay: 240ms !important; }
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(6) { animation-delay: 300ms !important; }
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(7) { animation-delay: 360ms !important; }
+.ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(8) { animation-delay: 420ms !important; }
+
+/* Button takes on a moving sheen + cyan accent during launch */
+.ob-shell.ob-launching .ob-launch {
+  background: linear-gradient(
+    100deg,
+    rgba(255,255,255,0.06) 0%,
+    rgba(103, 232, 249, 0.12) 50%,
+    rgba(255,255,255,0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: launchSheen 1.4s ease-in-out infinite;
+  border-color: rgba(103, 232, 249, 0.4);
+  color: var(--cs-text-primary);
+  cursor: progress;
+  transform: none !important;
+}
+
+@keyframes launchSheen {
+  0%   { background-position: 200% 50%; }
+  100% { background-position: -100% 50%; }
+}
+
+.ob-launch-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ob-launch-text {
+  letter-spacing: 0.02em;
+}
+
+.ob-launch-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ob-launch-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--cs-cyan, #67e8f9);
+  box-shadow: 0 0 6px var(--cs-cyan-glow, rgba(103, 232, 249, 0.45));
+  opacity: 0.35;
+  animation: launchDot 0.95s ease-in-out infinite;
+}
+
+.ob-launch-dots span:nth-child(1) { animation-delay: 0s; }
+.ob-launch-dots span:nth-child(2) { animation-delay: 0.18s; }
+.ob-launch-dots span:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes launchDot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(-1.5px); }
+}
+
+/* Hint subtly shifts to "spawning agents…" feel */
+.ob-shell.ob-launching .ob-hint {
+  color: var(--cs-cyan, #67e8f9);
+  opacity: 0.7;
+  text-shadow: 0 0 12px var(--cs-cyan-glow, rgba(103, 232, 249, 0.4));
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
 
 .ob-hint {
   font-family: var(--cs-font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--cs-text-dim);
-  letter-spacing: 0.02em;
-  animation: slideUp 0.5s ease both;
-  animation-delay: 260ms;
+  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ob-hint .ob-dot { color: var(--cs-text-muted); }
+
+.ob-sep {
+  display: inline-block;
+  width: 1px;
+  height: 9px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 6px;
 }

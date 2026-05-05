@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CodeSpace · Theme Preview</title>
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: #050505;
+    color: rgba(255,255,255,0.85);
+    padding: 36px 28px 60px;
+    overflow-x: auto;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .lead {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 28px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(280px, 1fr));
+    gap: 18px;
+  }
+
+  .swatch {
+    border-radius: 14px;
+    padding: 18px;
+    background: rgba(255,255,255,0.015);
+    border: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .swatch h2 {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+  .swatch p {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.5;
+  }
+
+  /* Mini CodeSpace mock */
+  .mock {
+    --bg-base: #0a0a0a;
+    --bg-surface: #0f0f0f;
+    --bg-sidebar: #0b0b0b;
+    --bg-elev: #141414;
+    --border: #1c1c1c;
+    --border-mid: #262626;
+    --text-1: rgba(255,255,255,0.92);
+    --text-2: rgba(255,255,255,0.78);
+    --text-3: rgba(255,255,255,0.42);
+    --text-4: rgba(255,255,255,0.22);
+    --green: #86efac;
+    --cyan: #67e8f9;
+    height: 220px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-base);
+    border: 1px solid var(--border-mid);
+    display: grid;
+    grid-template-rows: 28px 1fr;
+  }
+  .mock .titlebar {
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-mid);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 10px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 10px;
+    color: var(--text-2);
+    letter-spacing: 0.05em;
+  }
+  .mock .titlebar::before {
+    content: "";
+    width: 2px; height: 9px;
+    background: rgba(255,255,255,0.45);
+    border-radius: 1px;
+  }
+  .mock .body {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    min-height: 0;
+  }
+  .mock .sidebar {
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mock .ws {
+    height: 22px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,0.02);
+    display: flex;
+    align-items: center;
+    padding: 0 7px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 9.5px;
+    color: var(--text-3);
+    letter-spacing: 0.05em;
+  }
+  .mock .ws.active {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.08);
+    color: var(--text-1);
+  }
+  .mock .panes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    background: var(--bg-base);
+  }
+  .mock .pane {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 18px 1fr;
+  }
+  .mock .pane.focused { border-color: rgba(255,255,255,0.22); }
+  .mock .pane-head {
+    background: rgba(255,255,255,0.025);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 6px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 8px;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+  }
+  .mock .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .mock .pane-body {
+    padding: 6px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 8px;
+    color: var(--text-2);
+    line-height: 1.35;
+  }
+  .mock .pane-body .accent { color: var(--cyan); }
+  .mock .pane-body .muted  { color: var(--text-4); }
+
+  /* === Theme overrides === */
+
+  .mock.warm {
+    /* current — neutral grey */
+    --bg-base: #0a0a0a;
+    --bg-surface: #0f0f0f;
+    --bg-sidebar: #0b0b0b;
+    --bg-elev:  #141414;
+    --border:   #1c1c1c;
+    --border-mid: #262626;
+  }
+
+  .mock.subtle {
+    /* barely-bluish — would be hard to spot side-by-side */
+    --bg-base: #0a0b0d;
+    --bg-surface: #0d0f12;
+    --bg-sidebar: #0a0c0f;
+    --bg-elev:  #11151b;
+    --border:   #1b1e24;
+    --border-mid: #262a32;
+  }
+
+  .mock.slate {
+    /* slate-blue — clearly cool, still discreet */
+    --bg-base: #08101c;
+    --bg-surface: #0c1421;
+    --bg-sidebar: #0a1220;
+    --bg-elev:  #121a2b;
+    --border:   #1e2433;
+    --border-mid: #2a3142;
+  }
+
+  .mock.deep {
+    /* deep indigo — distinctively blue */
+    --bg-base: #060818;
+    --bg-surface: #0a0e22;
+    --bg-sidebar: #07091a;
+    --bg-elev:  #121830;
+    --border:   #1f2542;
+    --border-mid: #2c3354;
+  }
+
+  .label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .chip {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+  }
+  .palette {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .palette .chip { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+  .hex {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 9.5px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+  <h1>CodeSpace · theme preview</h1>
+  <p class="lead">
+    Pick the bluish flavor that feels right. Each card is a miniature of the real app at the same scale, with the active state, sidebar, and a pane open.
+  </p>
+
+  <div class="grid">
+
+    <!-- Current: warm / neutral -->
+    <div class="swatch">
+      <h2>A · Current (Warm Neutral)</h2>
+      <div class="mock warm">
+        <div class="titlebar">CodeSpace</div>
+        <div class="body">
+          <div class="sidebar">
+            <div class="ws active">CS</div>
+            <div class="ws">PJ</div>
+            <div class="ws">SC</div>
+          </div>
+          <div class="panes">
+            <div class="pane focused">
+              <div class="pane-head"><span class="dot"></span>Agent 01</div>
+              <div class="pane-body">
+                <span class="accent">›</span> Welcome back<br>
+                <span class="muted">tips · /init</span>
+              </div>
+            </div>
+            <div class="pane">
+              <div class="pane-head"><span class="dot"></span>Agent 02</div>
+              <div class="pane-body">
+                <span class="muted">› idle</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p>Today's palette. Pure greys; reads slightly warm next to cooler displays.</p>
+      <div class="palette">
+        <span class="chip" style="background:#0a0a0a"></span>
+        <span class="chip" style="background:#0f0f0f"></span>
+        <span class="chip" style="background:#141414"></span>
+        <span class="chip" style="background:#1c1c1c"></span>
+        <span class="hex">#0a0a0a → #1c1c1c</span>
+      </div>
+    </div>
+
+    <!-- Subtle bluish -->
+    <div class="swatch">
+      <h2>B · Subtle Bluish</h2>
+      <div class="mock subtle">
+        <div class="titlebar">CodeSpace</div>
+        <div class="body">
+          <div class="sidebar">
+            <div class="ws active">CS</div>
+            <div class="ws">PJ</div>
+            <div class="ws">SC</div>
+          </div>
+          <div class="panes">
+            <div class="pane focused">
+              <div class="pane-head"><span class="dot"></span>Agent 01</div>
+              <div class="pane-body">
+                <span class="accent">›</span> Welcome back<br>
+                <span class="muted">tips · /init</span>
+              </div>
+            </div>
+            <div class="pane">
+              <div class="pane-head"><span class="dot"></span>Agent 02</div>
+              <div class="pane-body">
+                <span class="muted">› idle</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p>Same densities, hue nudged ~3° toward blue. Reads as "neutral, just clearly not warm."</p>
+      <div class="palette">
+        <span class="chip" style="background:#0a0b0d"></span>
+        <span class="chip" style="background:#0d0f12"></span>
+        <span class="chip" style="background:#11151b"></span>
+        <span class="chip" style="background:#1b1e24"></span>
+        <span class="hex">#0a0b0d → #1b1e24</span>
+      </div>
+    </div>
+
+    <!-- Slate -->
+    <div class="swatch">
+      <h2>C · Slate Blue</h2>
+      <div class="mock slate">
+        <div class="titlebar">CodeSpace</div>
+        <div class="body">
+          <div class="sidebar">
+            <div class="ws active">CS</div>
+            <div class="ws">PJ</div>
+            <div class="ws">SC</div>
+          </div>
+          <div class="panes">
+            <div class="pane focused">
+              <div class="pane-head"><span class="dot"></span>Agent 01</div>
+              <div class="pane-body">
+                <span class="accent">›</span> Welcome back<br>
+                <span class="muted">tips · /init</span>
+              </div>
+            </div>
+            <div class="pane">
+              <div class="pane-head"><span class="dot"></span>Agent 02</div>
+              <div class="pane-body">
+                <span class="muted">› idle</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p>Distinctly cool. Borders pick up a noticeable indigo tint. Still calm, not "themed".</p>
+      <div class="palette">
+        <span class="chip" style="background:#08101c"></span>
+        <span class="chip" style="background:#0c1421"></span>
+        <span class="chip" style="background:#121a2b"></span>
+        <span class="chip" style="background:#1e2433"></span>
+        <span class="hex">#08101c → #1e2433</span>
+      </div>
+    </div>
+
+    <!-- Deep -->
+    <div class="swatch">
+      <h2>D · Deep Indigo</h2>
+      <div class="mock deep">
+        <div class="titlebar">CodeSpace</div>
+        <div class="body">
+          <div class="sidebar">
+            <div class="ws active">CS</div>
+            <div class="ws">PJ</div>
+            <div class="ws">SC</div>
+          </div>
+          <div class="panes">
+            <div class="pane focused">
+              <div class="pane-head"><span class="dot"></span>Agent 01</div>
+              <div class="pane-body">
+                <span class="accent">›</span> Welcome back<br>
+                <span class="muted">tips · /init</span>
+              </div>
+            </div>
+            <div class="pane">
+              <div class="pane-head"><span class="dot"></span>Agent 02</div>
+              <div class="pane-body">
+                <span class="muted">› idle</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p>Rich, almost midnight-blue. Most distinctive — feels like a deliberate theme.</p>
+      <div class="palette">
+        <span class="chip" style="background:#060818"></span>
+        <span class="chip" style="background:#0a0e22"></span>
+        <span class="chip" style="background:#121830"></span>
+        <span class="chip" style="background:#1f2542"></span>
+        <span class="hex">#060818 → #1f2542</span>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="lead" style="margin-top: 36px;">
+    Tell me which one feels right (B, C, or D — or something between two of them) and I'll roll it into the design tokens.
+  </p>
+</body>
+</html>

@@ -3,7 +3,7 @@
   flex-direction: column;
   background: var(--cs-bg-surface);
   border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius);
+  border-radius: 0;
   overflow: hidden;
   min-height: 0;
   transition: border-color var(--cs-transition);
@@ -18,14 +18,21 @@
   border-color: var(--cs-border-mid);
 }
 
-/* Done state — subtle green pulse */
-@keyframes donePulse {
-  0%, 100% { border-color: rgba(134, 239, 172, 0.25); }
-  50%       { border-color: rgba(134, 239, 172, 0.55); }
+/* Done state — static green border */
+.pane.done {
+  border-color: rgba(134, 239, 172, 0.45);
+  transition: none;
 }
 
-.pane.done {
-  animation: donePulse 2.5s ease-in-out infinite;
+/* Drag source — fades the original */
+.pane.dragging {
+  opacity: 0.45;
+}
+
+/* Drag target — single thin cyan border + soft outer glow */
+.pane.drag-over {
+  border-color: rgba(103, 232, 249, 0.7);
+  box-shadow: 0 0 18px rgba(103, 232, 249, 0.14);
 }
 
 .pane-header {
@@ -37,6 +44,11 @@
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
+  cursor: grab;
+}
+
+.pane-header:active {
+  cursor: grabbing;
 }
 
 .pane.focused .pane-header {
@@ -66,6 +78,32 @@
   color: var(--cs-text-secondary);
 }
 
+.pane-label {
+  cursor: text;
+}
+
+.pane-label-input {
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--cs-text-primary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  padding: 1px 6px;
+  outline: none;
+  height: 18px;
+  min-width: 80px;
+  max-width: 180px;
+  caret-color: var(--cs-cyan, #67e8f9);
+}
+
+.pane-label-input:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 /* Done badge */
 .done-badge {
   font-family: var(--cs-font-mono);
@@ -78,22 +116,45 @@
   padding: 1px 6px;
 }
 
-.close-btn {
+.pane-header-actions {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pane-add-btn,
+.close-btn {
   background: none;
   border: none;
-  color: var(--cs-text-dim);
   cursor: pointer;
-  font-size: 15px;
   line-height: 1;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: color var(--cs-transition), background var(--cs-transition);
+  border-radius: 5px;
   font-family: var(--cs-font-mono);
+  transition: color var(--cs-transition), background var(--cs-transition);
+  padding: 0;
+}
+
+.pane-add-btn {
+  color: var(--cs-text-dim);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.pane-add-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--cs-text-primary);
+}
+
+.close-btn {
+  color: var(--cs-text-dim);
+  font-size: 18px;
+  font-weight: 400;
 }
 
 .close-btn:hover {
