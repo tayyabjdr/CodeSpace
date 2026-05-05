@@ -1,5 +1,4 @@
-// src/main/editor-fs.js
-import { readFile as nodeReadFile, writeFile as nodeWriteFile, stat as nodeStat, access as nodeAccess, open as nodeOpen } from 'node:fs/promises'
+import { readFile as nodeReadFile, writeFile as nodeWriteFile, stat as nodeStat, access as nodeAccess } from 'node:fs/promises'
 
 export const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 export const BINARY_PROBE_BYTES = 8 * 1024 // 8 KB
@@ -15,29 +14,15 @@ export async function readFile(absPath) {
   if (!stat.isFile()) return { ok: false, reason: 'denied', message: 'Not a file' }
   if (stat.size > MAX_BYTES) return { ok: false, reason: 'too-large', message: 'File exceeds 20 MB limit' }
 
-  // Binary probe — read first 8KB and look for null bytes.
-  let probe
-  let fh
+  let buf
   try {
-    fh = await nodeOpen(absPath, 'r')
-    const probeLen = Math.min(stat.size, BINARY_PROBE_BYTES)
-    const buf = Buffer.alloc(probeLen)
-    await fh.read(buf, 0, probeLen, 0)
-    probe = buf
-  } catch (err) {
-    return { ok: false, reason: 'denied', message: err?.message ?? 'Could not read file' }
-  } finally {
-    try { await fh?.close() } catch {}
-  }
-  if (probe.includes(0x00)) return { ok: false, reason: 'binary', message: 'Binary file' }
-
-  let content
-  try {
-    content = await nodeReadFile(absPath, 'utf8')
+    buf = await nodeReadFile(absPath)
   } catch (err) {
     return { ok: false, reason: 'denied', message: err?.message ?? 'Could not read file' }
   }
-  return { ok: true, content, encoding: 'utf8' }
+  // Binary probe — check first 8KB for null bytes.
+  if (buf.subarray(0, BINARY_PROBE_BYTES).includes(0x00)) return { ok: false, reason: 'binary', message: 'Binary file' }
+  return { ok: true, content: buf.toString('utf8'), encoding: 'utf8' }
 }
 
 export async function writeFile(absPath, content) {

@@ -1,7 +1,7 @@
 // tests/editor-fs.test.js
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { readFile as nodeReadFile, writeFile as nodeWriteFile, stat as nodeStat, access as nodeAccess } from 'node:fs/promises'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { readFile as nodeReadFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
@@ -40,6 +40,15 @@ describe('editor-fs.readFile', () => {
     writeFileSync(p, buf)
     const r = await readFile(p)
     expect(r).toMatchObject({ ok: false, reason: 'binary' })
+  })
+
+  it('does not flag a null byte that lies beyond the probe window', async () => {
+    const p = join(dir, 'long.txt')
+    const buf = Buffer.alloc(BINARY_PROBE_BYTES + 100, 0x61) // 0x61 is 'a'
+    buf[BINARY_PROBE_BYTES + 50] = 0x00
+    writeFileSync(p, buf)
+    const r = await readFile(p)
+    expect(r.ok).toBe(true)
   })
 })
 
