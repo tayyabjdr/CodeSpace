@@ -512,10 +512,15 @@ function AppInner() {
           removeTerminal(activeWorkspace.focusedTerminalId)
         }
       }
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault()
+        if (activeWorkspace.editor?.open) closeEditor()
+        else setEditorPatch({ open: true })
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [addAgent, removeTerminal, activeWorkspace])
+  }, [addAgent, removeTerminal, activeWorkspace, closeEditor, setEditorPatch])
 
   if (!loaded) {
     return <div className="app" />
