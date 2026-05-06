@@ -1,15 +1,24 @@
-import { useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import Onboarding from './components/Onboarding.jsx'
 import Toolbar from './components/Toolbar.jsx'
 import TerminalPane from './components/TerminalPane.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import NewWorkspaceModal from './components/NewWorkspaceModal.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
+import EditorResizer from './components/EditorResizer.jsx'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
+import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
 import { PERSIST_DEBOUNCE_MS } from './constants.js'
 import './design-tokens.css'
 import './App.css'
+
+const EditorPane = lazy(() => import('./components/EditorPane.jsx'))
+
+function isExternalToWorkspace(file, dir) {
+  if (!file || !dir) return false
+  return !file.toLowerCase().startsWith(dir.toLowerCase())
+}
 
 function makeId() {
   return crypto.randomUUID()
@@ -92,7 +101,8 @@ function AppInner() {
         agentCounter: 0,
         focusedTerminalId: null,
         spawned: false,
-        fontSize: 13
+        fontSize: 13,
+        editor: w.editor ? { ...defaultEditorState(), ...w.editor, dirty: false, scroll: 0 } : defaultEditorState()
       }))
       setWorkspaces(restored)
       setActiveId(state?.activeWorkspaceId ?? restored[0]?.id ?? null)
@@ -113,7 +123,8 @@ function AppInner() {
     persistTimerRef.current = setTimeout(() => {
       window.electronAPI.saveWorkspaces({
         workspaces: workspaces.map(w => ({
-          id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount
+          id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount,
+          editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
         })),
         activeWorkspaceId: activeId
       })
@@ -189,7 +200,8 @@ function AppInner() {
       agentCounter: 0,
       focusedTerminalId: null,
       spawned: false,
-      fontSize: 13
+      fontSize: 13,
+      editor: defaultEditorState()
     }
     setWorkspaces([ws])
     setActiveId(ws.id)
@@ -206,7 +218,8 @@ function AppInner() {
       agentCounter: 0,
       focusedTerminalId: null,
       spawned: false,
-      fontSize: 13
+      fontSize: 13,
+      editor: defaultEditorState()
     }
     setWorkspaces(prev => [...prev, ws])
     setActiveId(ws.id)
@@ -357,6 +370,87 @@ function AppInner() {
     }))
   }, [activeId])
 
+  // ── Editor pane state ───────────────────────────────────────────────────
+  const setEditorPatch = useCallback((patch) => {
+    updateActive(w => ({ ...w, editor: mergeEditor(w.editor ?? defaultEditorState(), patch) }))
+  }, [updateActive])
+
+  const setEditorWidth  = useCallback((width)  => setEditorPatch({ width }),  [setEditorPatch])
+  const setEditorDirty  = useCallback((dirty)  => setEditorPatch({ dirty }),  [setEditorPatch])
+  const setEditorScroll = useCallback((scroll) => setEditorPatch({ scroll }), [setEditorPatch])
+
+  const openFileInEditor = useCallback(({ path, line }) => {
+    setEditorPatch({ open: true, file: path, line: line ?? null, dirty: false })
+  }, [setEditorPatch])
+
+  const closeEditor = useCallback(() => setEditorPatch({ open: false }), [setEditorPatch])
+
+  // Editor I/O state — scoped to the active workspace.
+  const [editorLoadState, setEditorLoadState] = useState('empty')
+  const [editorContent, setEditorContent] = useState('')
+  const [editorErrorReason, setEditorErrorReason] = useState(null)
+  const [editorReloadKey, setEditorReloadKey] = useState(0)
+  const triggerEditorReload = useCallback(() => setEditorReloadKey(k => k + 1), [])
+
+  const editorFile = activeWorkspace?.editor?.file ?? null
+
+  useEffect(() => {
+    if (!editorFile) {
+      setEditorLoadState('empty')
+      setEditorContent('')
+      setEditorErrorReason(null)
+      return
+    }
+    let cancelled = false
+    setEditorLoadState('loading')
+    setEditorErrorReason(null)
+    window.electronAPI.editor.readFile(editorFile).then(r => {
+      if (cancelled) return
+      if (r.ok) {
+        setEditorContent(r.content)
+        setEditorLoadState('content')
+      } else {
+        setEditorErrorReason(r.reason)
+        setEditorLoadState('error')
+      }
+    }).catch(err => {
+      if (cancelled) return
+      setEditorErrorReason('unknown')
+      setEditorLoadState('error')
+      console.error('editor.readFile failed', err)
+    })
+    return () => { cancelled = true }
+  }, [editorFile, editorReloadKey])
+
+  const handleEditorSave = useCallback(async (content) => {
+    if (!editorFile) return
+    try {
+      const r = await window.electronAPI.editor.writeFile(editorFile, content)
+      if (r.ok) {
+        setEditorContent(content)
+        setEditorPatch({ dirty: false })
+      } else {
+        console.error('editor.writeFile failed', r)
+      }
+    } catch (err) {
+      console.error('editor.writeFile threw', err)
+    }
+  }, [editorFile, setEditorPatch])
+
+  // Track .app-body width so the resizer can clamp against the visible area.
+  const bodyWidthRef = useRef(1400)
+  const appBodyRef = useRef(null)
+  useEffect(() => {
+    const el = appBodyRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) bodyWidthRef.current = e.contentRect.width
+    })
+    ro.observe(el)
+    bodyWidthRef.current = el.getBoundingClientRect().width
+    return () => ro.disconnect()
+  }, [loaded])
+
   // Keyboard shortcuts. Skip when an editable element has focus so renaming
   // a workspace/agent or typing in the new-workspace modal isn't swallowed.
   useEffect(() => {
@@ -406,7 +500,7 @@ function AppInner() {
   return (
     <div className="app">
       <Toolbar onAdd={addAgent} agentCount={terminals.length} />
-      <div className="app-body">
+      <div className="app-body" ref={appBodyRef}>
         <Sidebar
           workspaces={workspaces}
           activeId={activeId}
@@ -415,39 +509,75 @@ function AppInner() {
           onCreate={() => setShowNewModal(true)}
           onDelete={handleDeleteWorkspace}
         />
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            gridTemplateRows: `repeat(${rows}, 1fr)`
-          }}
-        >
-          {terminals.length === 0 ? (
-            <div className="empty-workspace">
-              <span className="empty-mark">✦</span>
-              <p className="empty-title">No agents in this workspace</p>
-              <button className="empty-btn" onClick={addAgent}>+ New Agent</button>
+        <div className="body-main">
+          <div className="grid-wrap">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                gridTemplateRows: `repeat(${rows}, 1fr)`
+              }}
+            >
+              {terminals.length === 0 ? (
+                <div className="empty-workspace">
+                  <span className="empty-mark">✦</span>
+                  <p className="empty-title">No agents in this workspace</p>
+                  <button className="empty-btn" onClick={addAgent}>+ New Agent</button>
+                </div>
+              ) : terminals.map(t => (
+                <TerminalPane
+                  key={t.id}
+                  id={t.id}
+                  ptyId={t.ptyId}
+                  shell={t.shell}
+                  cwd={t.cwd}
+                  workspaceDir={activeWorkspace?.dir}
+                  agentNum={t.agentNum}
+                  name={t.name}
+                  fontSize={activeWorkspace?.fontSize ?? 13}
+                  onClose={removeTerminal}
+                  onFocus={setFocusedId}
+                  onRename={renameTerminal}
+                  onPtyReady={handlePtyReady}
+                  onFontSizeChange={adjustFontSize}
+                  onAddAgent={addAgent}
+                  onSwap={swapTerminals}
+                  onOpenFile={openFileInEditor}
+                  isFocused={focusedId === t.id}
+                />
+              ))}
             </div>
-          ) : terminals.map(t => (
-            <TerminalPane
-              key={t.id}
-              id={t.id}
-              ptyId={t.ptyId}
-              shell={t.shell}
-              cwd={t.cwd}
-              agentNum={t.agentNum}
-              name={t.name}
-              fontSize={activeWorkspace?.fontSize ?? 13}
-              onClose={removeTerminal}
-              onFocus={setFocusedId}
-              onRename={renameTerminal}
-              onPtyReady={handlePtyReady}
-              onFontSizeChange={adjustFontSize}
-              onAddAgent={addAgent}
-              onSwap={swapTerminals}
-              isFocused={focusedId === t.id}
-            />
-          ))}
+          </div>
+          {activeWorkspace?.editor?.open && (
+            <>
+              <EditorResizer
+                width={activeWorkspace.editor.width || Math.round((bodyWidthRef.current || 1400) * EDITOR_DEFAULT_FRAC)}
+                bodyWidth={bodyWidthRef.current || 1400}
+                onResize={setEditorWidth}
+                onResizeEnd={() => { /* width already in state */ }}
+                onReset={() => setEditorWidth(Math.round((bodyWidthRef.current || 1400) * EDITOR_DEFAULT_FRAC))}
+              />
+              <Suspense fallback={null}>
+                <EditorPane
+                  file={activeWorkspace.editor.file}
+                  initialLine={activeWorkspace.editor.line}
+                  dirty={activeWorkspace.editor.dirty}
+                  isExternal={isExternalToWorkspace(activeWorkspace.editor.file, activeWorkspace.dir)}
+                  loadState={editorLoadState}
+                  content={editorContent}
+                  errorReason={editorErrorReason}
+                  width={activeWorkspace.editor.width || Math.round((bodyWidthRef.current || 1400) * EDITOR_DEFAULT_FRAC)}
+                  fontSize={activeWorkspace?.fontSize ?? 13}
+                  onSave={handleEditorSave}
+                  onClose={closeEditor}
+                  onRevealInFolder={(p) => window.electronAPI.editor.revealInFolder(p)}
+                  onDirtyChange={setEditorDirty}
+                  onScroll={setEditorScroll}
+                  onRetry={triggerEditorReload}
+                />
+              </Suspense>
+            </>
+          )}
         </div>
       </div>
 

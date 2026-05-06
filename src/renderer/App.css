@@ -12,12 +12,27 @@
   min-height: 0;
 }
 
+.body-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+
+.grid-wrap {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+
 .grid {
   flex: 1;
   display: grid;
   gap: 4px;
   padding: 4px;
   min-height: 0;
+  min-width: 0;
   animation: fadeIn 0.2s ease both;
 }
 
