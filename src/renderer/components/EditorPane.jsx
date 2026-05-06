@@ -2,7 +2,8 @@
 // CodeMirror is wired in Phase 4; the body slot renders a <pre> placeholder
 // so the layout/header/states can be verified independently.
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
+import useEditor, { PLAIN_MODE_THRESHOLD } from '../hooks/useEditor.js'
 import './EditorPane.css'
 
 const REASON_COPY = {
@@ -22,8 +23,9 @@ function basename(p) {
 export default function EditorPane({
   file, dirty, isExternal, isPlain,
   loadState, content, errorReason,
-  width,
+  width, fontSize, initialLine,
   onClose, onRevealInFolder, onRetry,
+  onSave, onDirtyChange, onScroll,
 }) {
   const handleReveal = useCallback(() => file && onRevealInFolder?.(file), [file, onRevealInFolder])
   const reason = errorReason ? REASON_COPY[errorReason] : null
@@ -63,7 +65,15 @@ export default function EditorPane({
 
       {file && loadState === 'content' && (
         <div className="editor-body">
-          <pre className="editor-pre">{content ?? ''}</pre>
+          <EditorBody
+            file={file}
+            line={initialLine}
+            content={content ?? ''}
+            fontSize={fontSize}
+            onSave={onSave}
+            onDirtyChange={onDirtyChange}
+            onScroll={onScroll}
+          />
         </div>
       )}
 
@@ -81,4 +91,14 @@ export default function EditorPane({
       )}
     </div>
   )
+}
+
+function EditorBody({ file, line, content, fontSize, onSave, onDirtyChange, onScroll }) {
+  const hostRef = useRef(null)
+  const isPlain = (content?.length ?? 0) >= PLAIN_MODE_THRESHOLD
+  const { jumpToLine } = useEditor({ hostRef, file, content, isPlain, fontSize, onSave, onDirtyChange, onScroll })
+
+  useEffect(() => { if (line) jumpToLine(line) }, [file, line]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <div ref={hostRef} className="editor-cm-host" />
 }

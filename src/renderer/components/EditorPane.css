@@ -108,6 +108,9 @@
   overflow: hidden;
 }
 
+.editor-cm-host { height: 100%; }
+.editor-cm-host .cm-editor { height: 100%; }
+
 .editor-pre {
   margin: 0;
   padding: 8px;
