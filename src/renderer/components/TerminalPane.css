@@ -165,6 +165,10 @@
   padding: 4px;
 }
 
+.xterm-container[data-modifier-ctrl="true"] .xterm-link {
+  cursor: pointer;
+}
+
 .pane-error {
   flex: 1;
   display: flex;

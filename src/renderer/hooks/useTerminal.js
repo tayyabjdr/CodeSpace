@@ -2,9 +2,11 @@ import { useEffect, useState, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import * as ptyPool from '../pty-pool.js'
+import { parsePathsInLine } from '../path-parser.js'
+import { resolvePath } from '../path-resolver.js'
 import { FONT_RESIZE_DEBOUNCE_MS } from '../constants.js'
 
-export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange) {
+export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange, linkOpts) {
   const [error, setError] = useState(null)
   const [exitCode, setExitCode] = useState(null)
   const ptyIdRef = useRef(ptyId)
@@ -12,10 +14,12 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
   const fitRef = useRef(null)
   const onPtyReadyRef = useRef(onPtyReady)
   const onFontSizeChangeRef = useRef(onFontSizeChange)
+  const linkOptsRef = useRef(linkOpts)
 
   // keep latest callbacks without re-running mount effect
   useEffect(() => { onPtyReadyRef.current = onPtyReady }, [onPtyReady])
   useEffect(() => { onFontSizeChangeRef.current = onFontSizeChange }, [onFontSizeChange])
+  useEffect(() => { linkOptsRef.current = linkOpts }, [linkOpts])
 
   // Sync external fontSize → xterm options.
   // The visual font change is immediate, but fit() + PTY resize is debounced
@@ -211,6 +215,68 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
       // Note: PTY is NOT killed here. Workspace owns PTY lifecycle.
     }
   }, []) // intentionally empty — runs once on mount
+
+  // xterm linkProvider — Ctrl/Cmd-click on parsed paths to open in editor.
+  // Reads cwd / workspaceDir / onOpenFile from linkOptsRef so the provider
+  // doesn't re-register when those change.
+  useEffect(() => {
+    if (!termRef.current || !ptyId) return
+    const term = termRef.current
+
+    function getBufferLine(y) {
+      const line = term.buffer.active.getLine(y - 1)
+      return line ? line.translateToString(true) : ''
+    }
+
+    const disposable = term.registerLinkProvider({
+      provideLinks(bufferLineNumber, callback) {
+        const text = getBufferLine(bufferLineNumber)
+        const matches = parsePathsInLine(text)
+        if (matches.length === 0) return callback(undefined)
+        callback(matches.map(m => ({
+          range: {
+            start: { x: m.start + 1, y: bufferLineNumber },
+            end:   { x: m.end,       y: bufferLineNumber }
+          },
+          text: m.raw,
+          activate: async (event) => {
+            if (!(event.ctrlKey || event.metaKey)) return
+            const opts = linkOptsRef.current
+            if (!opts?.onOpenFile) return
+            const resolved = await resolvePath(
+              m.raw,
+              opts.cwdRef?.current,
+              opts.workspaceDirRef?.current,
+              window.electronAPI?.editor
+            )
+            if (!resolved) return
+            opts.onOpenFile({ path: resolved.path, line: resolved.line, col: resolved.col })
+          },
+          hover: () => {},
+          leave: () => {},
+        })))
+      }
+    })
+    return () => disposable.dispose()
+  }, [ptyId])
+
+  // Ctrl/Cmd held → expose a data-attr on the container so the linkProvider's
+  // <span class="xterm-link"> elements pick up `cursor: pointer` via CSS.
+  useEffect(() => {
+    const host = containerRef.current
+    if (!host) return
+    function onKey(e) {
+      if (e.key === 'Control' || e.key === 'Meta') {
+        host.dataset.modifierCtrl = e.type === 'keydown' ? 'true' : ''
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKey)
+    }
+  }, [containerRef])
 
   return { error, exitCode }
 }
