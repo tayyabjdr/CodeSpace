@@ -634,7 +634,11 @@ function AppInner() {
           title="Delete this workspace?"
           message={
             <>
-              Removing <strong className="cd-emphasis">{pendingDeleteWorkspace.name}</strong> will close every agent inside it. You can't bring it back.
+              Removing <strong className="cd-emphasis">{pendingDeleteWorkspace.name}</strong> will close every agent inside it
+              {pendingDeleteWorkspace.editor?.dirty && pendingDeleteWorkspace.editor?.file && (
+                <> and discard your unsaved edits to <strong className="cd-emphasis">{basename(pendingDeleteWorkspace.editor.file)}</strong></>
+              )}
+              . You can't bring it back.
             </>
           }
           confirmLabel="Delete"
