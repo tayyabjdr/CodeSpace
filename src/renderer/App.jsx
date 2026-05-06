@@ -538,7 +538,15 @@ function AppInner() {
 
   return (
     <div className="app">
-      <Toolbar onAdd={addAgent} agentCount={terminals.length} />
+      <Toolbar
+        onAdd={addAgent}
+        agentCount={terminals.length}
+        editorOpen={!!activeWorkspace?.editor?.open}
+        onToggleEditor={() => {
+          if (activeWorkspace?.editor?.open) closeEditor()
+          else setEditorPatch({ open: true })
+        }}
+      />
       <div className="app-body" ref={appBodyRef}>
         <Sidebar
           workspaces={workspaces}

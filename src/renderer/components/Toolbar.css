@@ -140,3 +140,13 @@
   background: var(--cs-red-hover-bg);
   color: var(--cs-red-hover-fg);
 }
+
+.titlebar-editor-toggle.is-open {
+  color: var(--cs-cyan);
+  background: rgba(103, 232, 249, 0.08);
+}
+
+.titlebar-editor-toggle.is-open:hover {
+  background: rgba(103, 232, 249, 0.14);
+  color: var(--cs-cyan);
+}

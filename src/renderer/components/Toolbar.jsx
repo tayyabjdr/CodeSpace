@@ -28,7 +28,15 @@ const CloseIcon = () => (
   </svg>
 )
 
-export default function Toolbar({ onAdd, agentCount }) {
+const CodeIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4.5 4 1.5 7 4.5 10" />
+    <polyline points="9.5 4 12.5 7 9.5 10" />
+    <line x1="8.2" y1="3" x2="5.8" y2="11" />
+  </svg>
+)
+
+export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor }) {
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => window.electronAPI.onMaximizeChanged(setIsMaximized), [])
@@ -50,6 +58,13 @@ export default function Toolbar({ onAdd, agentCount }) {
       </div>
 
       <div className="titlebar-controls">
+        <button
+          className={`titlebar-btn titlebar-editor-toggle${editorOpen ? ' is-open' : ''}`}
+          title="Editor (Ctrl+E)"
+          onClick={onToggleEditor}
+        >
+          <CodeIcon />
+        </button>
         <VolumeControl />
         <button className="titlebar-btn" onClick={handleMinimize} title="Minimize">
           <MinusIcon />
