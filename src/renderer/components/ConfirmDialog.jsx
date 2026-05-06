@@ -7,9 +7,11 @@ export default function ConfirmDialog({
   message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
+  extraLabel,
   destructive = false,
   onConfirm,
-  onCancel
+  onCancel,
+  onExtra
 }) {
   const confirmRef = useRef(null)
   const cardRef = useRef(null)
@@ -53,6 +55,11 @@ export default function ConfirmDialog({
           <button type="button" className="cd-cancel" onClick={onCancel}>
             {cancelLabel}
           </button>
+          {extraLabel && (
+            <button type="button" className="cd-extra" onClick={onExtra}>
+              {extraLabel}
+            </button>
+          )}
           <button
             type="button"
             ref={confirmRef}

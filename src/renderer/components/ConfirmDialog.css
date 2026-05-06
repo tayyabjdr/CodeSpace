@@ -113,3 +113,21 @@
 .cd-confirm.destructive:focus-visible {
   border-color: rgba(239, 68, 68, 0.6);
 }
+
+.cd-extra {
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--cs-text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--cs-transition), background var(--cs-transition), border-color var(--cs-transition);
+}
+
+.cd-extra:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--cs-text-primary);
+}
