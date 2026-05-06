@@ -1,9 +1,20 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog, clipboard, session } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
+import { mkdirSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
 import { loadWorkspaces, saveWorkspaces, consumeCorruptBackupNotice } from './workspaces-store.js'
+
+// Dev runs alongside an installed CodeSpace.app — same productName means
+// the same %APPDATA%\CodeSpace userData folder, so the two would clobber
+// each other's workspaces.json. Redirect dev to an isolated dir.
+if (process.env['ELECTRON_RENDERER_URL']) {
+  const devUserData = join(app.getPath('appData'), 'CodeSpace-dev')
+  mkdirSync(devUserData, { recursive: true })
+  app.setPath('userData', devUserData)
+  app.setPath('sessionData', devUserData)
+}
 
 function createWindow() {
   const win = new BrowserWindow({
