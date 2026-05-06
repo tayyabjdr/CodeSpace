@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import Onboarding from './components/Onboarding.jsx'
 import Toolbar from './components/Toolbar.jsx'
 import TerminalPane from './components/TerminalPane.jsx'
@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar.jsx'
 import NewWorkspaceModal from './components/NewWorkspaceModal.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import * as ptyPool from './pty-pool.js'
+import * as doneTracker from './done-tracker.js'
 import { PERSIST_DEBOUNCE_MS } from './constants.js'
 import './design-tokens.css'
 import './App.css'
@@ -120,6 +121,43 @@ function AppInner() {
   }, [workspaces, activeId, loaded])
 
   const activeWorkspace = workspaces.find(w => w.id === activeId) ?? null
+
+  // Keep done-tracker subscriptions in sync with every live PTY across every
+  // workspace. Tracking persists through workspace switches so a hidden
+  // workspace's "done" notification still fires.
+  useEffect(() => {
+    if (!loaded) return
+    const map = new Map()
+    for (const w of workspaces) {
+      for (const t of (w.terminals ?? [])) {
+        if (t.ptyId) map.set(t.id, t.ptyId)
+      }
+    }
+    doneTracker.syncTracked(map)
+  }, [workspaces, loaded])
+
+  // A terminal counts as "attended" only if it's the focused pane in the
+  // currently-active workspace. Hidden-workspace terminals are never attended.
+  useEffect(() => {
+    doneTracker.setAttendedCheck(termId => {
+      if (!activeWorkspace) return false
+      return activeWorkspace.focusedTerminalId === termId
+    })
+  }, [activeWorkspace])
+
+  // Workspaces that have at least one done terminal AND aren't the active one
+  // → sidebar shows the notify dot beside their name until you switch in.
+  const doneTermIds = useSyncExternalStore(doneTracker.subscribe, doneTracker.getDoneTermIds)
+  const notifyingWorkspaceIds = useMemo(() => {
+    const set = new Set()
+    for (const w of workspaces) {
+      if (w.id === activeId) continue
+      for (const t of (w.terminals ?? [])) {
+        if (doneTermIds.has(t.id)) { set.add(w.id); break }
+      }
+    }
+    return set
+  }, [workspaces, activeId, doneTermIds])
 
   // Lazy-spawn terminals when a workspace becomes active for the first time.
   // Depend only on activeId so identity churn on `workspaces` doesn't re-fire.
@@ -372,6 +410,7 @@ function AppInner() {
         <Sidebar
           workspaces={workspaces}
           activeId={activeId}
+          notifyingIds={notifyingWorkspaceIds}
           onSelect={handleSelectWorkspace}
           onCreate={() => setShowNewModal(true)}
           onDelete={handleDeleteWorkspace}

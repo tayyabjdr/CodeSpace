@@ -1,15 +1,14 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback, useSyncExternalStore } from 'react'
 import useTerminal from '../hooks/useTerminal.js'
-import { DONE_SILENCE_MS } from '../constants.js'
-import { playDoneSound } from '../done-sound.js'
+import * as doneTracker from '../done-tracker.js'
 import './TerminalPane.css'
 
 export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, isFocused }) {
   const containerRef = useRef(null)
-  const [done, setDone] = useState(false)
-  const isFocusedRef = useRef(isFocused)
-  const activityTimerRef = useRef(null)
-  const awaitingResponseRef = useRef(false)
+  const done = useSyncExternalStore(
+    doneTracker.subscribe,
+    () => doneTracker.isDone(id)
+  )
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState('')
   const inputRef = useRef(null)
@@ -41,53 +40,26 @@ export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fo
     setEditing(false)
   }
 
-  // Keep isFocusedRef in sync without re-creating handleActivity
-  useEffect(() => { isFocusedRef.current = isFocused }, [isFocused])
-
-  // Clear done state when pane is focused
+  // Clear done when this pane becomes attended (workspace active + focused).
   useEffect(() => {
-    if (isFocused && done) {
-      setDone(false)
-      clearTimeout(activityTimerRef.current)
-    }
-  }, [isFocused, done])
-
-  // Cleanup timer on unmount
-  useEffect(() => () => clearTimeout(activityTimerRef.current), [])
+    if (isFocused) doneTracker.noteFocus(id)
+  }, [isFocused, id])
 
   const handleUserInput = useCallback((data) => {
-    // Only treat Enter as a prompt submission. Arrow keys, Tab,
-    // typing characters, etc. shouldn't arm the "done" timer.
-    if (typeof data === 'string' && (data.includes('\r') || data.includes('\n'))) {
-      awaitingResponseRef.current = true
-    }
-  }, [])
-
-  const handleActivity = useCallback(() => {
-    if (!awaitingResponseRef.current) return
-    clearTimeout(activityTimerRef.current)
-    // 4s of silence after activity → assume Claude finished and is waiting
-    activityTimerRef.current = setTimeout(() => {
-      awaitingResponseRef.current = false
-      if (!isFocusedRef.current) {
-        setDone(true)
-        playDoneSound()
-      }
-    }, DONE_SILENCE_MS)
-  }, [])
+    doneTracker.noteUserInput(id, data)
+  }, [id])
 
   const handlePtyReady = useCallback((newPtyId) => {
     onPtyReady?.(id, newPtyId)
   }, [id, onPtyReady])
 
-  const { error, exitCode } = useTerminal(id, ptyId, shell, cwd, containerRef, handleActivity, handleUserInput, handlePtyReady, fontSize, onFontSizeChange)
+  // No onActivity — the done-tracker subscribes to the PTY pool directly so
+  // the silence timer keeps running while this pane is unmounted.
+  const { error, exitCode } = useTerminal(id, ptyId, shell, cwd, containerRef, undefined, handleUserInput, handlePtyReady, fontSize, onFontSizeChange)
 
   const handleFocus = () => {
     onFocus(id)
-    if (done) {
-      setDone(false)
-      clearTimeout(activityTimerRef.current)
-    }
+    doneTracker.noteFocus(id)
   }
 
   // Drag-to-swap — handled on the header (so xterm content stays interactive)

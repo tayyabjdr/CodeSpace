@@ -8,7 +8,7 @@ const PlusGlyph = () => (
   </svg>
 )
 
-export default function Sidebar({ workspaces, activeId, onSelect, onCreate, onDelete }) {
+export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, onCreate, onDelete }) {
   const listRef = useRef(null)
 
   // Roving keyboard nav across workspace items: Up/Down to move focus,
@@ -48,6 +48,7 @@ export default function Sidebar({ workspaces, activeId, onSelect, onCreate, onDe
       <div className="sb-list" role="listbox" aria-label="Workspaces" ref={listRef}>
         {workspaces.map((ws, i) => {
           const isActive = ws.id === activeId
+          const isNotifying = notifyingIds?.has(ws.id) ?? false
           const count = ws.spawned ? (ws.terminals?.length ?? 0) : ws.agentCount
           return (
             <div
@@ -63,7 +64,7 @@ export default function Sidebar({ workspaces, activeId, onSelect, onCreate, onDe
               <span className="sb-item-bar" />
               <span className="sb-item-name" title={ws.name}>{ws.name}</span>
               <span className="sb-item-status" aria-hidden>
-                {isActive && count > 0 && <span className="sb-item-dot" />}
+                {isNotifying && <span className="sb-item-dot" title="An agent finished" />}
                 <span className="sb-item-count">{count}</span>
               </span>
               <button
