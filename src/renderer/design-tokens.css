@@ -46,6 +46,11 @@
   --cs-toolbar-h:  42px;
   --cs-header-h:   30px;
   --cs-transition: 0.15s ease;
+
+  /* Editor pane */
+  --cs-editor-min:           320px;
+  --cs-editor-max-frac:      0.7;
+  --cs-editor-default-frac:  0.45;
 }
 
 *, *::before, *::after {
