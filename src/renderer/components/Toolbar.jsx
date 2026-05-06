@@ -36,6 +36,13 @@ const CodeIcon = () => (
   </svg>
 )
 
+const TerminalIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 17 10 11 4 5" />
+    <line x1="12" y1="19" x2="20" y2="19" />
+  </svg>
+)
+
 export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor }) {
   const [isMaximized, setIsMaximized] = useState(false)
 
@@ -48,12 +55,9 @@ export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor 
   return (
     <div className="titlebar">
       <div className="titlebar-left">
-        <div className="titlebar-mark">
-          <span style={{ height: '4px',  opacity: 0.55 }} />
-          <span style={{ height: '7px',  opacity: 0.75 }} />
-          <span style={{ height: '11px', opacity: 1    }} />
-          <span style={{ height: '5px',  opacity: 0.65 }} />
-        </div>
+        <span className="titlebar-mark" aria-hidden>
+          <TerminalIcon />
+        </span>
         <span className="titlebar-name">CodeSpace</span>
       </div>
 
