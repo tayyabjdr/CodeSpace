@@ -248,7 +248,8 @@ function AppInner() {
     // Persist deletion FIRST, before any PTY teardown that could crash native code.
     window.electronAPI.saveWorkspaces({
       workspaces: nextWorkspaces.map(w => ({
-        id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount
+        id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount,
+        editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
       })),
       activeWorkspaceId: nextActiveId
     })

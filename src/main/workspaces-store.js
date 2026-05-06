@@ -57,9 +57,20 @@ export async function loadWorkspaces() {
       id: String(w.id),
       name: String(w.name ?? 'Workspace'),
       dir: String(w.dir ?? ''),
-      agentCount: Number.isFinite(w.agentCount) ? Math.max(1, Math.min(8, w.agentCount)) : 2
+      agentCount: Number.isFinite(w.agentCount) ? Math.max(1, Math.min(8, w.agentCount)) : 2,
+      editor: sanitizeEditor(w.editor)
     })),
     activeWorkspaceId: parsed.activeWorkspaceId ?? null
+  }
+}
+
+function sanitizeEditor(e) {
+  if (!e || typeof e !== 'object') return undefined
+  return {
+    open:  !!e.open,
+    file:  typeof e.file === 'string' ? e.file : null,
+    line:  Number.isFinite(e.line) ? e.line : null,
+    width: Number.isFinite(e.width) ? e.width : 0
   }
 }
 
@@ -69,7 +80,8 @@ export async function saveWorkspaces(state) {
       id: w.id,
       name: w.name,
       dir: w.dir,
-      agentCount: w.agentCount
+      agentCount: w.agentCount,
+      editor: sanitizeEditor(w.editor)
     })),
     activeWorkspaceId: state?.activeWorkspaceId ?? null
   }
