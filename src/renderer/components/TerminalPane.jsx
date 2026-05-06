@@ -3,7 +3,7 @@ import useTerminal from '../hooks/useTerminal.js'
 import * as doneTracker from '../done-tracker.js'
 import './TerminalPane.css'
 
-export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, isFocused }) {
+export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused }) {
   const containerRef = useRef(null)
   const done = useSyncExternalStore(
     doneTracker.subscribe,
@@ -14,6 +14,13 @@ export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fo
   const inputRef = useRef(null)
   const [dragging, setDragging] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+
+  // Stable refs for the linkProvider — changing cwd or workspaceDir doesn't
+  // re-register the provider; activation reads .current at click time.
+  const cwdRef = useRef(cwd)
+  const workspaceDirRef = useRef(workspaceDir)
+  useEffect(() => { cwdRef.current = cwd }, [cwd])
+  useEffect(() => { workspaceDirRef.current = workspaceDir }, [workspaceDir])
 
   const displayName = name?.trim() || `Agent ${String(agentNum).padStart(2, '0')}`
 
@@ -55,7 +62,12 @@ export default function TerminalPane({ id, ptyId, shell, cwd, agentNum, name, fo
 
   // No onActivity — the done-tracker subscribes to the PTY pool directly so
   // the silence timer keeps running while this pane is unmounted.
-  const { error, exitCode } = useTerminal(id, ptyId, shell, cwd, containerRef, undefined, handleUserInput, handlePtyReady, fontSize, onFontSizeChange)
+  const { error, exitCode } = useTerminal(
+    id, ptyId, shell, cwd, containerRef,
+    undefined, handleUserInput, handlePtyReady,
+    fontSize, onFontSizeChange,
+    { cwdRef, workspaceDirRef, onOpenFile }
+  )
 
   const handleFocus = () => {
     onFocus(id)
