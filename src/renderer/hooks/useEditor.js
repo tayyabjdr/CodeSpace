@@ -25,7 +25,7 @@ function langFor(file) {
   }
 }
 
-export default function useEditor({ hostRef, file, content, isPlain, fontSize, onSave, onDirtyChange, onScroll }) {
+export default function useEditor({ hostRef, file, content, isPlain, fontSize, onSave, onDirtyChange, onChange, onScroll }) {
   const viewRef = useRef(null)
   const fontCompartmentRef = useRef(new Compartment())
   const lastSavedRef = useRef(content ?? '')
@@ -59,6 +59,7 @@ export default function useEditor({ hostRef, file, content, isPlain, fontSize, o
           EditorView.updateListener.of(update => {
             if (update.docChanged) {
               const cur = update.state.doc.toString()
+              onChange?.(cur)
               const dirty = cur !== lastSavedRef.current
               onDirtyChange?.(dirty)
             }

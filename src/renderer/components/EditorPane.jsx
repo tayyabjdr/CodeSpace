@@ -25,7 +25,7 @@ export default function EditorPane({
   loadState, content, errorReason,
   width, fontSize, initialLine,
   onClose, onRevealInFolder, onRetry,
-  onSave, onDirtyChange, onScroll,
+  onSave, onDirtyChange, onChange, onScroll,
 }) {
   const handleReveal = useCallback(() => file && onRevealInFolder?.(file), [file, onRevealInFolder])
   const reason = errorReason ? REASON_COPY[errorReason] : null
@@ -72,6 +72,7 @@ export default function EditorPane({
             fontSize={fontSize}
             onSave={onSave}
             onDirtyChange={onDirtyChange}
+            onChange={onChange}
             onScroll={onScroll}
           />
         </div>
@@ -93,10 +94,10 @@ export default function EditorPane({
   )
 }
 
-function EditorBody({ file, line, content, fontSize, onSave, onDirtyChange, onScroll }) {
+function EditorBody({ file, line, content, fontSize, onSave, onDirtyChange, onChange, onScroll }) {
   const hostRef = useRef(null)
   const isPlain = (content?.length ?? 0) >= PLAIN_MODE_THRESHOLD
-  const { jumpToLine } = useEditor({ hostRef, file, content, isPlain, fontSize, onSave, onDirtyChange, onScroll })
+  const { jumpToLine } = useEditor({ hostRef, file, content, isPlain, fontSize, onSave, onDirtyChange, onChange, onScroll })
 
   useEffect(() => { if (line) jumpToLine(line) }, [file, line]) // eslint-disable-line react-hooks/exhaustive-deps
 

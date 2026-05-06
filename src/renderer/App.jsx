@@ -81,6 +81,10 @@ function AppInner() {
   const [activeId, setActiveId] = useState(null)
   const [showNewModal, setShowNewModal] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
+  // Dirty-prompt: triggered when the user opens another file / closes the
+  // editor / switches workspace while the active editor has unsaved changes.
+  // shape: { kind: 'open-file' | 'close-pane' | 'switch-workspace', payload }
+  const [pendingDirtyAction, setPendingDirtyAction] = useState(null)
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
@@ -284,8 +288,12 @@ function AppInner() {
     : null
 
   const handleSelectWorkspace = useCallback((wsId) => {
+    if (activeWorkspace?.editor?.dirty) {
+      setPendingDirtyAction({ kind: 'switch-workspace', payload: { wsId } })
+      return
+    }
     setActiveId(wsId)
-  }, [])
+  }, [activeWorkspace])
 
   const updateActive = useCallback((updater) => {
     setWorkspaces(prev => prev.map(w => w.id === activeId ? updater(w) : w))
@@ -379,11 +387,26 @@ function AppInner() {
   const setEditorDirty  = useCallback((dirty)  => setEditorPatch({ dirty }),  [setEditorPatch])
   const setEditorScroll = useCallback((scroll) => setEditorPatch({ scroll }), [setEditorPatch])
 
-  const openFileInEditor = useCallback(({ path, line }) => {
+  const openFileImmediate = useCallback(({ path, line }) => {
     setEditorPatch({ open: true, file: path, line: line ?? null, dirty: false })
   }, [setEditorPatch])
 
-  const closeEditor = useCallback(() => setEditorPatch({ open: false }), [setEditorPatch])
+  const openFileInEditor = useCallback(({ path, line }) => {
+    const ed = activeWorkspace?.editor
+    if (ed?.dirty && ed?.file && ed.file !== path) {
+      setPendingDirtyAction({ kind: 'open-file', payload: { path, line } })
+      return
+    }
+    openFileImmediate({ path, line })
+  }, [activeWorkspace, openFileImmediate])
+
+  const closeEditor = useCallback(() => {
+    if (activeWorkspace?.editor?.dirty) {
+      setPendingDirtyAction({ kind: 'close-pane' })
+      return
+    }
+    setEditorPatch({ open: false })
+  }, [activeWorkspace, setEditorPatch])
 
   // Editor I/O state — scoped to the active workspace.
   const [editorLoadState, setEditorLoadState] = useState('empty')
@@ -422,20 +445,35 @@ function AppInner() {
     return () => { cancelled = true }
   }, [editorFile, editorReloadKey])
 
+  // Latest in-editor doc, mirrored from the EditorView via onChange. Lets the
+  // dirty-prompt's "Save" branch persist the current text without exposing the
+  // EditorView ref up the tree.
+  const latestDocRef = useRef('')
+  const handleEditorChange = useCallback((doc) => { latestDocRef.current = doc }, [])
+
   const handleEditorSave = useCallback(async (content) => {
-    if (!editorFile) return
+    if (!editorFile) return false
+    const text = content ?? latestDocRef.current
     try {
-      const r = await window.electronAPI.editor.writeFile(editorFile, content)
+      const r = await window.electronAPI.editor.writeFile(editorFile, text)
       if (r.ok) {
-        setEditorContent(content)
+        setEditorContent(text)
         setEditorPatch({ dirty: false })
-      } else {
-        console.error('editor.writeFile failed', r)
+        return true
       }
+      console.error('editor.writeFile failed', r)
+      return false
     } catch (err) {
       console.error('editor.writeFile threw', err)
+      return false
     }
   }, [editorFile, setEditorPatch])
+
+  const proceedDirtyAction = useCallback((action) => {
+    if (action.kind === 'open-file') openFileImmediate(action.payload)
+    else if (action.kind === 'close-pane') setEditorPatch({ open: false })
+    else if (action.kind === 'switch-workspace') setActiveId(action.payload.wsId)
+  }, [openFileImmediate, setEditorPatch])
 
   // Track .app-body width so the resizer can clamp against the visible area.
   const bodyWidthRef = useRef(1400)
@@ -572,6 +610,7 @@ function AppInner() {
                   onClose={closeEditor}
                   onRevealInFolder={(p) => window.electronAPI.editor.revealInFolder(p)}
                   onDirtyChange={setEditorDirty}
+                  onChange={handleEditorChange}
                   onScroll={setEditorScroll}
                   onRetry={triggerEditorReload}
                 />
@@ -604,6 +643,40 @@ function AppInner() {
           onCancel={handleCancelDelete}
         />
       )}
+
+      {pendingDirtyAction && activeWorkspace?.editor?.file && (
+        <ConfirmDialog
+          title="Save unsaved changes?"
+          message={
+            <>
+              You have unsaved changes in <strong className="cd-emphasis">{basename(activeWorkspace.editor.file)}</strong>.
+            </>
+          }
+          confirmLabel="Save"
+          cancelLabel="Cancel"
+          extraLabel="Discard"
+          onConfirm={async () => {
+            const ok = await handleEditorSave(latestDocRef.current)
+            if (!ok) return
+            const action = pendingDirtyAction
+            setPendingDirtyAction(null)
+            proceedDirtyAction(action)
+          }}
+          onExtra={() => {
+            const action = pendingDirtyAction
+            setEditorPatch({ dirty: false })
+            setPendingDirtyAction(null)
+            proceedDirtyAction(action)
+          }}
+          onCancel={() => setPendingDirtyAction(null)}
+        />
+      )}
     </div>
   )
+}
+
+function basename(p) {
+  if (!p) return ''
+  const m = p.match(/[^\\/]+$/)
+  return m ? m[0] : p
 }
