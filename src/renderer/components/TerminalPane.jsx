@@ -4,7 +4,7 @@ import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
 import './TerminalPane.css'
 
-export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused }) {
+export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused }) {
   const containerRef = useRef(null)
   const done = useSyncExternalStore(
     doneTracker.subscribe,
@@ -23,7 +23,7 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
   useEffect(() => { cwdRef.current = cwd }, [cwd])
   useEffect(() => { workspaceDirRef.current = workspaceDir }, [workspaceDir])
 
-  const displayName = name?.trim() || `Agent ${String(agentNum).padStart(2, '0')}`
+  const displayName = name?.trim() || autoName?.trim() || `Agent ${String(agentNum).padStart(2, '0')}`
 
   useEffect(() => {
     if (editing) {
