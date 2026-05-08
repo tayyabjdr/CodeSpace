@@ -9,6 +9,7 @@ import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
+import * as autoNamer from './auto-namer.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
 import { PERSIST_DEBOUNCE_MS } from './constants.js'
 import './design-tokens.css'
@@ -64,7 +65,8 @@ function makeAgents(count, cwd, startNum = 1) {
     shell: 'claude',
     agentNum: startNum + i,
     cwd,
-    ptyId: null
+    ptyId: null,
+    autoName: null
   }))
 }
 
@@ -117,11 +119,6 @@ function AppInner() {
       setWorkspaces(restored)
       setActiveId(state?.activeWorkspaceId ?? restored[0]?.id ?? null)
       setLoaded(true)
-      // Resuming a session → maximize. Fresh launch (no workspaces) → keep
-      // the small dialog window for onboarding.
-      if (restored.length > 0) {
-        window.electronAPI.windowEnsureMaximized()
-      }
     })
     return () => { cancelled = true }
   }, [])
@@ -143,27 +140,58 @@ function AppInner() {
 
   const activeWorkspace = workspaces.find(w => w.id === activeId) ?? null
 
-  // Keep done-tracker subscriptions in sync with every live PTY across every
-  // workspace. Tracking persists through workspace switches so a hidden
-  // workspace's "done" notification still fires.
+  // Keep done-tracker and auto-namer subscriptions in sync with every live PTY
+  // across every workspace. Tracking persists through workspace switches so a
+  // hidden workspace's "done" notification still fires.
   useEffect(() => {
     if (!loaded) return
     const map = new Map()
+    const pinned = new Set()
     for (const w of workspaces) {
       for (const t of (w.terminals ?? [])) {
         if (t.ptyId) map.set(t.id, t.ptyId)
+        if (t.name && t.name.trim()) pinned.add(t.id)
       }
     }
     doneTracker.syncTracked(map)
+    autoNamer.syncTracked(map, pinned)
   }, [workspaces, loaded])
 
+  useEffect(() => {
+    return autoNamer.subscribe((termId, name) => {
+      setWorkspaces(prev => prev.map(w => {
+        const idx = w.terminals.findIndex(t => t.id === termId)
+        if (idx === -1) return w
+        const t = w.terminals[idx]
+        if (t.autoName === name) return w
+        const next = [...w.terminals]
+        next[idx] = { ...t, autoName: name }
+        return { ...w, terminals: next }
+      }))
+    })
+  }, [])
+
   // A terminal counts as "attended" only if it's the focused pane in the
-  // currently-active workspace. Hidden-workspace terminals are never attended.
+  // currently-active workspace AND the OS window has focus. Without the
+  // hasFocus() gate, alt-tabbing to another app would suppress the chirp
+  // for the last-clicked pane (the user can't see it, so they need to hear it).
   useEffect(() => {
     doneTracker.setAttendedCheck(termId => {
       if (!activeWorkspace) return false
+      if (!document.hasFocus()) return false
       return activeWorkspace.focusedTerminalId === termId
     })
+  }, [activeWorkspace])
+
+  // When the user comes back to the app, clear the cyan dot on the pane they
+  // were last looking at — same effect as clicking back into the pane.
+  useEffect(() => {
+    const onFocus = () => {
+      const id = activeWorkspace?.focusedTerminalId
+      if (id) doneTracker.noteFocus(id)
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [activeWorkspace])
 
   // Workspaces that have at least one done terminal AND aren't the active one
@@ -215,7 +243,6 @@ function AppInner() {
     }
     setWorkspaces([ws])
     setActiveId(ws.id)
-    window.electronAPI.windowEnsureMaximized()
   }, [])
 
   const handleCreateWorkspace = useCallback(({ name, dir, agentCount }) => {
@@ -264,11 +291,6 @@ function AppInner() {
     setActiveId(nextActiveId)
     setPendingDelete(null)
 
-    // If we just dropped to zero workspaces, shrink window to dialog size for onboarding.
-    if (nextWorkspaces.length === 0) {
-      window.electronAPI.windowEnsureRestored()
-    }
-
     // Now kill PTYs. Even if conpty seg-faults, persistence is already on disk.
     // Stagger the kills — node-pty's conpty subsystem on Windows can throw a
     // CRT assertion (remove_pty_baton) when multiple PTYs are torn down in
@@ -309,16 +331,19 @@ function AppInner() {
   const addAgent = useCallback(() => {
     if (!activeId) return
     updateActive(w => {
-      const nextNum = w.agentCounter + 1
+      const used = new Set(w.terminals.map(t => t.agentNum))
+      let nextNum = 1
+      while (used.has(nextNum)) nextNum++
       return {
         ...w,
-        agentCounter: nextNum,
+        agentCounter: Math.max(w.agentCounter, nextNum),
         terminals: [...w.terminals, {
           id: makeId(),
           shell: 'claude',
           agentNum: nextNum,
           cwd: w.dir,
-          ptyId: null
+          ptyId: null,
+          autoName: null
         }]
       }
     })
@@ -330,9 +355,13 @@ function AppInner() {
       const target = w.terminals.find(t => t.id === termId)
       if (target?.ptyId) ptyPool.killPty(target.ptyId)
       else if (target) ptyPool.cancelCreate(target.id)
+      const remaining = w.terminals
+        .filter(t => t.id !== termId)
+        .map((t, i) => ({ ...t, agentNum: i + 1 }))
       return {
         ...w,
-        terminals: w.terminals.filter(t => t.id !== termId),
+        terminals: remaining,
+        agentCounter: remaining.length,
         focusedTerminalId: w.focusedTerminalId === termId ? null : w.focusedTerminalId
       }
     }))
@@ -546,8 +575,11 @@ function AppInner() {
     }
   }, [])
 
+  // Hold render until persisted state is loaded — main keeps the window
+  // hidden until ready-to-show, so this brief null render doesn't flash
+  // an empty placeholder before Onboarding/main mount.
   if (!loaded) {
-    return <div className="app" />
+    return null
   }
 
   if (workspaces.length === 0) {
@@ -610,6 +642,7 @@ function AppInner() {
                   workspaceDir={activeWorkspace?.dir}
                   agentNum={t.agentNum}
                   name={t.name}
+                  autoName={t.autoName}
                   fontSize={activeWorkspace?.fontSize ?? 13}
                   onClose={removeTerminal}
                   onFocus={setFocusedId}
