@@ -129,3 +129,7 @@ export function writePty(ptyId, data) {
 export function resizePty(ptyId, cols, rows) {
   window.electronAPI.resizePty(ptyId, cols, rows)
 }
+
+export function getRing(ptyId) {
+  return buffers.get(ptyId) ?? ''
+}
