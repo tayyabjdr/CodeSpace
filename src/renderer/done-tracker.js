@@ -16,6 +16,7 @@ const awaiting = new Set()       // termId — Enter pressed, response pending
 const doneSet = new Set()        // termId — currently flagged done
 const silenceTimers = new Map()  // termId -> timeout handle
 const listeners = new Set()      // subscribers for done-state changes
+const doneListeners = new Set()  // (termId) => void — fires when a turn finishes
 
 let isAttended = () => false     // (termId) => bool — set from App
 
@@ -29,6 +30,11 @@ export function setAttendedCheck(fn) { isAttended = fn }
 export function subscribe(cb) {
   listeners.add(cb)
   return () => listeners.delete(cb)
+}
+
+export function onDone(cb) {
+  doneListeners.add(cb)
+  return () => doneListeners.delete(cb)
 }
 
 function notify() {
@@ -71,6 +77,9 @@ function trackTerm(termId, ptyId) {
           doneSet.add(termId)
           playDoneSound()
           notify()
+        }
+        for (const cb of doneListeners) {
+          try { cb(termId) } catch (err) { console.warn('[done-tracker] listener threw:', err) }
         }
       }, DONE_SILENCE_MS))
     }
