@@ -48,6 +48,14 @@ const api = {
     pathExists:     (absPath) => ipcRenderer.invoke('editor:pathExists', absPath),
     revealInFolder: (absPath) => ipcRenderer.send('editor:revealInFolder', absPath),
   },
+
+  onUpdateReady: (callback) => {
+    const handler = (_event, info) => callback(info)
+    ipcRenderer.on('update:ready', handler)
+    return () => ipcRenderer.removeListener('update:ready', handler)
+  },
+
+  installUpdate: () => ipcRenderer.invoke('update:install'),
 }
 
 try {

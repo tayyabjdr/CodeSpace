@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar.jsx'
 import NewWorkspaceModal from './components/NewWorkspaceModal.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
+import UpdateToast from './components/UpdateToast.jsx'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
@@ -71,7 +72,12 @@ export default function App() {
   if (typeof window === 'undefined' || !window.electronAPI) {
     return <BridgeMissing />
   }
-  return <AppInner />
+  return (
+    <>
+      <AppInner />
+      <UpdateToast />
+    </>
+  )
 }
 
 function AppInner() {

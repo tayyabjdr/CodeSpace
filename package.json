@@ -8,6 +8,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "package": "electron-builder",
+    "release": "electron-vite build && electron-builder --publish always",
     "test": "vitest run",
     "test:watch": "vitest",
     "postinstall": "electron-rebuild -f -w node-pty"
@@ -25,6 +26,7 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.1",
     "@lezer/highlight": "^1.2.3",
+    "electron-updater": "^6.3.0",
     "node-pty": "^1.0.0"
   },
   "devDependencies": {
@@ -48,6 +50,13 @@
   "build": {
     "appId": "com.controlDeck.codespace",
     "productName": "CodeSpace",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "tayyabjdr",
+        "repo": "CodeSpace"
+      }
+    ],
     "win": {
       "target": "nsis"
     },
