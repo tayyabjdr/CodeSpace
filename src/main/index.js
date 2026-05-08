@@ -5,6 +5,7 @@ import { mkdirSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
 import { loadWorkspaces, saveWorkspaces, consumeCorruptBackupNotice } from './workspaces-store.js'
+import { setupAutoUpdater } from './auto-updater.js'
 
 // Dev runs alongside an installed CodeSpace.app — same productName means
 // the same %APPDATA%\CodeSpace userData folder, so the two would clobber
@@ -129,7 +130,8 @@ app.whenReady().then(() => {
     })
   }
 
-  createWindow()
+  const win = createWindow()
+  setupAutoUpdater(win)
 })
 
 app.on('window-all-closed', () => {
