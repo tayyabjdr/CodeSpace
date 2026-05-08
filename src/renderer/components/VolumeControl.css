@@ -18,20 +18,20 @@
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--cs-icon-tertiary);
   cursor: pointer;
   transition: background var(--cs-transition), color var(--cs-transition);
 }
 .vol-trigger:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--cs-icon-primary);
 }
 .vol-trigger.is-open {
   background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--cs-icon-primary);
 }
 .vol-trigger.is-muted {
-  color: rgba(255, 255, 255, 0.32);
+  color: var(--cs-icon-muted);
 }
 
 /* Popover */
@@ -85,13 +85,13 @@
   background: transparent;
   border: none;
   border-radius: 4px;
-  color: var(--cs-text-tertiary);
+  color: var(--cs-icon-tertiary);
   cursor: pointer;
   transition: background var(--cs-transition), color var(--cs-transition);
 }
 .vol-pop-mute:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: var(--cs-text-secondary);
+  color: var(--cs-icon-secondary);
 }
 .vol-pop-mute.is-muted {
   color: var(--cs-cyan);

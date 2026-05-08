@@ -14,6 +14,43 @@
   animation: fadeOut 0.45s ease 0.55s forwards;
 }
 
+/* Close — only window control surfaced during onboarding (the full Toolbar
+   isn't rendered yet). Mirrors .titlebar-close geometry and red-hover so the
+   transition into the main UI doesn't introduce a new visual language. */
+
+.ob-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--cs-icon-tertiary);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+
+.ob-close:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
+}
+
+.ob-close:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.ob-close:disabled:hover {
+  background: transparent;
+  color: var(--cs-icon-tertiary);
+}
+
 /* Shell */
 
 .ob-shell {
@@ -38,9 +75,11 @@
 }
 
 .ob-mark {
-  font-size: 0.85rem;
-  color: var(--cs-text-dim);
-  margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 6px 18px rgba(103, 232, 249, 0.18));
 }
 
 .ob-wordmark {

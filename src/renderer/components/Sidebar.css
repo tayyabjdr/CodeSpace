@@ -38,7 +38,7 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: 5px;
-  color: var(--cs-text-muted);
+  color: var(--cs-icon-muted);
   cursor: pointer;
   transition: color var(--cs-transition), background var(--cs-transition), border-color var(--cs-transition);
 }
@@ -46,7 +46,7 @@
 .sb-header-add:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
-  color: var(--cs-text-primary);
+  color: var(--cs-icon-primary);
 }
 
 /* List */
@@ -183,7 +183,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--cs-text-muted);
+  color: var(--cs-icon-muted);
   cursor: pointer;
   font-size: 15px;
   line-height: 1;
@@ -222,6 +222,10 @@
   transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
 }
 
+.sb-new-btn svg {
+  color: var(--cs-icon-tertiary);
+}
+
 .sb-new-btn:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.2);
@@ -229,5 +233,5 @@
 }
 
 .sb-new-btn:hover svg {
-  color: var(--cs-text-primary);
+  color: var(--cs-icon-primary);
 }
