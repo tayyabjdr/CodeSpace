@@ -522,6 +522,24 @@ function AppInner() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [addAgent, removeTerminal, activeWorkspace, closeEditor, setEditorPatch])
 
+  // Block window-level file drops. Panes consume their own drops; anything
+  // that misses (sidebar, gaps) would otherwise navigate the BrowserWindow
+  // to a file:// URL and replace the app. Skip if a pane already handled it
+  // so we don't override the pane's 'copy' cursor with 'none'.
+  useEffect(() => {
+    const swallow = (e) => {
+      if (e.defaultPrevented) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'none'
+    }
+    window.addEventListener('dragover', swallow)
+    window.addEventListener('drop', swallow)
+    return () => {
+      window.removeEventListener('dragover', swallow)
+      window.removeEventListener('drop', swallow)
+    }
+  }, [])
+
   if (!loaded) {
     return <div className="app" />
   }

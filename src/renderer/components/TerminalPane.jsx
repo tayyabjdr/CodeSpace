@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback, useSyncExternalStore } from 'react'
 import useTerminal from '../hooks/useTerminal.js'
+import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
 import './TerminalPane.css'
 
@@ -74,7 +75,9 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     doneTracker.noteFocus(id)
   }
 
-  // Drag-to-swap — handled on the header (so xterm content stays interactive)
+  // Drag-to-swap — handled on the header (so xterm content stays interactive).
+  // The pane itself is also a drop target for OS files (images, etc.) — dropped
+  // file paths are written into the PTY so Claude CLI can attach them.
   const handleDragStart = (e) => {
     e.dataTransfer.setData('application/x-codespace-terminal', id)
     e.dataTransfer.effectAllowed = 'move'
@@ -82,9 +85,12 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
   }
   const handleDragEnd = () => setDragging(false)
   const handleDragOver = (e) => {
-    if (!Array.from(e.dataTransfer.types).includes('application/x-codespace-terminal')) return
+    const types = Array.from(e.dataTransfer.types)
+    const isPaneSwap = types.includes('application/x-codespace-terminal')
+    const isFileDrop = types.includes('Files')
+    if (!isPaneSwap && !isFileDrop) return
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+    e.dataTransfer.dropEffect = isPaneSwap ? 'move' : 'copy'
     setDragOver(true)
   }
   const handleDragLeave = (e) => {
@@ -92,11 +98,24 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     setDragOver(false)
   }
   const handleDrop = (e) => {
-    if (!Array.from(e.dataTransfer.types).includes('application/x-codespace-terminal')) return
+    const types = Array.from(e.dataTransfer.types)
+    const isPaneSwap = types.includes('application/x-codespace-terminal')
+    const isFileDrop = types.includes('Files')
+    if (!isPaneSwap && !isFileDrop) return
     e.preventDefault()
     setDragOver(false)
-    const srcId = e.dataTransfer.getData('application/x-codespace-terminal')
-    if (srcId && srcId !== id) onSwap?.(srcId, id)
+    if (isPaneSwap) {
+      const srcId = e.dataTransfer.getData('application/x-codespace-terminal')
+      if (srcId && srcId !== id) onSwap?.(srcId, id)
+      return
+    }
+    const paths = Array.from(e.dataTransfer.files)
+      .map(f => f.path)
+      .filter(p => typeof p === 'string' && p.length > 0)
+    if (paths.length === 0 || !ptyId) return
+    const text = paths.map(p => /[\s"]/.test(p) ? `"${p.replace(/"/g, '\\"')}"` : p).join(' ')
+    ptyPool.writePty(ptyId, text)
+    onFocus?.(id)
   }
 
   return (
