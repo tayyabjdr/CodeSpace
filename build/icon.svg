@@ -1,0 +1,38 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#0a1830"/>
+      <stop offset="55%"  stop-color="#143352"/>
+      <stop offset="100%" stop-color="#1d4f78"/>
+    </linearGradient>
+
+    <radialGradient id="cyanGlow" cx="78%" cy="82%" r="60%">
+      <stop offset="0%"   stop-color="#67e8f9" stop-opacity="0.22"/>
+      <stop offset="60%"  stop-color="#67e8f9" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#67e8f9" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="rim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+    </linearGradient>
+
+    <clipPath id="squircle">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#squircle)">
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <rect width="512" height="512" fill="url(#cyanGlow)"/>
+  </g>
+
+  <rect x="0.75" y="0.75" width="510.5" height="510.5" rx="111.25" ry="111.25"
+        fill="none" stroke="url(#rim)" stroke-width="1.5"/>
+
+  <g fill="none" stroke="#67e8f9" stroke-width="26"
+     stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="147 161 229 242 147 324"/>
+    <line x1="256" y1="351" x2="365" y2="351"/>
+  </g>
+</svg>

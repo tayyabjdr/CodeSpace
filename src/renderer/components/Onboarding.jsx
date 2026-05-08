@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react'
 import { ONBOARDING_BOOT_DELAY_MS } from '../constants.js'
+import AppIcon from './AppIcon.jsx'
 import './Onboarding.css'
 
 const FolderIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+  </svg>
+)
+
+const CloseIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 )
 
@@ -80,9 +88,21 @@ export default function Onboarding({ onLaunch }) {
 
   return (
     <div className={`onboarding${launching ? ' ob-exit' : ''}`}>
+      <button
+        type="button"
+        className="ob-close"
+        title="Close"
+        aria-label="Close"
+        onClick={() => window.electronAPI.windowClose()}
+        disabled={launching}
+      >
+        <CloseIcon />
+      </button>
       <div className={`ob-shell${launching ? ' ob-launching' : ''}`}>
         <header className="ob-brand">
-          <span className="ob-mark">✦</span>
+          <span className="ob-mark" aria-hidden>
+            <AppIcon size={48} />
+          </span>
           <h1 className="ob-wordmark">CodeSpace</h1>
           <p className="ob-tagline">Multi-agent workspace</p>
         </header>
