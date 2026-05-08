@@ -153,3 +153,55 @@
 .vol-pop-slider.is-muted::-webkit-slider-thumb {
   background: var(--cs-text-tertiary);
 }
+
+/* Tone picker */
+
+.vol-pop-divider {
+  height: 1px;
+  background: var(--cs-border-mid);
+  margin: 12px -14px 10px;
+  opacity: 0.6;
+}
+
+.vol-pop-tone-label {
+  font-family: var(--cs-font-ui);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cs-text-tertiary);
+  margin-bottom: 8px;
+}
+
+.vol-pop-sounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vol-pop-sound {
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  padding: 4px 9px;
+  background: transparent;
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 4px;
+  color: var(--cs-text-secondary);
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.vol-pop-sound:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--cs-border-hover);
+  color: var(--cs-text-primary);
+}
+
+.vol-pop-sound.is-active {
+  border-color: var(--cs-cyan);
+  color: var(--cs-cyan);
+  background: rgba(103, 232, 249, 0.08);
+}
+
+.vol-pop-sound.is-active:hover {
+  background: rgba(103, 232, 249, 0.14);
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as volumeStore from '../volume-store.js'
-import { playDoneSound } from '../done-sound.js'
+import { playDoneSound, SOUND_OPTIONS } from '../done-sound.js'
 import './VolumeControl.css'
 
 const SpeakerHigh = () => (
@@ -33,9 +33,15 @@ function pickSpeaker(volume, muted) {
 }
 
 export default function VolumeControl() {
-  const [{ volume, muted }, setState] = useState(volumeStore.getState())
+  const [{ volume, muted, sound }, setState] = useState(volumeStore.getState())
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+
+  const pickSound = (id) => {
+    if (muted) volumeStore.setMuted(false)
+    volumeStore.setSound(id)
+    playDoneSound(id)
+  }
 
   useEffect(() => volumeStore.subscribe(setState), [])
 
@@ -108,6 +114,23 @@ export default function VolumeControl() {
             style={{ '--vol-fill': fill }}
             aria-label="Sound volume"
           />
+
+          <div className="vol-pop-divider" />
+          <div className="vol-pop-tone-label">Tone</div>
+          <div className="vol-pop-sounds" role="radiogroup" aria-label="Notification tone">
+            {SOUND_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                role="radio"
+                aria-checked={sound === opt.id}
+                className={`vol-pop-sound${sound === opt.id ? ' is-active' : ''}`}
+                onClick={() => pickSound(opt.id)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

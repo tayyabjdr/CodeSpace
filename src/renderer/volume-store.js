@@ -2,18 +2,20 @@
 // Read by playDoneSound() in TerminalPane and by the toolbar UI.
 
 const STORAGE_KEY = 'codespace.volume.v1'
+const DEFAULT_SOUND = 'chirp'
 
 function loadInitial() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { volume: 50, muted: false }
+    if (!raw) return { volume: 50, muted: false, sound: DEFAULT_SOUND }
     const parsed = JSON.parse(raw)
     return {
       volume: clamp(Number(parsed.volume), 0, 100, 50),
-      muted: parsed.muted === true
+      muted: parsed.muted === true,
+      sound: typeof parsed.sound === 'string' && parsed.sound ? parsed.sound : DEFAULT_SOUND
     }
   } catch {
-    return { volume: 50, muted: false }
+    return { volume: 50, muted: false, sound: DEFAULT_SOUND }
   }
 }
 
@@ -55,6 +57,17 @@ export function setMuted(m) {
   state = { ...state, muted: next }
   persist()
   emit()
+}
+
+export function setSound(id) {
+  if (typeof id !== 'string' || !id || state.sound === id) return
+  state = { ...state, sound: id }
+  persist()
+  emit()
+}
+
+export function getSoundChoice() {
+  return state.sound
 }
 
 export function subscribe(callback) {
