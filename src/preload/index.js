@@ -48,6 +48,11 @@ const api = {
     pathExists:     (absPath) => ipcRenderer.invoke('editor:pathExists', absPath),
     revealInFolder: (absPath) => ipcRenderer.send('editor:revealInFolder', absPath),
   },
+
+  agentName: {
+    hasKey:    () => ipcRenderer.invoke('agentName:hasKey'),
+    summarize: (tail) => ipcRenderer.invoke('agentName:summarize', tail),
+  },
 }
 
 try {
