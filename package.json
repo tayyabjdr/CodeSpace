@@ -13,6 +13,7 @@
     "postinstall": "electron-rebuild -f -w node-pty"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -25,7 +26,8 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.1",
     "@lezer/highlight": "^1.2.3",
-    "node-pty": "^1.0.0"
+    "node-pty": "^1.0.0",
+    "strip-ansi": "^7.2.0"
   },
   "devDependencies": {
     "@fontsource-variable/geist": "^5.2.8",
