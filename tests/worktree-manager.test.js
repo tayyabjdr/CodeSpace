@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
@@ -77,7 +77,7 @@ describe('worktree-manager / ensureGitignoreExcludes', () => {
   })
 })
 
-import { readMeta, writeMeta, META_DEFAULT } from '../src/main/worktree-manager.js'
+import { readMeta, writeMeta, META_DEFAULT, create } from '../src/main/worktree-manager.js'
 
 describe('worktree-manager / meta file', () => {
   let root, repoDir
@@ -114,5 +114,62 @@ describe('worktree-manager / meta file', () => {
     m1.agents['x'] = { branch: 'cs/x/aaaa' }
     const m2 = readMeta(join(root, 'doesnotexist2'))
     expect(m2.agents).toEqual({})
+  })
+})
+
+describe('worktree-manager / create', () => {
+  let root, repoDir
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'cs-wt-create-'))
+    repoDir = join(root, 'repo')
+    mkdirSync(repoDir)
+    execFileSync('git', ['init', '-q'], { cwd: repoDir })
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'init'], { cwd: repoDir })
+  })
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('creates a worktree at the deterministic path on a new branch', async () => {
+    const agentId = '11111111-2222-3333-4444-555555555555'
+    const r = await create({ repoDir, workspaceName: 'CodeSpace', agentId })
+    expect(r.path).toBe(join(repoDir, '.codespace', 'worktrees', agentId))
+    expect(existsSync(r.path)).toBe(true)
+    expect(r.branch).toMatch(/^cs\/codespace\/11111111$/)
+    const list = execFileSync('git', ['-C', repoDir, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' })
+    expect(list).toContain(r.path.replace(/\\/g, '/'))
+  })
+
+  it('records the agent in the meta file with branch and baseSha', async () => {
+    const agentId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+    const r = await create({ repoDir, workspaceName: 'CodeSpace', agentId })
+    const meta = readMeta(repoDir)
+    expect(meta.agents[agentId]).toMatchObject({ branch: r.branch, baseSha: r.baseSha })
+    expect(meta.agents[agentId].createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+
+  it('ensures .codespace/ in .gitignore exactly once', async () => {
+    const r1 = await create({ repoDir, workspaceName: 'CodeSpace', agentId: 'a1111111-0000-0000-0000-000000000000' })
+    await create({ repoDir, workspaceName: 'CodeSpace', agentId: 'a2222222-0000-0000-0000-000000000000' })
+    const gi = readFileSync(join(repoDir, '.gitignore'), 'utf8')
+    const matches = gi.match(/^\.codespace\/$/gm) ?? []
+    expect(matches.length).toBe(1)
+    expect(readMeta(repoDir).gitignoreTouched).toBe(true)
+  })
+
+  it('retries with -2 suffix on branch collision', async () => {
+    execFileSync('git', ['-C', repoDir, 'branch', 'cs/codespace/deadbeef'], { stdio: 'ignore' })
+    const r = await create({ repoDir, workspaceName: 'CodeSpace', agentId: 'deadbeef-0000-0000-0000-000000000000' })
+    expect(r.branch).toBe('cs/codespace/deadbeef-2')
+  })
+
+  it('throws { code: "no-commits" } when source repo has no commits', async () => {
+    const empty = join(root, 'empty')
+    mkdirSync(empty)
+    execFileSync('git', ['init', '-q'], { cwd: empty })
+    await expect(create({ repoDir: empty, workspaceName: 'X', agentId: 'eeeeeeee-0000-0000-0000-000000000000' }))
+      .rejects.toMatchObject({ code: 'no-commits' })
   })
 })

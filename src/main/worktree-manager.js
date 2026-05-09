@@ -82,3 +82,74 @@ export function writeMeta(repoDir, data) {
   writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8')
   renameSync(tmp, p)
 }
+
+function execGit(args, opts = {}) {
+  return execFileSync('git', args, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+    encoding: 'utf8',
+    ...opts
+  })
+}
+
+function slugify(s) {
+  return String(s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'workspace'
+}
+
+function shortId(uuid) {
+  return String(uuid).split('-')[0] || String(uuid).slice(0, 8)
+}
+
+function branchExists(repoDir, branch) {
+  try {
+    execGit(['-C', repoDir, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])
+    return true
+  } catch { return false }
+}
+
+function pickBranchName(repoDir, base) {
+  if (!branchExists(repoDir, base)) return base
+  for (let i = 2; i <= 5; i++) {
+    const candidate = `${base}-${i}`
+    if (!branchExists(repoDir, candidate)) return candidate
+  }
+  const err = new Error(`could not find a free branch name near ${base}`)
+  err.code = 'branch-collision'
+  throw err
+}
+
+export async function create({ repoDir, workspaceName, agentId }) {
+  if (!isGitAvailable()) {
+    const err = new Error('git not found on PATH'); err.code = 'git-missing'; throw err
+  }
+  if (!isGitRepo(repoDir)) {
+    const err = new Error('source is not a git repo'); err.code = 'not-a-repo'; throw err
+  }
+  let baseSha
+  try { baseSha = execGit(['-C', repoDir, 'rev-parse', 'HEAD']).trim() }
+  catch {
+    const err = new Error('source repo has no commits'); err.code = 'no-commits'; throw err
+  }
+
+  ensureGitignoreExcludes(repoDir)
+
+  const slug = slugify(workspaceName)
+  const branch = pickBranchName(repoDir, `cs/${slug}/${shortId(agentId)}`)
+  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+
+  try {
+    execGit(['-C', repoDir, 'worktree', 'add', '-b', branch, wtPath, baseSha])
+  } catch (e) {
+    const err = new Error(`git worktree add failed: ${e.stderr || e.message}`)
+    err.code = 'worktree-create-failed'
+    err.detail = String(e.stderr || e.message).slice(0, 500)
+    throw err
+  }
+
+  const meta = readMeta(repoDir)
+  meta.gitignoreTouched = true
+  meta.agents[agentId] = { branch, baseSha, createdAt: new Date().toISOString() }
+  writeMeta(repoDir, meta)
+
+  return { path: wtPath, branch, baseSha }
+}
