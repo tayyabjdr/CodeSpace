@@ -678,6 +678,7 @@ function AppInner() {
                   workspaceDir={activeWorkspace?.dir}
                   agentNum={t.agentNum}
                   name={t.name}
+                  branch={t.branch}
                   fontSize={activeWorkspace?.fontSize ?? 13}
                   onClose={removeTerminal}
                   onFocus={setFocusedId}
