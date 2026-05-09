@@ -4,6 +4,7 @@ import { isAbsolute } from 'path'
 import { createSession, writeSession, resizeSession, killSession, isClaudeAvailable } from './pty-manager.js'
 import * as editorFs from './editor-fs.js'
 import * as autoNamer from './auto-namer.js'
+import * as worktree from './worktree-manager.js'
 
 function isValidCwd(cwd) {
   if (typeof cwd !== 'string' || cwd.length === 0) return false
@@ -100,6 +101,58 @@ export function registerHandlers(mainWindow) {
 
   ipcMain.handle('agentName:hasKey',    async () => autoNamer.hasKey())
   ipcMain.handle('agentName:summarize', async (_event, tail) => autoNamer.summarize(tail))
+
+  ipcMain.handle('worktree:isGitAvailable', () => worktree.isGitAvailable())
+
+  ipcMain.handle('worktree:isGitRepo', (_e, dir) => {
+    if (typeof dir !== 'string' || !isAbsolute(dir)) return false
+    return worktree.isGitRepo(dir)
+  })
+
+  ipcMain.handle('worktree:create', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)
+        || typeof args.workspaceName !== 'string' || typeof args.agentId !== 'string') {
+      return { error: 'invalid-args' }
+    }
+    try { return await worktree.create(args) }
+    catch (err) { return { error: err.code || 'unknown', detail: err.detail } }
+  })
+
+  ipcMain.handle('worktree:close', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir) || typeof args.agentId !== 'string') {
+      return { error: 'invalid-args' }
+    }
+    try { return await worktree.close(args) }
+    catch (err) { return { error: err.code || 'unknown' } }
+  })
+
+  ipcMain.handle('worktree:closeAll', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir) || !Array.isArray(args.agentIds)) {
+      return { error: 'invalid-args' }
+    }
+    try { await worktree.closeAllForWorkspace(args); return { ok: true } }
+    catch (err) { return { error: err.code || 'unknown' } }
+  })
+
+  ipcMain.handle('worktree:checkDirty', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir) || typeof args.agentId !== 'string') {
+      return { error: 'invalid-args' }
+    }
+    try { return await worktree.checkDirty(args) }
+    catch (err) { return { error: err.code || 'unknown' } }
+  })
+
+  ipcMain.handle('worktree:wipeAll', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
+    try { await worktree.wipeAll(args); return { ok: true } }
+    catch (err) { return { error: err.code || 'unknown' } }
+  })
+
+  ipcMain.handle('worktree:repairOrphans', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
+    try { await worktree.repairOrphans(args); return { ok: true } }
+    catch (err) { return { error: err.code || 'unknown' } }
+  })
 
   // If the renderer goes away (window close, devtools reload, crash) drop
   // every subscription so we don't post events into a destroyed webContents.

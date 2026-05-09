@@ -59,17 +59,6 @@ function BridgeMissing() {
   )
 }
 
-function makeAgents(count, cwd, startNum = 1) {
-  return Array.from({ length: count }, (_, i) => ({
-    id: makeId(),
-    shell: 'claude',
-    agentNum: startNum + i,
-    cwd,
-    ptyId: null,
-    autoName: null
-  }))
-}
-
 export default function App() {
   if (typeof window === 'undefined' || !window.electronAPI) {
     return <BridgeMissing />
@@ -89,6 +78,9 @@ function AppInner() {
   const [activeId, setActiveId] = useState(null)
   const [showNewModal, setShowNewModal] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
+  // Dirty-close prompt for an isolated agent's worktree.
+  // shape: { wsId, termId, branch, agentName }
+  const [pendingWorktreeClose, setPendingWorktreeClose] = useState(null)
   // Dirty-prompt: triggered when the user opens another file / closes the
   // editor / switches workspace while the active editor has unsaved changes.
   // shape: { kind: 'open-file' | 'close-pane' | 'switch-workspace', payload }
@@ -96,6 +88,33 @@ function AppInner() {
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
+
+  const materializeAgents = useCallback(async (workspace, count, startNum) => {
+    const agents = []
+    for (let i = 0; i < count; i++) {
+      const id = makeId()
+      let cwd = workspace.dir
+      let branch = null
+      if (workspace.isolated) {
+        const r = await window.electronAPI.worktree.create({
+          repoDir: workspace.dir,
+          workspaceName: workspace.name,
+          agentId: id
+        })
+        if (r?.error) {
+          console.error('worktree.create failed', r)
+          continue
+        }
+        cwd = r.path
+        branch = r.branch
+      }
+      agents.push({
+        id, shell: 'claude', agentNum: startNum + i,
+        cwd, ptyId: null, autoName: null, branch
+      })
+    }
+    return agents
+  }, [])
 
   // Load persisted workspaces + defaults on first mount.
   useEffect(() => {
@@ -123,6 +142,17 @@ function AppInner() {
     return () => { cancelled = true }
   }, [])
 
+  // One-shot reconciliation: drop meta entries whose worktree dir was hand-deleted
+  // since last run. Idempotent and silent on error.
+  useEffect(() => {
+    if (!loaded) return
+    for (const w of workspaces) {
+      if (!w.isolated) continue
+      window.electronAPI.worktree.repairOrphans({ repoDir: w.dir }).catch(() => {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
+
   // Persist (debounced) whenever workspace identity changes.
   useEffect(() => {
     if (!loaded) return
@@ -131,6 +161,7 @@ function AppInner() {
       window.electronAPI.saveWorkspaces({
         workspaces: workspaces.map(w => ({
           id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount,
+          isolated: !!w.isolated,
           editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
         })),
         activeWorkspaceId: activeId
@@ -212,20 +243,34 @@ function AppInner() {
   // Depend only on activeId so identity churn on `workspaces` doesn't re-fire.
   useEffect(() => {
     if (!activeId) return
-    setWorkspaces(prev => prev.map(w => {
-      if (w.id !== activeId || w.spawned) return w
-      const terminals = makeAgents(w.agentCount, w.dir, 1)
-      return {
-        ...w,
-        terminals,
-        agentCounter: w.agentCount,
-        spawned: true,
-        focusedTerminalId: terminals[0]?.id ?? null
+    let cancelled = false
+    ;(async () => {
+      const w0 = workspaces.find(x => x.id === activeId)
+      if (!w0 || w0.spawned) return
+      if (w0.isolated) {
+        // Last session's worktrees are orphans now — agent UUIDs are session-only.
+        // Wipe them; branches with commits survive.
+        try { await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir }) } catch {}
+        if (cancelled) return
       }
-    }))
-  }, [activeId])
+      const terminals = await materializeAgents(w0, w0.agentCount, 1)
+      if (cancelled) return
+      setWorkspaces(prev => prev.map(w => {
+        if (w.id !== activeId || w.spawned) return w
+        return {
+          ...w,
+          terminals,
+          agentCounter: w.agentCount,
+          spawned: true,
+          focusedTerminalId: terminals[0]?.id ?? null
+        }
+      }))
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, materializeAgents])
 
-  const handleOnboardingLaunch = useCallback((count, dir, name) => {
+  const handleOnboardingLaunch = useCallback((count, dir, name, isolated) => {
     const resolvedName = (name && name.trim())
       || dir.split(/[\\/]/).filter(Boolean).pop()
       || 'Workspace'
@@ -234,6 +279,7 @@ function AppInner() {
       name: resolvedName,
       dir,
       agentCount: count,
+      isolated: !!isolated,
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,
@@ -282,6 +328,7 @@ function AppInner() {
     window.electronAPI.saveWorkspaces({
       workspaces: nextWorkspaces.map(w => ({
         id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount,
+        isolated: !!w.isolated,
         editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
       })),
       activeWorkspaceId: nextActiveId
@@ -309,6 +356,16 @@ function AppInner() {
           try { ptyPool.killPty(ptyId) } catch {}
         }, i * 80)
       })
+
+      // Released-then-cleanup ordering: PTY kills first (so files are released),
+      // then ask main to clean up all worktrees + branches in one call.
+      if (target.isolated) {
+        const agentIds = (target.terminals ?? []).map(t => t.id)
+        setTimeout(() => {
+          window.electronAPI.worktree.closeAll({ repoDir: target.dir, agentIds })
+            .catch(err => console.error('worktree.closeAll failed', err))
+        }, agentIds.length * 80 + 100)
+      }
     }
   }, [pendingDelete, workspaces, activeId])
 
@@ -328,44 +385,64 @@ function AppInner() {
     setWorkspaces(prev => prev.map(w => w.id === activeId ? updater(w) : w))
   }, [activeId])
 
-  const addAgent = useCallback(() => {
+  const addAgent = useCallback(async () => {
     if (!activeId) return
-    updateActive(w => {
-      const used = new Set(w.terminals.map(t => t.agentNum))
-      let nextNum = 1
-      while (used.has(nextNum)) nextNum++
-      return {
-        ...w,
-        agentCounter: Math.max(w.agentCounter, nextNum),
-        terminals: [...w.terminals, {
-          id: makeId(),
-          shell: 'claude',
-          agentNum: nextNum,
-          cwd: w.dir,
-          ptyId: null,
-          autoName: null
-        }]
-      }
-    })
-  }, [activeId, updateActive])
+    const w = workspaces.find(x => x.id === activeId)
+    if (!w) return
+    const nextNum = w.agentCounter + 1
+    const [agent] = await materializeAgents(w, 1, nextNum)
+    if (!agent) return // creation failed; abort silently (already logged)
+    setWorkspaces(prev => prev.map(x => x.id === activeId ? {
+      ...x,
+      agentCounter: Math.max(x.agentCounter, nextNum),
+      terminals: [...x.terminals, agent]
+    } : x))
+  }, [activeId, workspaces, materializeAgents])
 
-  const removeTerminal = useCallback((termId) => {
-    setWorkspaces(prev => prev.map(w => {
-      if (w.id !== activeId) return w
-      const target = w.terminals.find(t => t.id === termId)
-      if (target?.ptyId) ptyPool.killPty(target.ptyId)
-      else if (target) ptyPool.cancelCreate(target.id)
-      const remaining = w.terminals
-        .filter(t => t.id !== termId)
+  const finalizeTerminalRemoval = useCallback((w, target) => {
+    if (target.ptyId) ptyPool.killPty(target.ptyId)
+    else ptyPool.cancelCreate(target.id)
+
+    if (w.isolated) {
+      // Fire-and-forget; main is single-writer and tolerates errors.
+      window.electronAPI.worktree.close({ repoDir: w.dir, agentId: target.id })
+        .catch(err => console.error('worktree.close failed', err))
+    }
+
+    setWorkspaces(prev => prev.map(x => {
+      if (x.id !== w.id) return x
+      const remaining = x.terminals
+        .filter(t => t.id !== target.id)
         .map((t, i) => ({ ...t, agentNum: i + 1 }))
       return {
-        ...w,
+        ...x,
         terminals: remaining,
         agentCounter: remaining.length,
-        focusedTerminalId: w.focusedTerminalId === termId ? null : w.focusedTerminalId
+        focusedTerminalId: x.focusedTerminalId === target.id ? null : x.focusedTerminalId
       }
     }))
-  }, [activeId])
+  }, [])
+
+  const removeTerminal = useCallback(async (termId) => {
+    const w = workspaces.find(x => x.id === activeId)
+    if (!w) return
+    const target = w.terminals.find(t => t.id === termId)
+    if (!target) return
+
+    if (w.isolated) {
+      // Peek dirty status before tearing anything down.
+      const peek = await window.electronAPI.worktree.checkDirty({ repoDir: w.dir, agentId: termId })
+      if (peek?.dirty) {
+        setPendingWorktreeClose({
+          wsId: w.id, termId, branch: target.branch,
+          agentName: target.name || target.autoName || `Agent ${target.agentNum}`
+        })
+        return
+      }
+    }
+
+    finalizeTerminalRemoval(w, target)
+  }, [activeId, workspaces, finalizeTerminalRemoval])
 
   const setFocusedId = useCallback((termId) => {
     updateActive(w => ({ ...w, focusedTerminalId: termId }))
@@ -643,6 +720,7 @@ function AppInner() {
                   agentNum={t.agentNum}
                   name={t.name}
                   autoName={t.autoName}
+                  branch={t.branch}
                   fontSize={activeWorkspace?.fontSize ?? 13}
                   onClose={removeTerminal}
                   onFocus={setFocusedId}
@@ -716,6 +794,28 @@ function AppInner() {
           destructive
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
+        />
+      )}
+
+      {pendingWorktreeClose && (
+        <ConfirmDialog
+          title="Discard agent's uncommitted changes?"
+          message={
+            <>
+              <strong className="cd-emphasis">{pendingWorktreeClose.agentName}</strong> has uncommitted changes in <code>{pendingWorktreeClose.branch}</code>. The worktree will be removed and the changes lost. Committed work on the branch is preserved.
+            </>
+          }
+          confirmLabel="Discard and close"
+          cancelLabel="Cancel"
+          destructive
+          onConfirm={() => {
+            const { wsId, termId } = pendingWorktreeClose
+            setPendingWorktreeClose(null)
+            const w = workspaces.find(x => x.id === wsId)
+            const target = w?.terminals.find(t => t.id === termId)
+            if (w && target) finalizeTerminalRemoval(w, target)
+          }}
+          onCancel={() => setPendingWorktreeClose(null)}
         />
       )}
 

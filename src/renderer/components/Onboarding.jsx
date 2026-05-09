@@ -55,6 +55,15 @@ export default function Onboarding({ onLaunch }) {
   const [selectedCount, setSelectedCount] = useState(2)
   const [projectDir, setProjectDir] = useState('')
   const [launching, setLaunching] = useState(false)
+  const [isolated, setIsolated] = useState(false)
+  const [isRepo, setIsRepo] = useState(true)
+
+  useEffect(() => {
+    if (!projectDir) { setIsRepo(true); return }
+    let cancelled = false
+    window.electronAPI.worktree.isGitRepo(projectDir).then(v => { if (!cancelled) setIsRepo(!!v) })
+    return () => { cancelled = true }
+  }, [projectDir])
 
   useEffect(() => {
     window.electronAPI.getDesktopPath().then(p => setProjectDir(p || ''))
@@ -73,13 +82,17 @@ export default function Onboarding({ onLaunch }) {
     if (dir) setProjectDir(dir)
   }
 
-  const canLaunch = name.trim().length > 0 && projectDir.length > 0 && !launching
+  const canLaunch =
+    name.trim().length > 0 &&
+    projectDir.length > 0 &&
+    !launching &&
+    (!isolated || isRepo)
 
   const handleLaunch = () => {
     if (!canLaunch) return
     setLaunching(true)
     // Allow the boot animation a beat before swapping to the workspace
-    setTimeout(() => onLaunch(selectedCount, projectDir, name.trim()), ONBOARDING_BOOT_DELAY_MS)
+    setTimeout(() => onLaunch(selectedCount, projectDir, name.trim(), isolated), ONBOARDING_BOOT_DELAY_MS)
   }
 
   const dirLabel = projectDir
@@ -163,6 +176,28 @@ export default function Onboarding({ onLaunch }) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="ob-field ob-isolation">
+              <label className="ob-toggle">
+                <input
+                  type="checkbox"
+                  checked={isolated}
+                  onChange={e => setIsolated(e.target.checked)}
+                />
+                <span className="ob-toggle-track" aria-hidden />
+                <span className="ob-toggle-text">
+                  <span className="ob-toggle-title">Isolated agents</span>
+                  <span className="ob-toggle-help">
+                    Each agent gets its own git branch and folder under <code>.codespace/worktrees/</code>. Requires a git repo.
+                  </span>
+                </span>
+              </label>
+              {isolated && projectDir && !isRepo && (
+                <p className="ob-isolation-error">
+                  This folder isn't a git repo. Run <code>git init</code> there, or turn off isolated agents.
+                </p>
+              )}
             </div>
           </section>
         </div>

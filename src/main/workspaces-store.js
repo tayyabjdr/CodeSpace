@@ -58,6 +58,7 @@ export async function loadWorkspaces() {
       name: String(w.name ?? 'Workspace'),
       dir: String(w.dir ?? ''),
       agentCount: Number.isFinite(w.agentCount) ? Math.max(1, Math.min(8, w.agentCount)) : 2,
+      isolated: !!w.isolated,
       editor: sanitizeEditor(w.editor)
     })),
     activeWorkspaceId: parsed.activeWorkspaceId ?? null
@@ -81,6 +82,7 @@ export async function saveWorkspaces(state) {
       name: w.name,
       dir: w.dir,
       agentCount: w.agentCount,
+      isolated: !!w.isolated,
       editor: sanitizeEditor(w.editor)
     })),
     activeWorkspaceId: state?.activeWorkspaceId ?? null

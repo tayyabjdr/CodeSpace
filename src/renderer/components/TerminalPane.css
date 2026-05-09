@@ -214,3 +214,18 @@
   color: var(--cs-text-primary);
   background: var(--cs-bg-hover);
 }
+
+.tp-branch {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 2px; padding: 1px 4px;
+  background: transparent; border: 0; cursor: pointer;
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-size: 10.5px; color: var(--cs-text-dim, #8c93a0);
+  border-radius: 3px;
+  max-width: 100%; min-width: 0;
+}
+.tp-branch:hover { color: var(--cs-text-primary, #e6e9ef); background: var(--cs-bg-elevated, #11151b); }
+.tp-branch-icon { display: inline-flex; opacity: 0.85; flex: 0 0 auto; }
+.tp-branch-text {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}

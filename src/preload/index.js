@@ -54,6 +54,17 @@ const api = {
     summarize: (tail) => ipcRenderer.invoke('agentName:summarize', tail),
   },
 
+  worktree: {
+    isGitAvailable: () => ipcRenderer.invoke('worktree:isGitAvailable'),
+    isGitRepo:      (dir) => ipcRenderer.invoke('worktree:isGitRepo', dir),
+    create:         (args) => ipcRenderer.invoke('worktree:create', args),
+    close:          (args) => ipcRenderer.invoke('worktree:close', args),
+    closeAll:       (args) => ipcRenderer.invoke('worktree:closeAll', args),
+    checkDirty:     (args) => ipcRenderer.invoke('worktree:checkDirty', args),
+    wipeAll:        (args) => ipcRenderer.invoke('worktree:wipeAll', args),
+    repairOrphans:  (args) => ipcRenderer.invoke('worktree:repairOrphans', args),
+  },
+
   onUpdateReady: (callback) => {
     const handler = (_event, info) => callback(info)
     ipcRenderer.on('update:ready', handler)

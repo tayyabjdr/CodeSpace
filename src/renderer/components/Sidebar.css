@@ -235,3 +235,10 @@
 .sb-new-btn:hover svg {
   color: var(--cs-icon-primary);
 }
+
+.sb-iso {
+  display: inline-flex; align-items: center;
+  margin-left: 6px; opacity: 0.55;
+  color: var(--cs-text-dim, #8c93a0);
+}
+.sb-iso:hover { opacity: 0.9; color: var(--cs-cyan, #67e8f9); }
