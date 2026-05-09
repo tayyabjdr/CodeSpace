@@ -232,6 +232,22 @@ export async function closeAllForWorkspace({ repoDir, agentIds }) {
   })
 }
 
+export async function wipeAll({ repoDir }) {
+  return withRepoLock(repoDir, async () => {
+    const m = readMeta(repoDir)
+    const ids = Object.keys(m.agents)
+    for (const id of ids) {
+      try { await _closeImpl({ repoDir, agentId: id }) } catch {}
+    }
+    try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}
+    try {
+      const dir = join(repoDir, '.codespace', 'worktrees')
+      const entries = readdirSync(dir).filter(n => n !== '.cs-meta.json')
+      if (entries.length === 0) rmSync(dir, { recursive: true, force: true })
+    } catch {}
+  })
+}
+
 export async function repairOrphans({ repoDir }) {
   return withRepoLock(repoDir, async () => {
     const m = readMeta(repoDir)

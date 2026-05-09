@@ -56,6 +56,8 @@ const api = {
     close:          (args) => ipcRenderer.invoke('worktree:close', args),
     closeAll:       (args) => ipcRenderer.invoke('worktree:closeAll', args),
     checkDirty:     (args) => ipcRenderer.invoke('worktree:checkDirty', args),
+    wipeAll:        (args) => ipcRenderer.invoke('worktree:wipeAll', args),
+    repairOrphans:  (args) => ipcRenderer.invoke('worktree:repairOrphans', args),
   },
 
   onUpdateReady: (callback) => {

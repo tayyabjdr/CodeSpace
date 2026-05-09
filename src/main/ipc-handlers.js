@@ -125,6 +125,18 @@ export function registerHandlers(mainWindow) {
     catch (err) { return { error: err.code || 'unknown' } }
   })
 
+  ipcMain.handle('worktree:wipeAll', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
+    try { await worktree.wipeAll(args); return { ok: true } }
+    catch (err) { return { error: err.code || 'unknown' } }
+  })
+
+  ipcMain.handle('worktree:repairOrphans', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
+    try { await worktree.repairOrphans(args); return { ok: true } }
+    catch (err) { return { error: err.code || 'unknown' } }
+  })
+
   // If the renderer goes away (window close, devtools reload, crash) drop
   // every subscription so we don't post events into a destroyed webContents.
   mainWindow.webContents.on('destroyed', () => {

@@ -77,7 +77,7 @@ describe('worktree-manager / ensureGitignoreExcludes', () => {
   })
 })
 
-import { readMeta, writeMeta, META_DEFAULT, create, checkDirty, close, closeAllForWorkspace, repairOrphans } from '../src/main/worktree-manager.js'
+import { readMeta, writeMeta, META_DEFAULT, create, checkDirty, close, closeAllForWorkspace, repairOrphans, wipeAll } from '../src/main/worktree-manager.js'
 
 describe('worktree-manager / meta file', () => {
   let root, repoDir
@@ -260,5 +260,42 @@ describe('worktree-manager / bulk + repair', () => {
     rmSync(r.path, { recursive: true, force: true })
     await repairOrphans({ repoDir })
     expect(readMeta(repoDir).agents[id]).toBeUndefined()
+  })
+})
+
+describe('worktree-manager / wipeAll', () => {
+  let root, repoDir
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'cs-wt-wipe-'))
+    repoDir = join(root, 'repo')
+    mkdirSync(repoDir)
+    execFileSync('git', ['init', '-q'], { cwd: repoDir })
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'init'], { cwd: repoDir })
+  })
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('removes every meta-tracked worktree and clears meta', async () => {
+    const ids = ['w1111111-0000-0000-0000-000000000000', 'w2222222-0000-0000-0000-000000000000']
+    for (const id of ids) await create({ repoDir, workspaceName: 'X', agentId: id })
+    await wipeAll({ repoDir })
+    for (const id of ids) {
+      expect(existsSync(join(repoDir, '.codespace', 'worktrees', id))).toBe(false)
+      expect(readMeta(repoDir).agents[id]).toBeUndefined()
+    }
+  })
+
+  it('keeps a branch that has commits beyond base', async () => {
+    const id = 'w3333333-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'X', agentId: id })
+    writeFileSync(join(r.path, 'k.txt'), 'k')
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', '-C', r.path, 'add', 'k.txt'])
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', '-C', r.path, 'commit', '-m', 'k'])
+    await wipeAll({ repoDir })
+    const branches = execFileSync('git', ['-C', repoDir, 'branch', '--list', r.branch], { encoding: 'utf8' })
+    expect(branches).toContain(r.branch)
   })
 })

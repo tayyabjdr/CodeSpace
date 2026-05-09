@@ -146,6 +146,17 @@ function AppInner() {
     return () => { cancelled = true }
   }, [])
 
+  // One-shot reconciliation: drop meta entries whose worktree dir was hand-deleted
+  // since last run. Idempotent and silent on error.
+  useEffect(() => {
+    if (!loaded) return
+    for (const w of workspaces) {
+      if (!w.isolated) continue
+      window.electronAPI.worktree.repairOrphans({ repoDir: w.dir }).catch(() => {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
+
   // Persist (debounced) whenever workspace identity changes.
   useEffect(() => {
     if (!loaded) return
@@ -209,6 +220,12 @@ function AppInner() {
     ;(async () => {
       const w0 = workspaces.find(x => x.id === activeId)
       if (!w0 || w0.spawned) return
+      if (w0.isolated) {
+        // Last session's worktrees are orphans now — agent UUIDs are session-only.
+        // Wipe them; branches with commits survive.
+        try { await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir }) } catch {}
+        if (cancelled) return
+      }
       const terminals = await materializeAgents(w0, w0.agentCount, 1)
       if (cancelled) return
       setWorkspaces(prev => prev.map(w => {
