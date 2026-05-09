@@ -138,12 +138,7 @@
 .sb-item-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: opacity var(--cs-transition);
-}
-
-.sb-item:hover .sb-item-status {
-  opacity: 0;
+  gap: 8px;
 }
 
 .sb-item-dot {
@@ -152,6 +147,7 @@
   border-radius: 50%;
   background: var(--cs-status-live);
   box-shadow: 0 0 6px rgba(134, 239, 172, 0.45);
+  transition: opacity var(--cs-transition);
 }
 
 .sb-item-count {
@@ -163,6 +159,12 @@
   font-variant-numeric: tabular-nums;
   min-width: 10px;
   text-align: right;
+  transition: opacity var(--cs-transition);
+}
+
+.sb-item:hover .sb-item-count,
+.sb-item:hover .sb-item-dot {
+  opacity: 0;
 }
 
 .sb-item.active .sb-item-count {
@@ -207,15 +209,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   background: transparent;
   border: none;
   color: var(--cs-icon-muted);
   cursor: pointer;
-  font-size: 15px;
   line-height: 1;
-  border-radius: 4px;
   opacity: 0;
-  transition: opacity var(--cs-transition), background var(--cs-transition), color var(--cs-transition);
+  transition: opacity var(--cs-transition), color var(--cs-transition);
 }
 
 .sb-item:hover .sb-item-delete {
@@ -223,8 +224,7 @@
 }
 
 .sb-item-delete:hover {
-  background: var(--cs-red-hover-bg);
-  color: var(--cs-red-hover-fg);
+  color: #ef4444;
 }
 
 /* New workspace button */
@@ -264,7 +264,11 @@
 
 .sb-iso {
   display: inline-flex; align-items: center;
-  margin-left: 6px; opacity: 0.55;
-  color: var(--cs-text-dim, #8c93a0);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 3px rgba(103, 232, 249, 0.25));
+  transition: opacity var(--cs-transition), filter var(--cs-transition);
 }
-.sb-iso:hover { opacity: 0.9; color: var(--cs-cyan, #67e8f9); }
+.sb-iso:hover {
+  opacity: 1;
+  filter: drop-shadow(0 0 5px rgba(134, 239, 172, 0.4));
+}

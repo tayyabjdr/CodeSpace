@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import './Sidebar.css'
 
 const PlusGlyph = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
     <line x1="12" y1="5" x2="12" y2="19" />
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
@@ -64,18 +64,24 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
             >
               <span className="sb-item-bar" />
               <span className="sb-item-name" title={ws.name}>{ws.name}</span>
-              {ws.isolated && (
-                <span className="sb-iso" title="Isolated agents" aria-label="Isolated agents">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="6" y1="3" x2="6" y2="15" />
-                    <circle cx="18" cy="6" r="3" />
-                    <circle cx="6" cy="18" r="3" />
-                    <path d="M18 9a9 9 0 0 1-9 9" />
-                  </svg>
-                </span>
-              )}
               <span className="sb-item-status" aria-hidden>
                 {isNotifying && <span className="sb-item-dot" title="An agent finished" />}
+                {ws.isolated && (
+                  <span className="sb-iso" title="Isolated agents" aria-label="Isolated agents">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="url(#sb-iso-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <defs>
+                        <linearGradient id="sb-iso-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#67e8f9" />
+                          <stop offset="100%" stopColor="#86efac" />
+                        </linearGradient>
+                      </defs>
+                      <line x1="6" y1="3" x2="6" y2="15" />
+                      <circle cx="18" cy="6" r="3" />
+                      <circle cx="6" cy="18" r="3" />
+                      <path d="M18 9a9 9 0 0 1-9 9" />
+                    </svg>
+                  </span>
+                )}
                 <span className="sb-item-count">{isDraft ? '✦' : count}</span>
               </span>
               <button
@@ -86,7 +92,12 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
                   e.stopPropagation()
                   onDelete(ws.id)
                 }}
-              >×</button>
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
             </div>
           )
         })}
