@@ -3,7 +3,6 @@ import Onboarding from './components/Onboarding.jsx'
 import Toolbar from './components/Toolbar.jsx'
 import TerminalPane from './components/TerminalPane.jsx'
 import Sidebar from './components/Sidebar.jsx'
-import NewWorkspaceModal from './components/NewWorkspaceModal.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
@@ -84,10 +83,8 @@ export default function App() {
 
 function AppInner() {
   const [loaded, setLoaded] = useState(false)
-  const [defaultDir, setDefaultDir] = useState('')
   const [workspaces, setWorkspaces] = useState([])
   const [activeId, setActiveId] = useState(null)
-  const [showNewModal, setShowNewModal] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
   // Dirty-prompt: triggered when the user opens another file / closes the
   // editor / switches workspace while the active editor has unsaved changes.
@@ -106,7 +103,6 @@ function AppInner() {
     ]).then(([state, desktop]) => {
       if (cancelled) return
       desktopPathRef.current = desktop || ''
-      setDefaultDir(desktop || '')
       const restored = (state?.workspaces ?? []).map(w => ({
         ...w,
         terminals: [],          // session-only — lazy spawn
@@ -123,17 +119,20 @@ function AppInner() {
     return () => { cancelled = true }
   }, [])
 
-  // Persist (debounced) whenever workspace identity changes.
+  // Persist (debounced) whenever workspace identity changes. Drafts
+  // (`unconfigured: true`) are session-only — they don't survive a reload.
   useEffect(() => {
     if (!loaded) return
     clearTimeout(persistTimerRef.current)
     persistTimerRef.current = setTimeout(() => {
+      const persistable = workspaces.filter(w => !w.unconfigured)
+      const activeIsDraft = workspaces.find(w => w.id === activeId)?.unconfigured
       window.electronAPI.saveWorkspaces({
-        workspaces: workspaces.map(w => ({
+        workspaces: persistable.map(w => ({
           id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount,
           editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
         })),
-        activeWorkspaceId: activeId
+        activeWorkspaceId: activeIsDraft ? (persistable[0]?.id ?? null) : activeId
       })
     }, PERSIST_DEBOUNCE_MS)
   }, [workspaces, activeId, loaded])
@@ -210,10 +209,11 @@ function AppInner() {
 
   // Lazy-spawn terminals when a workspace becomes active for the first time.
   // Depend only on activeId so identity churn on `workspaces` doesn't re-fire.
+  // Drafts (`unconfigured`) skip spawn — handleInitializeDraft does it inline.
   useEffect(() => {
     if (!activeId) return
     setWorkspaces(prev => prev.map(w => {
-      if (w.id !== activeId || w.spawned) return w
+      if (w.id !== activeId || w.spawned || w.unconfigured) return w
       const terminals = makeAgents(w.agentCount, w.dir, 1)
       return {
         ...w,
@@ -245,23 +245,70 @@ function AppInner() {
     setActiveId(ws.id)
   }, [])
 
-  const handleCreateWorkspace = useCallback(({ name, dir, agentCount }) => {
+  // Click "+" in the sidebar → create a *draft* workspace (unconfigured).
+  // The draft renders the embedded onboarding form in place of terminals
+  // until the user hits Initialize. Drafts don't persist across reload.
+  const handleStartDraft = useCallback(() => {
     const ws = {
       id: makeId(),
-      name,
-      dir,
-      agentCount,
+      name: 'New Workspace',
+      dir: '',
+      agentCount: 0,
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,
       spawned: false,
       fontSize: 13,
-      editor: defaultEditorState()
+      editor: defaultEditorState(),
+      unconfigured: true
     }
     setWorkspaces(prev => [...prev, ws])
     setActiveId(ws.id)
-    setShowNewModal(false)
   }, [])
+
+  // Initialize a draft → real workspace. Sets identity, spawns terminals,
+  // and clears the unconfigured flag in a single state update so persistence
+  // and lazy-spawn see a consistent post-init state.
+  const handleInitializeDraft = useCallback((count, dir, name) => {
+    const resolvedName = (name && name.trim()) || 'New Workspace'
+    setWorkspaces(prev => prev.map(w => {
+      if (w.id !== activeId || !w.unconfigured) return w
+      const terminals = makeAgents(count, dir, 1)
+      return {
+        ...w,
+        name: resolvedName,
+        dir,
+        agentCount: count,
+        terminals,
+        agentCounter: count,
+        spawned: true,
+        focusedTerminalId: terminals[0]?.id ?? null,
+        unconfigured: false
+      }
+    }))
+  }, [activeId])
+
+  // Discard a draft → remove it from the list. If it was active, fall back
+  // to the next available real workspace (or null → standalone Onboarding).
+  const handleDiscardDraft = useCallback(() => {
+    setWorkspaces(prev => {
+      const next = prev.filter(w => !(w.id === activeId && w.unconfigured))
+      if (next.length === prev.length) return prev
+      setActiveId(next[0]?.id ?? null)
+      return next
+    })
+  }, [activeId])
+
+  // Live-sync the typed workspace name from the embedded onboarding form
+  // up to the workspace record so the sidebar label updates as the user types.
+  const handleDraftNameChange = useCallback((name) => {
+    setWorkspaces(prev => prev.map(w => {
+      if (w.id !== activeId || !w.unconfigured) return w
+      const display = name.trim() ? name : 'New Workspace'
+      if (w.name === display) return w
+      return { ...w, name: display }
+    }))
+  }, [activeId])
 
   const handleDeleteWorkspace = useCallback((wsId) => {
     setPendingDelete(wsId)
@@ -331,6 +378,7 @@ function AppInner() {
   const addAgent = useCallback(() => {
     if (!activeId) return
     updateActive(w => {
+      if (w.unconfigured) return w
       const used = new Set(w.terminals.map(t => t.agentNum))
       let nextNum = 1
       while (used.has(nextNum)) nextNum++
@@ -537,6 +585,8 @@ function AppInner() {
     }
     const handleKeyDown = (e) => {
       if (isEditable(e.target)) return
+      // Drafts have no terminals/editor — Ctrl+T/W/E shouldn't fire.
+      if (activeWorkspace.unconfigured) return
       if (e.ctrlKey && e.key === 't') {
         e.preventDefault()
         addAgent()
@@ -614,11 +664,19 @@ function AppInner() {
           activeId={activeId}
           notifyingIds={notifyingWorkspaceIds}
           onSelect={handleSelectWorkspace}
-          onCreate={() => setShowNewModal(true)}
+          onCreate={handleStartDraft}
           onDelete={handleDeleteWorkspace}
         />
         <div className="body-main">
           <div className="grid-wrap">
+            {activeWorkspace?.unconfigured ? (
+              <Onboarding
+                mode="embedded"
+                onLaunch={handleInitializeDraft}
+                onDiscard={handleDiscardDraft}
+                onNameChange={handleDraftNameChange}
+              />
+            ) : (
             <div
               className="grid"
               style={{
@@ -656,8 +714,9 @@ function AppInner() {
                 />
               ))}
             </div>
+            )}
           </div>
-          {activeWorkspace?.editor?.open && (
+          {activeWorkspace?.editor?.open && !activeWorkspace?.unconfigured && (
             <>
               <EditorResizer
                 width={activeWorkspace.editor.width || Math.round((bodyWidthRef.current || 1400) * EDITOR_DEFAULT_FRAC)}
@@ -690,14 +749,6 @@ function AppInner() {
           )}
         </div>
       </div>
-
-      {showNewModal && (
-        <NewWorkspaceModal
-          defaultDir={defaultDir}
-          onCancel={() => setShowNewModal(false)}
-          onCreate={handleCreateWorkspace}
-        />
-      )}
 
       {pendingDeleteWorkspace && (
         <ConfirmDialog

@@ -169,6 +169,32 @@
   color: var(--cs-text-secondary);
 }
 
+/* Draft (unconfigured) workspace — italic name + ✦ glyph as the count slot,
+   so the sidebar reads as "this one's still being set up". */
+.sb-item.draft .sb-item-name {
+  color: var(--cs-text-muted);
+}
+
+.sb-item.draft.active .sb-item-name {
+  color: var(--cs-text-secondary);
+}
+
+.sb-item.draft .sb-item-count {
+  font-family: var(--cs-font-ui);
+  font-size: 11px;
+  color: var(--cs-text-muted);
+}
+
+.sb-item.draft.active .sb-item-bar {
+  background: rgba(255, 255, 255, 0.4);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.7) 40%,
+    transparent 40%, transparent 60%,
+    rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0.7) 100%
+  );
+}
+
 /* Delete — replaces status on hover */
 
 .sb-item-delete {
