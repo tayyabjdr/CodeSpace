@@ -1,12 +1,12 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'fs'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
 
 import { isGitAvailable, isGitRepo, ensureGitignoreExcludes } from '../src/main/worktree-manager.js'
-import { readFileSync, existsSync } from 'fs'
 
 describe('worktree-manager / detection', () => {
   let root, repoDir, plainDir
