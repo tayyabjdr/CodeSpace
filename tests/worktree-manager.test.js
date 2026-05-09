@@ -77,7 +77,7 @@ describe('worktree-manager / ensureGitignoreExcludes', () => {
   })
 })
 
-import { readMeta, writeMeta, META_DEFAULT, create, checkDirty, close } from '../src/main/worktree-manager.js'
+import { readMeta, writeMeta, META_DEFAULT, create, checkDirty, close, closeAllForWorkspace, repairOrphans } from '../src/main/worktree-manager.js'
 
 describe('worktree-manager / meta file', () => {
   let root, repoDir
@@ -226,5 +226,39 @@ describe('worktree-manager / checkDirty + close', () => {
     expect(existsSync(r.path)).toBe(false)
     const branches = execFileSync('git', ['-C', repoDir, 'branch', '--list', r.branch], { encoding: 'utf8' })
     expect(branches).toContain(r.branch)
+  })
+})
+
+describe('worktree-manager / bulk + repair', () => {
+  let root, repoDir
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'cs-wt-bulk-'))
+    repoDir = join(root, 'repo')
+    mkdirSync(repoDir)
+    execFileSync('git', ['init', '-q'], { cwd: repoDir })
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'init'], { cwd: repoDir })
+  })
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('closeAllForWorkspace removes every worktree given a list of agentIds', async () => {
+    const ids = ['b1111111-0000-0000-0000-000000000000', 'b2222222-0000-0000-0000-000000000000']
+    for (const id of ids) await create({ repoDir, workspaceName: 'X', agentId: id })
+    await closeAllForWorkspace({ repoDir, agentIds: ids })
+    for (const id of ids) {
+      expect(existsSync(join(repoDir, '.codespace', 'worktrees', id))).toBe(false)
+      expect(readMeta(repoDir).agents[id]).toBeUndefined()
+    }
+  })
+
+  it('repairOrphans drops meta entries whose worktree directory is gone', async () => {
+    const id = 'orphan11-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'X', agentId: id })
+    rmSync(r.path, { recursive: true, force: true })
+    await repairOrphans({ repoDir })
+    expect(readMeta(repoDir).agents[id]).toBeUndefined()
   })
 })

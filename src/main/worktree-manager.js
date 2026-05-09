@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process'
-import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
 
 let gitAvailable = null
@@ -118,7 +118,18 @@ function pickBranchName(repoDir, base) {
   throw err
 }
 
-export async function create({ repoDir, workspaceName, agentId }) {
+const repoLocks = new Map()
+async function withRepoLock(repoDir, fn) {
+  const prev = repoLocks.get(repoDir) ?? Promise.resolve()
+  let release
+  const next = new Promise(r => { release = r })
+  repoLocks.set(repoDir, prev.then(() => next))
+  await prev
+  try { return await fn() }
+  finally { release(); if (repoLocks.get(repoDir) === next) repoLocks.delete(repoDir) }
+}
+
+async function _createImpl({ repoDir, workspaceName, agentId }) {
   if (!isGitAvailable()) {
     const err = new Error('git not found on PATH'); err.code = 'git-missing'; throw err
   }
@@ -154,6 +165,10 @@ export async function create({ repoDir, workspaceName, agentId }) {
   return { path: wtPath, branch, baseSha }
 }
 
+export async function create(args) {
+  return withRepoLock(args.repoDir, () => _createImpl(args))
+}
+
 function metaEntry(repoDir, agentId) {
   const m = readMeta(repoDir)
   return { meta: m, entry: m.agents[agentId] }
@@ -170,7 +185,7 @@ export async function checkDirty({ repoDir, agentId }) {
   return { dirty: out.trim().length > 0 }
 }
 
-export async function close({ repoDir, agentId }) {
+async function _closeImpl({ repoDir, agentId }) {
   const m = readMeta(repoDir)
   const entry = m.agents[agentId]
   if (!entry) return { ok: true, missing: true }
@@ -197,4 +212,43 @@ export async function close({ repoDir, agentId }) {
   writeMeta(repoDir, m)
 
   return { ok: true, branchKept: aheadCount > 0 }
+}
+
+export async function close(args) {
+  return withRepoLock(args.repoDir, () => _closeImpl(args))
+}
+
+export async function closeAllForWorkspace({ repoDir, agentIds }) {
+  return withRepoLock(repoDir, async () => {
+    for (const id of agentIds) {
+      try { await _closeImpl({ repoDir, agentId: id }) } catch {}
+    }
+    try {
+      const dir = join(repoDir, '.codespace', 'worktrees')
+      const entries = readdirSync(dir).filter(n => n !== '.cs-meta.json')
+      if (entries.length === 0) rmSync(dir, { recursive: true, force: true })
+    } catch {}
+  })
+}
+
+export async function repairOrphans({ repoDir }) {
+  return withRepoLock(repoDir, async () => {
+    const m = readMeta(repoDir)
+    let changed = false
+    for (const [id, entry] of Object.entries(m.agents)) {
+      const wtPath = join(repoDir, '.codespace', 'worktrees', id)
+      if (!existsSync(wtPath)) {
+        delete m.agents[id]
+        changed = true
+        try {
+          const out = execGit(['-C', repoDir, 'rev-list', '--count', `${entry.baseSha}..${entry.branch}`])
+          if (parseInt(out.trim(), 10) === 0) {
+            try { execGit(['-C', repoDir, 'branch', '-D', entry.branch]) } catch {}
+          }
+        } catch {}
+      }
+    }
+    try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}
+    if (changed) writeMeta(repoDir, m)
+  })
 }
