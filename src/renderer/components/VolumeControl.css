@@ -1,10 +1,10 @@
-/* Volume control — speaker icon in toolbar with a popover holding the
-   slider and an inline mute icon. Matches the existing titlebar-btn
-   geometry so it slots in beside the window controls without disturbing
-   the visual rhythm. */
+/* Volume control — speaker icon in the toolbar with an inline slider that
+   slides out to the left when the icon is clicked. Volume === 0 is muted;
+   no separate mute control. */
 
 .vol {
-  position: relative;
+  display: flex;
+  align-items: center;
   -webkit-app-region: no-drag;
   margin-right: 4px;
 }
@@ -21,6 +21,7 @@
   color: var(--cs-icon-tertiary);
   cursor: pointer;
   transition: background var(--cs-transition), color var(--cs-transition);
+  flex-shrink: 0;
 }
 .vol-trigger:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -34,86 +35,31 @@
   color: var(--cs-icon-muted);
 }
 
-/* Popover */
+/* Inline slider — collapsed to width 0 when closed, expands left of the
+   speaker icon when .vol.is-open. The 8px right margin only applies in the
+   open state so the closed control remains tight against the next button. */
 
-.vol-pop {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  width: 220px;
-  padding: 12px 14px;
-  background: var(--cs-bg-elevated);
-  border: 1px solid var(--cs-border-hover);
-  border-radius: 8px;
-  z-index: 50;
-  -webkit-app-region: no-drag;
-  animation: vol-pop-in 140ms ease;
-}
-
-@keyframes vol-pop-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.vol-pop-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.vol-pop-label {
-  font-family: var(--cs-font-ui);
-  font-size: 12px;
-  color: var(--cs-text-secondary);
-}
-
-.vol-pop-pct {
-  font-family: var(--cs-font-mono);
-  color: var(--cs-text-tertiary);
-  font-variant-numeric: tabular-nums;
-  margin-left: 2px;
-}
-
-.vol-pop-mute {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  color: var(--cs-icon-tertiary);
-  cursor: pointer;
-  transition: background var(--cs-transition), color var(--cs-transition);
-}
-.vol-pop-mute:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--cs-icon-secondary);
-}
-.vol-pop-mute.is-muted {
-  color: var(--cs-cyan);
-  background: rgba(103, 232, 249, 0.08);
-}
-.vol-pop-mute.is-muted:hover {
-  background: rgba(103, 232, 249, 0.14);
-}
-.vol-pop-mute svg { width: 13px; height: 13px; }
-
-/* Slider */
-
-.vol-pop-slider {
+.vol-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 100%;
+  width: 0;
   height: 18px;
+  margin: 0;
   background: transparent;
   cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: width 180ms ease, opacity 140ms ease, margin-right 180ms ease;
 }
 
-.vol-pop-slider::-webkit-slider-runnable-track {
+.vol.is-open .vol-slider {
+  width: 110px;
+  opacity: 1;
+  pointer-events: auto;
+  margin-right: 8px;
+}
+
+.vol-slider::-webkit-slider-runnable-track {
   height: 2px;
   border-radius: 1px;
   background: linear-gradient(
@@ -123,7 +69,7 @@
   );
 }
 
-.vol-pop-slider::-webkit-slider-thumb {
+.vol-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 11px;
@@ -136,72 +82,16 @@
   transition: transform var(--cs-transition), background var(--cs-transition);
 }
 
-.vol-pop-slider:hover::-webkit-slider-thumb {
+.vol-slider:hover::-webkit-slider-thumb {
   background: #fff;
   transform: scale(1.15);
 }
 
-/* When muted, dim the fill but keep the slider interactive — dragging it
-   auto-unmutes (matches standard system-tray / Discord / Spotify behavior). */
-.vol-pop-slider.is-muted::-webkit-slider-runnable-track {
-  background: linear-gradient(
-    to right,
-    var(--cs-text-muted) 0 var(--vol-fill, 50%),
-    var(--cs-border-mid) var(--vol-fill, 50%) 100%
-  );
-}
-.vol-pop-slider.is-muted::-webkit-slider-thumb {
-  background: var(--cs-text-tertiary);
-}
-
-/* Tone picker */
-
-.vol-pop-divider {
-  height: 1px;
+/* Muted (volume === 0) — dim the track + thumb so the visual matches the
+   speaker icon's muted state. Track is fully empty in this state. */
+.vol-slider.is-muted::-webkit-slider-runnable-track {
   background: var(--cs-border-mid);
-  margin: 12px -14px 10px;
-  opacity: 0.6;
 }
-
-.vol-pop-tone-label {
-  font-family: var(--cs-font-ui);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--cs-text-tertiary);
-  margin-bottom: 8px;
-}
-
-.vol-pop-sounds {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.vol-pop-sound {
-  font-family: var(--cs-font-mono);
-  font-size: 11px;
-  padding: 4px 9px;
-  background: transparent;
-  border: 1px solid var(--cs-border-mid);
-  border-radius: 4px;
-  color: var(--cs-text-secondary);
-  cursor: pointer;
-  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
-}
-
-.vol-pop-sound:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--cs-border-hover);
-  color: var(--cs-text-primary);
-}
-
-.vol-pop-sound.is-active {
-  border-color: var(--cs-cyan);
-  color: var(--cs-cyan);
-  background: rgba(103, 232, 249, 0.08);
-}
-
-.vol-pop-sound.is-active:hover {
-  background: rgba(103, 232, 249, 0.14);
+.vol-slider.is-muted::-webkit-slider-thumb {
+  background: var(--cs-text-tertiary);
 }
