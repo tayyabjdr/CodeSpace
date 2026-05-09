@@ -298,4 +298,25 @@ describe('worktree-manager / wipeAll', () => {
     const branches = execFileSync('git', ['-C', repoDir, 'branch', '--list', r.branch], { encoding: 'utf8' })
     expect(branches).toContain(r.branch)
   })
+
+  it('skips worktrees with uncommitted changes and reports them in kept', async () => {
+    const dirtyId = 'w4444444-0000-0000-0000-000000000000'
+    const cleanId = 'w5555555-0000-0000-0000-000000000000'
+    const dirty = await create({ repoDir, workspaceName: 'X', agentId: dirtyId })
+    await create({ repoDir, workspaceName: 'X', agentId: cleanId })
+    // Make dirtyId actually dirty (uncommitted untracked file)
+    writeFileSync(join(dirty.path, 'unsaved.txt'), 'in-flight work')
+
+    const result = await wipeAll({ repoDir })
+
+    // Dirty one survives intact
+    expect(existsSync(join(repoDir, '.codespace', 'worktrees', dirtyId))).toBe(true)
+    expect(readMeta(repoDir).agents[dirtyId]).toBeDefined()
+    expect(result.kept.map(k => k.agentId)).toContain(dirtyId)
+    expect(result.kept.find(k => k.agentId === dirtyId).branch).toBe(dirty.branch)
+
+    // Clean one is gone
+    expect(existsSync(join(repoDir, '.codespace', 'worktrees', cleanId))).toBe(false)
+    expect(readMeta(repoDir).agents[cleanId]).toBeUndefined()
+  })
 })

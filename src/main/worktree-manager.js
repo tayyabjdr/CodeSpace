@@ -232,11 +232,33 @@ export async function closeAllForWorkspace({ repoDir, agentIds }) {
   })
 }
 
+// Synchronous dirty check (no lock — caller already holds it).
+// Returns false on any error so cleanup isn't blocked by an unrelated git fault.
+function _isDirty(repoDir, agentId) {
+  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+  if (!existsSync(wtPath)) return false
+  try {
+    const out = execGit(['-C', wtPath, 'status', '--porcelain'])
+    return out.trim().length > 0
+  } catch {
+    return false
+  }
+}
+
 export async function wipeAll({ repoDir }) {
   return withRepoLock(repoDir, async () => {
     const m = readMeta(repoDir)
     const ids = Object.keys(m.agents)
+    const kept = []
     for (const id of ids) {
+      if (_isDirty(repoDir, id)) {
+        kept.push({
+          agentId: id,
+          branch: m.agents[id].branch,
+          path: join(repoDir, '.codespace', 'worktrees', id)
+        })
+        continue
+      }
       try { await _closeImpl({ repoDir, agentId: id }) } catch {}
     }
     try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}
@@ -245,6 +267,7 @@ export async function wipeAll({ repoDir }) {
       const entries = readdirSync(dir).filter(n => n !== '.cs-meta.json')
       if (entries.length === 0) rmSync(dir, { recursive: true, force: true })
     } catch {}
+    return { kept }
   })
 }
 

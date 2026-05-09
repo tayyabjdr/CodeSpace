@@ -249,8 +249,19 @@ function AppInner() {
       if (!w0 || w0.spawned || w0.unconfigured) return
       if (w0.isolated) {
         // Last session's worktrees are orphans now — agent UUIDs are session-only.
-        // Wipe them; branches with commits survive.
-        try { await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir }) } catch {}
+        // Wipe them; branches with commits survive. Dirty worktrees (uncommitted
+        // work, e.g. the user lost power last session) are preserved on disk
+        // and surfaced here so the work isn't silently destroyed.
+        try {
+          const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir })
+          if (r?.kept?.length) {
+            console.warn(
+              `[worktree] ${r.kept.length} worktree(s) from previous session had uncommitted changes and were preserved at:\n` +
+              r.kept.map(k => `  ${k.path}  (${k.branch})`).join('\n') +
+              `\nReview the changes there and either commit them on the branch or discard the directory.`
+            )
+          }
+        } catch {}
         if (cancelled) return
       }
       const terminals = await materializeAgents(w0, w0.agentCount, 1)
