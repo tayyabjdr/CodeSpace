@@ -56,6 +56,7 @@ export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor 
       </div>
 
       <div className="titlebar-controls">
+        <VolumeControl />
         <button
           className={`titlebar-btn titlebar-editor-toggle${editorOpen ? ' is-open' : ''}`}
           title="Editor (Ctrl+E)"
@@ -63,7 +64,7 @@ export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor 
         >
           <CodeIcon />
         </button>
-        <VolumeControl />
+        <span className="titlebar-divider" aria-hidden />
         <button className="titlebar-btn" onClick={handleMinimize} title="Minimize">
           <MinusIcon />
         </button>

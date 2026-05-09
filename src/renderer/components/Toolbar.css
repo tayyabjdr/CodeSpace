@@ -144,3 +144,14 @@
   background: rgba(103, 232, 249, 0.14);
   color: var(--cs-cyan);
 }
+
+/* Subtle vertical divider between custom controls (volume/editor) and the
+   standard window action buttons (minimize/maximize/close). */
+.titlebar-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--cs-border-mid);
+  opacity: 0.6;
+  margin: 0 6px;
+  flex-shrink: 0;
+}
