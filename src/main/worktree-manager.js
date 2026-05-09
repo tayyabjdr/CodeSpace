@@ -123,10 +123,11 @@ async function withRepoLock(repoDir, fn) {
   const prev = repoLocks.get(repoDir) ?? Promise.resolve()
   let release
   const next = new Promise(r => { release = r })
-  repoLocks.set(repoDir, prev.then(() => next))
+  const chained = prev.then(() => next)
+  repoLocks.set(repoDir, chained)
   await prev
   try { return await fn() }
-  finally { release(); if (repoLocks.get(repoDir) === next) repoLocks.delete(repoDir) }
+  finally { release(); if (repoLocks.get(repoDir) === chained) repoLocks.delete(repoDir) }
 }
 
 async function _createImpl({ repoDir, workspaceName, agentId }) {
