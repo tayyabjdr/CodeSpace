@@ -18,10 +18,32 @@
   border-color: var(--cs-border-mid);
 }
 
-/* Done state — static green border */
+/* Done state — continuously rotating cyan↔green gradient ring.
+   Two-layer background: padding-box paints the surface, border-box paints
+   the conic gradient that the transparent 1px border reveals. @property
+   makes --done-angle animatable so the rotation runs in CSS only. */
+@property --done-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .pane.done {
-  border-color: rgba(134, 239, 172, 0.45);
-  transition: none;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--cs-bg-surface), var(--cs-bg-surface)) padding-box,
+    conic-gradient(
+      from var(--done-angle),
+      rgba(103, 232, 249, 0.85)   0%,
+      rgba(134, 239, 172, 0.85)  50%,
+      rgba(103, 232, 249, 0.85) 100%
+    ) border-box;
+  animation: doneSpin 8s linear infinite;
+  box-shadow: 0 0 14px rgba(134, 239, 172, 0.18);
+}
+
+@keyframes doneSpin {
+  to { --done-angle: 360deg; }
 }
 
 /* Drag source — fades the original */
