@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CodeSpace — Shared vocabulary</title>
+<style>
+:root {
+  --bg:#0a0b0d; --surface:#0d0f12; --elev:#11151b; --side:#0a0c0f;
+  --border:#1b1e24; --border-mid:#262a32; --border-hover:#2b3038;
+  --text:rgba(255,255,255,0.92); --text2:rgba(255,255,255,0.78);
+  --text3:rgba(255,255,255,0.42); --muted:rgba(255,255,255,0.28);
+  --cyan:#67e8f9; --green:#86efac; --amber:#f59e0b; --red:#ef4444;
+  --mono:ui-monospace,"Cascadia Code","Consolas",monospace;
+  --ui:"Segoe UI Variable","Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--ui);
+  scroll-behavior:smooth}
+body{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+nav.toc{position:sticky;top:0;height:100vh;overflow-y:auto;
+  background:var(--side);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc h1{font-size:14px;color:var(--cyan);margin-bottom:18px}
+nav.toc h2{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;
+  color:var(--text3);margin:18px 0 6px;font-weight:500}
+nav.toc a{display:block;padding:5px 8px;color:var(--text2);
+  text-decoration:none;font-size:13px;border-radius:5px;transition:all 0.12s}
+nav.toc a:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+nav.toc a.active{background:rgba(103,232,249,0.08);color:var(--cyan)}
+
+main{padding:48px 56px 96px;max-width:1100px;line-height:1.6}
+section{margin-bottom:64px;scroll-margin-top:32px}
+section h2{font-size:24px;font-weight:600;margin-bottom:6px;color:var(--text)}
+section .lede{color:var(--text3);margin-bottom:24px;font-size:14px}
+h3{font-size:15px;font-weight:600;margin:24px 0 8px;color:var(--text)}
+p{color:var(--text2);font-size:14px;margin-bottom:10px}
+ul,ol{margin:8px 0 12px 22px}
+li{color:var(--text2);font-size:14px;margin-bottom:5px}
+strong{color:var(--text)}
+code{font-family:var(--mono);font-size:0.88em;background:var(--elev);
+  padding:1.5px 6px;border-radius:4px;border:1px solid var(--border);
+  color:var(--cyan)}
+
+/* The vocabulary entry — the heart of this doc */
+.term{display:grid;grid-template-columns:200px 1fr;gap:24px;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  align-items:start}
+.term:last-child{border-bottom:none}
+.term .name{font-weight:600;color:var(--text);font-size:14px}
+.term .name .alt{display:block;font-weight:400;font-size:12px;
+  color:var(--text3);margin-top:3px;font-family:var(--mono)}
+.term .body{color:var(--text2);font-size:13.5px;line-height:1.6}
+.term .body em{color:var(--text3);font-style:italic}
+.term .body code{font-size:0.92em}
+.term-group{background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin:14px 0 22px;overflow:hidden}
+
+/* Mockup tiles for UI sections */
+.mockup{background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:24px;margin:14px 0}
+.mockup-title{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--text3);margin-bottom:14px;font-family:var(--mono)}
+.mockup svg{display:block;margin:0 auto;max-width:100%;height:auto}
+.mockup .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:10px;margin-top:18px}
+.mockup .legend-item{font-size:13px;color:var(--text2);
+  padding:8px 12px;background:var(--elev);border:1px solid var(--border);
+  border-radius:6px;line-height:1.45}
+.mockup .legend-item b{color:var(--cyan);display:block;font-size:12px;
+  margin-bottom:2px;font-family:var(--mono);font-weight:500}
+
+/* Reference label arrows */
+.ref{font-family:var(--mono);font-size:10px;letter-spacing:0.04em;
+  fill:var(--cyan);font-weight:500}
+.callout{stroke:var(--cyan);stroke-width:1;fill:none;opacity:0.6}
+
+/* Two-column compare: bad name vs good name */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.compare .col{padding:14px 18px;border:1px solid var(--border);border-radius:8px}
+.compare .bad{border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.04)}
+.compare .good{border-color:rgba(134,239,172,0.3);background:rgba(134,239,172,0.04)}
+.compare h4{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;
+  margin-bottom:8px;font-weight:500}
+.compare .bad h4{color:var(--red)}
+.compare .good h4{color:var(--green)}
+.compare ul{margin:0 0 0 18px}
+.compare li{font-size:13px;margin-bottom:4px}
+
+/* Verb cards for git/dev actions */
+.verb{background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:14px 18px;margin:8px 0}
+.verb .head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+.verb .word{font-weight:600;font-size:15px;color:var(--cyan);
+  font-family:var(--mono)}
+.verb .gloss{color:var(--text3);font-size:12px;font-style:italic}
+.verb .body{font-size:13.5px;color:var(--text2);line-height:1.6}
+.verb .body code{font-size:0.92em}
+.verb .ex{margin-top:8px;font-family:var(--mono);font-size:12px;
+  color:var(--text3);background:var(--elev);padding:6px 10px;border-radius:4px;
+  border:1px solid var(--border)}
+.verb .ex::before{content:"e.g. ";color:var(--text3)}
+
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--cyan);margin:0 6px;vertical-align:middle}
+
+hr.sep{border:none;border-top:1px solid var(--border);margin:32px 0}
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <h1>Vocabulary</h1>
+  <h2>How to point at things</h2>
+  <a href="#how-to-use">How to use this</a>
+  <h2>UI surfaces</h2>
+  <a href="#titlebar">Title bar</a>
+  <a href="#sidebar">Sidebar</a>
+  <a href="#grid">Workspace grid</a>
+  <a href="#pane">Terminal pane</a>
+  <a href="#editor">Editor pane</a>
+  <a href="#onboarding">Onboarding form</a>
+  <a href="#modals">Modals &amp; toasts</a>
+  <a href="#states">UI states</a>
+  <h2>Process verbs</h2>
+  <a href="#git">Git actions</a>
+  <a href="#branches">Branches &amp; merging</a>
+  <a href="#remote">Remote &amp; PRs</a>
+  <a href="#dev">Dev &amp; build</a>
+  <a href="#release">Release &amp; update</a>
+  <h2>App-specific</h2>
+  <a href="#concepts">Concepts</a>
+</nav>
+
+<main>
+
+<section id="how-to-use">
+  <h2>How to use this</h2>
+  <p class="lede">Two glossaries. Names of UI parts so you can point at them
+    without describing them. Names of process actions so when I say
+    "I'll rebase that" or "let's merge feat/X" you know what's about to happen.</p>
+
+  <p><strong>Naming convention:</strong> wherever a UI part has a CSS class in
+    the source, that class is the canonical name. The <em>display</em> name in
+    parentheses is what you'd say in conversation.</p>
+
+  <div class="compare">
+    <div class="col bad">
+      <h4>Vague</h4>
+      <ul>
+        <li>"that thing on the left"</li>
+        <li>"the button on the setup screen"</li>
+        <li>"the small dot"</li>
+        <li>"the workspace tab"</li>
+      </ul>
+    </div>
+    <div class="col good">
+      <h4>Concrete</h4>
+      <ul>
+        <li>"the workspace item in the sidebar"</li>
+        <li>"the Initialize button on the onboarding form"</li>
+        <li>"the done dot in the sidebar"</li>
+        <li>"the workspace item" <em>(not "tab" — these aren't tabs)</em></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TITLE BAR -->
+<section id="titlebar">
+  <h2>Title bar</h2>
+  <p class="lede">The frameless top strip. Source: <code>Toolbar.jsx</code>,
+    class <code>.titlebar</code>.</p>
+
+  <div class="mockup">
+    <div class="mockup-title">title bar — 42px tall, draggable</div>
+    <svg viewBox="0 0 900 100" width="900" height="100">
+      <!-- Title bar -->
+      <rect x="0" y="20" width="900" height="42" fill="#0d0f12" stroke="#1b1e24"/>
+      <!-- Left -->
+      <rect x="14" y="32" width="18" height="18" rx="3" fill="#143352"/>
+      <text x="14" y="58" font-family="ui-monospace" font-size="9" fill="#67e8f9">[1]</text>
+      <text x="42" y="46" font-size="13" fill="#fff" font-weight="500">CodeSpace</text>
+      <text x="42" y="58" font-family="ui-monospace" font-size="9" fill="#67e8f9">[2]</text>
+      <!-- Right -->
+      <rect x="640" y="34" width="36" height="14" rx="2" fill="#11151b"/>
+      <circle cx="650" cy="41" r="2" fill="#67e8f9"/>
+      <text x="650" y="64" font-family="ui-monospace" font-size="9" fill="#67e8f9">[3]</text>
+      <rect x="690" y="32" width="20" height="18" rx="3" fill="#11151b" stroke="#1b1e24"/>
+      <text x="700" y="44" font-size="11" fill="#fff" text-anchor="middle">&lt;/&gt;</text>
+      <text x="700" y="64" font-family="ui-monospace" font-size="9" fill="#67e8f9">[4]</text>
+      <line x1="722" y1="34" x2="722" y2="50" stroke="#1b1e24"/>
+      <rect x="734" y="32" width="22" height="18" rx="3" fill="#11151b"/>
+      <text x="745" y="44" font-size="13" fill="#fff" text-anchor="middle">−</text>
+      <text x="745" y="64" font-family="ui-monospace" font-size="9" fill="#67e8f9">[5]</text>
+      <rect x="764" y="32" width="22" height="18" rx="3" fill="#11151b"/>
+      <rect x="769" y="36" width="12" height="10" fill="none" stroke="#fff" stroke-width="1"/>
+      <text x="775" y="64" font-family="ui-monospace" font-size="9" fill="#67e8f9">[6]</text>
+      <rect x="794" y="32" width="22" height="18" rx="3" fill="#11151b"/>
+      <text x="805" y="44" font-size="13" fill="#fff" text-anchor="middle">×</text>
+      <text x="805" y="64" font-family="ui-monospace" font-size="9" fill="#67e8f9">[7]</text>
+    </svg>
+    <div class="legend">
+      <div class="legend-item"><b>[1] App icon</b> <code>.titlebar-mark</code> — cyan <code>&gt;_</code> glyph from <code>AppIcon.jsx</code></div>
+      <div class="legend-item"><b>[2] Wordmark</b> <code>.titlebar-name</code> — the literal text "CodeSpace"</div>
+      <div class="legend-item"><b>[3] Volume control</b> <code>.vol</code> — slider hidden until you click the speaker. <code>VolumeControl.jsx</code></div>
+      <div class="legend-item"><b>[4] Editor toggle</b> <code>.titlebar-editor-toggle</code> — Ctrl+E. Cyan when open</div>
+      <div class="legend-item"><b>[5] Minimize button</b> <code>.titlebar-btn</code> with minus glyph</div>
+      <div class="legend-item"><b>[6] Maximize/restore button</b> <code>.titlebar-btn</code> — toggles; icon swaps</div>
+      <div class="legend-item"><b>[7] Close button</b> <code>.titlebar-close</code> — red on hover</div>
+    </div>
+  </div>
+</section>
+
+<!-- SIDEBAR -->
+<section id="sidebar">
+  <h2>Sidebar</h2>
+  <p class="lede">The left rail. Source: <code>Sidebar.jsx</code>,
+    class <code>.sidebar</code>.</p>
+
+  <div class="mockup">
+    <div class="mockup-title">sidebar — 200px wide</div>
+    <svg viewBox="0 0 600 360" width="600" height="360">
+      <rect x="0" y="0" width="220" height="360" fill="#0a0c0f" stroke="#1b1e24"/>
+      <!-- Header -->
+      <text x="20" y="30" font-size="10" fill="rgba(255,255,255,0.42)" letter-spacing="2">WORKSPACES</text>
+      <rect x="180" y="18" width="22" height="18" rx="3" fill="#11151b"/>
+      <text x="191" y="30" font-size="12" fill="#fff" text-anchor="middle">+</text>
+      <text x="232" y="22" font-family="ui-monospace" font-size="10" fill="#67e8f9">[1] sb-header</text>
+      <text x="232" y="34" font-family="ui-monospace" font-size="10" fill="#67e8f9">[2] sb-header-add</text>
+
+      <!-- Active item -->
+      <rect x="8" y="50" width="204" height="36" rx="6" fill="rgba(103,232,249,0.06)" stroke="rgba(103,232,249,0.2)"/>
+      <rect x="8" y="50" width="2" height="36" fill="#67e8f9"/>
+      <text x="22" y="72" font-size="13" fill="#fff">CodeSpace</text>
+      <text x="178" y="72" font-size="12" fill="#67e8f9" font-family="ui-monospace">3</text>
+      <text x="232" y="62" font-family="ui-monospace" font-size="10" fill="#67e8f9">[3] sb-item.active</text>
+      <text x="232" y="74" font-family="ui-monospace" font-size="10" fill="#67e8f9">[4] sb-item-bar (cyan stripe)</text>
+
+      <!-- Inactive item with notify dot -->
+      <rect x="8" y="92" width="204" height="36" rx="6" fill="transparent"/>
+      <text x="22" y="114" font-size="13" fill="rgba(255,255,255,0.78)">Desktop</text>
+      <circle cx="170" cy="110" r="3" fill="#67e8f9"/>
+      <text x="183" y="114" font-size="12" fill="rgba(255,255,255,0.42)" font-family="ui-monospace">2</text>
+      <text x="232" y="100" font-family="ui-monospace" font-size="10" fill="#67e8f9">[5] sb-item</text>
+      <text x="232" y="112" font-family="ui-monospace" font-size="10" fill="#67e8f9">[6] sb-item-dot (cyan)</text>
+      <text x="232" y="124" font-family="ui-monospace" font-size="10" fill="#67e8f9">[7] sb-item-count</text>
+
+      <!-- Draft item -->
+      <rect x="8" y="134" width="204" height="36" rx="6" fill="transparent" stroke="#1b1e24" stroke-dasharray="3,3"/>
+      <text x="22" y="156" font-size="13" fill="rgba(255,255,255,0.42)">Untitled</text>
+      <text x="178" y="156" font-size="12" fill="rgba(255,255,255,0.42)">✦</text>
+      <text x="232" y="156" font-family="ui-monospace" font-size="10" fill="#67e8f9">[8] sb-item.draft</text>
+
+      <!-- New button -->
+      <rect x="14" y="312" width="192" height="34" rx="6" fill="#11151b" stroke="#1b1e24"/>
+      <text x="110" y="333" font-size="12" fill="rgba(255,255,255,0.78)" text-anchor="middle">+ New Workspace</text>
+      <text x="232" y="324" font-family="ui-monospace" font-size="10" fill="#67e8f9">[9] sb-new-btn</text>
+    </svg>
+
+    <div class="legend">
+      <div class="legend-item"><b>[1] Sidebar header</b> <code>.sb-header</code> — "WORKSPACES" label + "+"</div>
+      <div class="legend-item"><b>[2] Header add button</b> <code>.sb-header-add</code> — small "+" in the header</div>
+      <div class="legend-item"><b>[3] Active workspace item</b> <code>.sb-item.active</code> — currently-shown workspace</div>
+      <div class="legend-item"><b>[4] Active stripe</b> <code>.sb-item-bar</code> — cyan vertical bar on the active item</div>
+      <div class="legend-item"><b>[5] Workspace item</b> <code>.sb-item</code> — one entry per workspace. <em>Not</em> a "tab".</div>
+      <div class="legend-item"><b>[6] Notify dot</b> <code>.sb-item-dot</code> — cyan; means an inactive workspace has a "done" agent</div>
+      <div class="legend-item"><b>[7] Agent count</b> <code>.sb-item-count</code> — number of agents in that workspace</div>
+      <div class="legend-item"><b>[8] Draft item</b> <code>.sb-item.draft</code> — unconfigured workspace; ✦ instead of a count</div>
+      <div class="legend-item"><b>[9] New workspace button</b> <code>.sb-new-btn</code> — bottom-anchored button</div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKSPACE GRID -->
+<section id="grid">
+  <h2>Workspace grid</h2>
+  <p class="lede">The big middle area. Source: <code>App.jsx</code>,
+    class <code>.grid</code>.</p>
+
+  <div class="term-group">
+    <div class="term"><div class="name">Workspace grid <span class="alt">.grid</span></div><div class="body">The whole panel of agent panes. Layout (1 / 2 / 3 / 2×2 / 3×2 / 4×2) depends on agent count.</div></div>
+    <div class="term"><div class="name">Grid wrap <span class="alt">.grid-wrap</span></div><div class="body">The container that scrolls/resizes around the grid. Sits between sidebar and editor.</div></div>
+    <div class="term"><div class="name">Body main <span class="alt">.body-main</span></div><div class="body">Everything to the right of the sidebar, including grid and editor.</div></div>
+    <div class="term"><div class="name">Empty workspace card <span class="alt">.empty-workspace</span></div><div class="body">Shown when a workspace has zero agents. The big ✦ + "No agents in this workspace" + "New Agent" button.</div></div>
+    <div class="term"><div class="name">New Agent button <span class="alt">.empty-btn</span></div><div class="body">The button on the empty workspace card. Same action as <code>Ctrl+T</code>.</div></div>
+  </div>
+</section>
+
+<!-- TERMINAL PANE -->
+<section id="pane">
+  <h2>Terminal pane</h2>
+  <p class="lede">One agent. Source: <code>TerminalPane.jsx</code>,
+    class <code>.pane</code>.</p>
+
+  <div class="mockup">
+    <div class="mockup-title">terminal pane — focused state</div>
+    <svg viewBox="0 0 900 280" width="900" height="280">
+      <rect x="20" y="20" width="600" height="240" rx="8" fill="#0d0f12" stroke="#67e8f9" stroke-opacity="0.4"/>
+      <!-- Header -->
+      <rect x="20" y="20" width="600" height="30" rx="8" fill="#11151b"/>
+      <rect x="20" y="42" width="600" height="8" fill="#11151b"/>
+      <line x1="20" y1="50" x2="620" y2="50" stroke="#1b1e24"/>
+      <circle cx="36" cy="35" r="4" fill="#86efac"/>
+      <text x="50" y="40" font-size="12" fill="#fff" font-weight="500">Refactoring Auth Flow</text>
+      <!-- Done tick -->
+      <polyline points="200,38 205,43 215,30" stroke="#86efac" stroke-width="2" fill="none"/>
+      <!-- Add + close -->
+      <rect x="560" y="26" width="20" height="18" rx="3" fill="transparent"/>
+      <text x="570" y="40" font-size="12" fill="rgba(255,255,255,0.7)" text-anchor="middle">+</text>
+      <rect x="588" y="26" width="20" height="18" rx="3" fill="transparent"/>
+      <text x="598" y="40" font-size="12" fill="rgba(255,255,255,0.7)" text-anchor="middle">×</text>
+
+      <!-- Body -->
+      <text x="36" y="80" font-family="ui-monospace" font-size="11" fill="#86efac">$</text>
+      <text x="50" y="80" font-family="ui-monospace" font-size="11" fill="rgba(255,255,255,0.85)">claude --dangerously-skip-permissions</text>
+      <rect x="36" y="100" width="2" height="11" fill="#fff">
+        <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+      </rect>
+
+      <!-- Labels -->
+      <text x="640" y="32" font-family="ui-monospace" font-size="10" fill="#67e8f9">[1] pane.focused</text>
+      <text x="640" y="44" font-family="ui-monospace" font-size="10" fill="#67e8f9">[2] pane-header (drag handle)</text>
+      <text x="640" y="56" font-family="ui-monospace" font-size="10" fill="#67e8f9">[3] status-dot.status-running</text>
+      <text x="640" y="68" font-family="ui-monospace" font-size="10" fill="#67e8f9">[4] pane-label</text>
+      <text x="640" y="80" font-family="ui-monospace" font-size="10" fill="#67e8f9">[5] done-tick (when done &amp; not focused)</text>
+      <text x="640" y="92" font-family="ui-monospace" font-size="10" fill="#67e8f9">[6] pane-add-btn</text>
+      <text x="640" y="104" font-family="ui-monospace" font-size="10" fill="#67e8f9">[7] close-btn</text>
+      <text x="640" y="120" font-family="ui-monospace" font-size="10" fill="#67e8f9">[8] xterm-container</text>
+    </svg>
+
+    <div class="legend">
+      <div class="legend-item"><b>[1] Pane</b> <code>.pane</code> — one agent. Modifiers: <code>.focused</code>, <code>.exited</code>, <code>.done</code>, <code>.dragging</code>, <code>.drag-over</code></div>
+      <div class="legend-item"><b>[2] Pane header</b> <code>.pane-header</code> — drag handle. Title strip at the top of every pane</div>
+      <div class="legend-item"><b>[3] Status dot</b> <code>.status-dot</code> — green when running, grey when exited</div>
+      <div class="legend-item"><b>[4] Pane label</b> <code>.pane-label</code> — agent name. Double-click to edit (becomes <code>.pane-label-input</code>)</div>
+      <div class="legend-item"><b>[5] Done tick</b> <code>.done-tick</code> — green checkmark on inactive panes after silence</div>
+      <div class="legend-item"><b>[6] Add agent button</b> <code>.pane-add-btn</code> — the "+" in the pane header</div>
+      <div class="legend-item"><b>[7] Close button</b> <code>.close-btn</code> — the "×" in the pane header</div>
+      <div class="legend-item"><b>[8] xterm container</b> <code>.xterm-container</code> — where the terminal renders</div>
+      <div class="legend-item"><b>Pane error</b> <code>.pane-error</code> — replaces xterm when claude.exe is missing or cwd doesn't exist</div>
+    </div>
+  </div>
+</section>
+
+<!-- EDITOR PANE -->
+<section id="editor">
+  <h2>Editor pane</h2>
+  <p class="lede">Right-docked file editor. Source: <code>EditorPane.jsx</code>,
+    class <code>.editor-pane</code>.</p>
+
+  <div class="term-group">
+    <div class="term"><div class="name">Editor pane <span class="alt">.editor-pane</span></div><div class="body">The whole right column when the editor is open. Toggle with <code>Ctrl+E</code> or the <code>&lt;/&gt;</code> button in the title bar.</div></div>
+    <div class="term"><div class="name">Editor resizer <span class="alt">.editor-resizer</span></div><div class="body">The thin draggable separator between grid and editor. Double-click resets width.</div></div>
+    <div class="term"><div class="name">Editor header <span class="alt">.editor-pane-header</span></div><div class="body">The strip at the top with filename and action buttons.</div></div>
+    <div class="term"><div class="name">Dirty dot <span class="alt">.editor-dirty-dot.is-dirty</span></div><div class="body">Cyan dot shown next to the filename when there are unsaved changes.</div></div>
+    <div class="term"><div class="name">Filename <span class="alt">.editor-filename</span></div><div class="body">Just the basename of the open file. Hovering shows the full path.</div></div>
+    <div class="term"><div class="name">External chip <span class="alt">.editor-chip</span></div><div class="body">Tag that appears when the file is outside the workspace folder.</div></div>
+    <div class="term"><div class="name">Plain chip</div><div class="body">Tag for files over 2 MB — shown without syntax highlighting / line numbers.</div></div>
+    <div class="term"><div class="name">Reveal button <span class="alt">.editor-icon-btn</span></div><div class="body">The "↗" — opens the file's folder in OS file explorer.</div></div>
+    <div class="term"><div class="name">Editor close button <span class="alt">.editor-close-btn</span></div><div class="body">The "×" in the editor header. Closes the editor pane (asks first if dirty).</div></div>
+    <div class="term"><div class="name">Editor empty state <span class="alt">.editor-empty</span></div><div class="body">Shown when the editor is open but no file is loaded yet — "Ctrl+click any path in your terminal".</div></div>
+    <div class="term"><div class="name">Editor body <span class="alt">.editor-body</span></div><div class="body">Wraps the CodeMirror host (<code>.editor-cm-host</code>).</div></div>
+    <div class="term"><div class="name">Editor loading bar <span class="alt">.editor-loading-bar</span></div><div class="body">Indeterminate cyan strip while reading the file.</div></div>
+  </div>
+</section>
+
+<!-- ONBOARDING -->
+<section id="onboarding">
+  <h2>Onboarding form</h2>
+  <p class="lede">First-launch form (whole screen) and draft-workspace form
+    (embedded in the grid area). Source: <code>Onboarding.jsx</code>.</p>
+
+  <div class="mockup">
+    <div class="mockup-title">onboarding — embedded mode</div>
+    <svg viewBox="0 0 900 380" width="900" height="380">
+      <rect x="20" y="20" width="640" height="340" rx="10" fill="#0d0f12" stroke="#1b1e24"/>
+      <!-- Close -->
+      <rect x="624" y="28" width="24" height="20" rx="3" fill="transparent"/>
+      <text x="636" y="44" font-size="14" fill="rgba(255,255,255,0.5)" text-anchor="middle">×</text>
+      <text x="668" y="40" font-family="ui-monospace" font-size="10" fill="#67e8f9">[1] ob-close</text>
+
+      <!-- Brand -->
+      <rect x="316" y="56" width="48" height="48" rx="11" fill="#143352"/>
+      <text x="170" y="86" font-family="ui-monospace" font-size="10" fill="#67e8f9">[2] ob-mark / AppIcon</text>
+      <text x="340" y="135" font-size="22" fill="#fff" text-anchor="middle" font-weight="600">CodeSpace</text>
+      <text x="340" y="155" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle">Multi-agent workspace</text>
+      <text x="668" y="142" font-family="ui-monospace" font-size="10" fill="#67e8f9">[3] ob-wordmark</text>
+      <text x="668" y="156" font-family="ui-monospace" font-size="10" fill="#67e8f9">[4] ob-tagline</text>
+
+      <!-- Left col: name + dir -->
+      <text x="40" y="195" font-size="11" fill="rgba(255,255,255,0.5)" letter-spacing="0.5">Workspace name</text>
+      <rect x="40" y="202" width="280" height="32" rx="6" fill="#11151b" stroke="#1b1e24"/>
+      <text x="52" y="223" font-size="13" fill="rgba(255,255,255,0.85)">CodeSpace</text>
+      <text x="668" y="220" font-family="ui-monospace" font-size="10" fill="#67e8f9">[5] ob-input (name)</text>
+
+      <text x="40" y="260" font-size="11" fill="rgba(255,255,255,0.5)" letter-spacing="0.5">Project directory</text>
+      <rect x="40" y="267" width="280" height="40" rx="6" fill="#11151b" stroke="#1b1e24"/>
+      <rect x="50" y="277" width="18" height="18" rx="3" fill="#0d0f12"/>
+      <text x="78" y="285" font-size="11" fill="rgba(255,255,255,0.85)">CodeSpace</text>
+      <text x="78" y="300" font-size="9" fill="rgba(255,255,255,0.4)" font-family="ui-monospace">C:\Users\TJ\Desktop\…</text>
+      <rect x="262" y="276" width="50" height="22" rx="4" fill="#11151b" stroke="#1b1e24"/>
+      <text x="287" y="291" font-size="11" fill="rgba(255,255,255,0.85)" text-anchor="middle">Browse</text>
+      <text x="668" y="278" font-family="ui-monospace" font-size="10" fill="#67e8f9">[6] ob-dir-display</text>
+      <text x="668" y="290" font-family="ui-monospace" font-size="10" fill="#67e8f9">[7] ob-browse-btn</text>
+
+      <!-- Footer: Initialize -->
+      <rect x="270" y="320" width="140" height="30" rx="6" fill="#11151b" stroke="#2b3038"/>
+      <text x="340" y="339" font-size="13" fill="#fff" text-anchor="middle">Initialize</text>
+      <text x="668" y="334" font-family="ui-monospace" font-size="10" fill="#67e8f9">[8] ob-launch</text>
+      <text x="430" y="339" font-size="11" fill="rgba(255,255,255,0.4)">Ctrl+T · new   Ctrl+W · close</text>
+      <text x="668" y="346" font-family="ui-monospace" font-size="10" fill="#67e8f9">[9] ob-hint</text>
+    </svg>
+
+    <div class="legend">
+      <div class="legend-item"><b>[1] Close button</b> <code>.ob-close</code> — discards a draft (embedded) or closes the window (standalone)</div>
+      <div class="legend-item"><b>[2] App icon mark</b> <code>.ob-mark</code> — wraps the AppIcon SVG</div>
+      <div class="legend-item"><b>[3] Wordmark</b> <code>.ob-wordmark</code> — "CodeSpace" heading</div>
+      <div class="legend-item"><b>[4] Tagline</b> <code>.ob-tagline</code> — "Multi-agent workspace"</div>
+      <div class="legend-item"><b>[5] Name input</b> <code>.ob-input</code> — workspace name field</div>
+      <div class="legend-item"><b>[6] Folder display</b> <code>.ob-dir-display</code> — selected project folder card</div>
+      <div class="legend-item"><b>[7] Browse button</b> <code>.ob-browse-btn</code> — opens the OS folder picker</div>
+      <div class="legend-item"><b>[8] Initialize button</b> <code>.ob-launch</code> — submits. <em>Not "the launch button"; call it "Initialize"</em></div>
+      <div class="legend-item"><b>[9] Hint row</b> <code>.ob-hint</code> — keyboard shortcut hints under the button</div>
+      <div class="legend-item"><b>Agent count selector</b> <code>.ob-cards</code> — the 8-cell selector grid (right column, not pictured)</div>
+      <div class="legend-item"><b>Agent card</b> <code>.ob-card</code> — single 1-of-8 selectable tile, with mini preview</div>
+      <div class="legend-item"><b>Agent preview</b> <code>.ob-preview</code> — the dotted grid drawn inside each card</div>
+    </div>
+  </div>
+</section>
+
+<!-- MODALS -->
+<section id="modals">
+  <h2>Modals &amp; toasts</h2>
+
+  <div class="term-group">
+    <div class="term"><div class="name">Confirm dialog <span class="alt">.cd-card</span></div><div class="body">Generic modal used for two flows: <strong>Delete workspace</strong> (destructive variant, red Confirm button) and the <strong>Unsaved changes prompt</strong> (Save / Discard / Cancel).</div></div>
+    <div class="term"><div class="name">Backdrop <span class="alt">.cd-backdrop</span></div><div class="body">Dimmer behind the modal. Clicking it cancels.</div></div>
+    <div class="term"><div class="name">Confirm button <span class="alt">.cd-confirm</span></div><div class="body">The primary action. Adds class <code>.destructive</code> for the delete flow.</div></div>
+    <div class="term"><div class="name">Extra button <span class="alt">.cd-extra</span></div><div class="body">The optional third button. Used as "Discard" in the dirty-prompt.</div></div>
+    <div class="term"><div class="name">Update toast <span class="alt">.update-toast</span></div><div class="body">Bottom-right card: "Update ready (vX.Y.Z)" + "Restart now" / "Later". Source: <code>UpdateToast.jsx</code>.</div></div>
+  </div>
+</section>
+
+<!-- STATES -->
+<section id="states">
+  <h2>UI states &amp; status indicators</h2>
+  <p class="lede">Words to use for visual states.</p>
+
+  <div class="term-group">
+    <div class="term"><div class="name">Focused pane</div><div class="body">The pane the user clicked into last (gets a cyan ring). At most one per workspace.</div></div>
+    <div class="term"><div class="name">Attended pane</div><div class="body">Focused pane <em>+</em> active workspace <em>+</em> window has focus. The done-sound is suppressed for attended panes.</div></div>
+    <div class="term"><div class="name">Done pane</div><div class="body">A pane whose silence timer fired while unattended. Shows the green tick. Cleared when you focus it.</div></div>
+    <div class="term"><div class="name">Pinned pane</div><div class="body">A pane the user manually renamed. Auto-namer skips it.</div></div>
+    <div class="term"><div class="name">Exited pane</div><div class="body">PTY has died (status dot turns grey, <code>.pane.exited</code>).</div></div>
+    <div class="term"><div class="name">Draft workspace</div><div class="body">A new workspace before Initialize. Sidebar shows ✦ instead of a count. Doesn't persist across reload.</div></div>
+    <div class="term"><div class="name">Notifying workspace</div><div class="body">An <em>inactive</em> workspace with at least one done pane. Sidebar shows the cyan dot.</div></div>
+    <div class="term"><div class="name">Spawned</div><div class="body">A workspace whose terminals have been created this session. Set lazily on first activation.</div></div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- GIT -->
+<section id="git">
+  <h2>Git actions — basic</h2>
+  <p class="lede">When I say these, this is what's about to happen to your repo.</p>
+
+  <div class="verb">
+    <div class="head"><span class="word">stage</span><span class="gloss">"queue this change for the next commit"</span></div>
+    <div class="body">Move a file (or part of one) from "modified" to "staged". Doesn't change history. Reversible with <em>unstage</em>.</div>
+    <div class="ex">git add src/renderer/App.jsx</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">unstage</span><span class="gloss">"take it out of the queue"</span></div>
+    <div class="body">Move a file back from staged → modified. Your edits are still there.</div>
+    <div class="ex">git restore --staged src/renderer/App.jsx</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">commit</span><span class="gloss">"freeze the staged changes as a snapshot"</span></div>
+    <div class="body">Permanently record the staged changes with a message. <strong>I never commit without you asking.</strong> Each commit gets a hash; nothing is lost — even "deleted" commits are recoverable for a while via <code>git reflog</code>.</div>
+    <div class="ex">git commit -m "feat(sidebar): cyan stripe on active item"</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">amend</span><span class="gloss">"edit the most recent commit"</span></div>
+    <div class="body">Replaces the last commit with a new one. <strong>I avoid this</strong> — I prefer making a new commit instead, because amending after a failed pre-commit hook can lose work.</div>
+    <div class="ex">git commit --amend</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">restore / discard</span><span class="gloss">"throw away uncommitted edits"</span></div>
+    <div class="body">Reverts a file to its last-committed state. <strong>Destructive</strong> — I always ask first.</div>
+    <div class="ex">git restore src/renderer/App.css</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">stash</span><span class="gloss">"shelve uncommitted changes for later"</span></div>
+    <div class="body">Pulls all current changes into a temporary stack so you have a clean tree. Get them back with <code>git stash pop</code>.</div>
+    <div class="ex">git stash &amp;&amp; git stash pop</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">status</span><span class="gloss">"what's changed in the working tree"</span></div>
+    <div class="body">Shows modified, staged, and untracked files. Read-only — runs in seconds, never breaks anything.</div>
+    <div class="ex">git status</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">diff</span><span class="gloss">"show the actual line changes"</span></div>
+    <div class="body">Read-only. <code>git diff</code> = unstaged. <code>git diff --staged</code> = staged. <code>git diff master..HEAD</code> = everything on this branch since master.</div>
+    <div class="ex">git diff src/renderer/App.jsx</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">log</span><span class="gloss">"show commit history"</span></div>
+    <div class="body">Read-only. <code>git log --oneline</code> for a compact list.</div>
+    <div class="ex">git log --oneline -20</div>
+  </div>
+</section>
+
+<!-- BRANCHES -->
+<section id="branches">
+  <h2>Branches &amp; merging</h2>
+
+  <div class="verb">
+    <div class="head"><span class="word">branch</span><span class="gloss">"a parallel line of commits"</span></div>
+    <div class="body">In this repo: <code>master</code> is primary; feature work happens on <code>feat/&lt;name&gt;</code>. List with <code>git branch</code>.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">switch / checkout</span><span class="gloss">"move to a different branch"</span></div>
+    <div class="body">Changes the working tree to match the target branch's tip. <strong>Uncommitted changes follow you</strong> — but if they conflict, switch refuses (you'll need to commit or stash first).</div>
+    <div class="ex">git switch feat/empty-state-button</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">merge</span><span class="gloss">"fold one branch's commits into another"</span></div>
+    <div class="body">In this repo's convention, merging <code>feat/X</code> into master creates a single <code>merge: feat/X — &lt;summary&gt;</code> commit (you've been doing this). The commits stay separate but are now reachable from master.</div>
+    <div class="ex">git checkout master &amp;&amp; git merge feat/empty-state-button</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">merge conflict</span><span class="gloss">"two branches changed the same lines"</span></div>
+    <div class="body">Git pauses and asks you to choose. Files get <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers showing both sides. Resolve, <code>git add</code>, then <code>git commit</code> to finish the merge.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">rebase</span><span class="gloss">"replay your commits on top of a different base"</span></div>
+    <div class="body">Different from merge: rewrites history. Used to make <code>feat/X</code> sit on top of the latest <code>master</code> as if you'd just branched. <strong>Don't rebase commits you've already pushed</strong> unless you're prepared to force-push.</div>
+    <div class="ex">git rebase master</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">cherry-pick</span><span class="gloss">"copy one commit to this branch"</span></div>
+    <div class="body">Takes a commit by hash and replays it here. Good when you want one fix from another branch without merging the whole thing.</div>
+    <div class="ex">git cherry-pick 0893a83</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">delete branch</span><span class="gloss">"remove a branch reference"</span></div>
+    <div class="body">After merging, branch references are usually deleted. <code>-d</code> only deletes if merged; <code>-D</code> deletes regardless. <strong>I always ask before -D.</strong></div>
+    <div class="ex">git branch -d feat/auto-rename-agents</div>
+  </div>
+</section>
+
+<!-- REMOTE -->
+<section id="remote">
+  <h2>Remote &amp; PRs</h2>
+
+  <div class="verb">
+    <div class="head"><span class="word">remote</span><span class="gloss">"a copy of the repo elsewhere"</span></div>
+    <div class="body">In this repo: <code>origin</code> = <code>github.com/tayyabjdr/CodeSpace</code>. Branches that start with <code>remotes/origin/</code> in <code>git branch -a</code> are pointers to what GitHub had last time you fetched.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">fetch</span><span class="gloss">"download new commits, don't merge"</span></div>
+    <div class="body">Updates your <code>remotes/origin/*</code> pointers but doesn't change your working branches. Safe — never modifies your code.</div>
+    <div class="ex">git fetch origin</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">pull</span><span class="gloss">"fetch + merge in one go"</span></div>
+    <div class="body">Updates the current branch with whatever's on its remote counterpart. Can produce merge conflicts if both you and someone else (or the GitHub web UI) made changes.</div>
+    <div class="ex">git pull</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">push</span><span class="gloss">"upload your commits to the remote"</span></div>
+    <div class="body">Sends local commits to GitHub so others (and CI / electron-updater) can see them. <strong>I always ask before pushing</strong> — pushing is visible to others. <code>-u</code> on first push sets up tracking.</div>
+    <div class="ex">git push -u origin feat/empty-state-button</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">force-push</span><span class="gloss">"overwrite the remote with your local history"</span></div>
+    <div class="body">Used after rebasing a branch you'd already pushed. <strong>Destructive on the remote</strong> — I never do this without explicit confirmation, and never on master.</div>
+    <div class="ex">git push --force-with-lease</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">PR (pull request)</span><span class="gloss">"propose merging on GitHub"</span></div>
+    <div class="body">A web view of "merge feat/X into master, please". I create these via <code>gh pr create</code>. Doesn't touch your code — just opens the conversation on GitHub.</div>
+    <div class="ex">gh pr create --title "..." --body "..."</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">tag</span><span class="gloss">"a name for a specific commit"</span></div>
+    <div class="body">Used for releases — <code>v1.0.0</code> points permanently at one commit. electron-builder picks up tags for auto-update.</div>
+    <div class="ex">git tag v1.0.0 &amp;&amp; git push --tags</div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- DEV -->
+<section id="dev">
+  <h2>Dev &amp; build verbs</h2>
+
+  <div class="verb">
+    <div class="head"><span class="word">dev (run dev server)</span><span class="gloss">"hot-reloading dev session"</span></div>
+    <div class="body"><code>npm run dev</code> — electron-vite serves the renderer with HMR. Renderer edits hot-reload; <strong>main and preload changes need a full restart</strong>. Dev runs against an isolated <code>%APPDATA%\CodeSpace-dev\</code> userData folder, so it can't clobber the installed app's data.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">build</span><span class="gloss">"produce production bundles"</span></div>
+    <div class="body"><code>npm run build</code> — runs Vite for all three targets (main, preload, renderer) and writes <code>out/</code>. No app produced yet, just bundles.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">preview</span><span class="gloss">"run the production bundles locally"</span></div>
+    <div class="body"><code>npm run preview</code> — runs Electron against <code>out/</code> instead of the dev server. Catches bugs that only show up without HMR / with CSP applied.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">package</span><span class="gloss">"build an installer"</span></div>
+    <div class="body"><code>npm run package</code> — runs electron-builder, produces an NSIS <code>.exe</code> installer. Drops it in <code>dist/</code>.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">postinstall</span><span class="gloss">"runs automatically after npm install"</span></div>
+    <div class="body">Two steps: <code>electron-rebuild -f -w node-pty</code> (recompiles the native PTY against this Electron's V8 ABI), then <code>build-icon.js</code> (re-rasterizes the SVG → ICO).</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">electron-rebuild</span><span class="gloss">"recompile native modules"</span></div>
+    <div class="body">node-pty has C++ code that must match Electron's V8. If you upgrade Electron or hit "module was compiled against a different version" errors, this is the fix. Needs Python 3.12 + setuptools on Windows.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">test</span><span class="gloss">"run the vitest suite once"</span></div>
+    <div class="body"><code>npm test</code> — vitest in jsdom. Read-only; safe to run any time.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">test:watch</span><span class="gloss">"vitest in watch mode"</span></div>
+    <div class="body"><code>npm run test:watch</code> — re-runs affected tests on file changes. Long-running; you stop it with <code>Ctrl+C</code>.</div>
+  </div>
+</section>
+
+<!-- RELEASE -->
+<section id="release">
+  <h2>Release &amp; auto-update</h2>
+
+  <div class="verb">
+    <div class="head"><span class="word">release</span><span class="gloss">"build + publish to GitHub Releases"</span></div>
+    <div class="body"><code>npm run release</code> — builds, packages, then runs <code>electron-builder --publish always</code> which uploads the <code>.exe</code> + a <code>latest.yml</code> manifest to a GitHub Release. Once that's live, every running CodeSpace instance will detect it within ~10 s of next launch.</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">publish</span><span class="gloss">"upload the build artifacts"</span></div>
+    <div class="body">The "publish" step inside release. Configured in <code>package.json</code> → <code>build.publish</code> (provider: github, owner: tayyabjdr, repo: CodeSpace).</div>
+  </div>
+
+  <div class="verb">
+    <div class="head"><span class="word">auto-update check</span><span class="gloss">"app pings GitHub for newer versions"</span></div>
+    <div class="body">Runs 10 seconds after launch. If a newer release is found, electron-updater downloads it in the background; on completion the <code>UpdateToast</code> appears. "Restart now" installs immediately; "Later" defers it to next quit.</div>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- CONCEPTS -->
+<section id="concepts">
+  <h2>App-specific concepts</h2>
+  <p class="lede">Words that mean something specific in CodeSpace.</p>
+
+  <div class="term-group">
+    <div class="term"><div class="name">Workspace</div><div class="body">A named folder + N agents. Persists. The unit of organization. <em>Not</em> a "tab".</div></div>
+    <div class="term"><div class="name">Agent</div><div class="body">One terminal pane in a workspace. Shorthand for "a Claude CLI instance running in a PTY". The displayed name is either pinned (<code>name</code>), auto-named (<code>autoName</code>), or default (<code>Agent NN</code>).</div></div>
+    <div class="term"><div class="name">PTY</div><div class="body">The actual shell process behind a pane. Lives in the main process; survives unmount. One PTY per agent.</div></div>
+    <div class="term"><div class="name">PTY pool</div><div class="body">The renderer-side fan-out + ring buffer between PTYs and any subscribers (xterm, done-tracker, auto-namer). <code>src/renderer/pty-pool.js</code>.</div></div>
+    <div class="term"><div class="name">Ring buffer</div><div class="body">Last 64 KB of PTY output kept in memory so a remounted xterm can replay recent context.</div></div>
+    <div class="term"><div class="name">Attach / detach</div><div class="body">Verbs for connecting an xterm (or any listener) to a PTY in the pool. Mounting a pane attaches; unmounting detaches.</div></div>
+    <div class="term"><div class="name">Lazy spawn</div><div class="body">Terminals are only created when a workspace is first activated in a session — not on app launch.</div></div>
+    <div class="term"><div class="name">Silence timer</div><div class="body">The 4 s window the done-tracker uses to decide an agent has stopped responding. Started by an Enter keystroke, reset by every PTY chunk.</div></div>
+    <div class="term"><div class="name">Trust prompt</div><div class="body">Claude CLI's "Yes, I trust this folder" prompt on first run. <code>pty-manager.js</code> auto-presses Enter for it.</div></div>
+    <div class="term"><div class="name">Draft</div><div class="body">An unconfigured workspace — name and folder not yet set. Doesn't persist.</div></div>
+    <div class="term"><div class="name">Pinned pane</div><div class="body">A pane the user manually renamed. Auto-namer skips it forever (until renamed empty).</div></div>
+    <div class="term"><div class="name">Done state</div><div class="body">An unattended pane after the silence timer fires. Shows the green tick + plays the ding (if volume &gt; 0).</div></div>
+    <div class="term"><div class="name">Attended</div><div class="body">A pane is attended when it's <em>focused</em> AND in the <em>active</em> workspace AND the <em>window has focus</em>. Done sounds suppressed for attended panes.</div></div>
+    <div class="term"><div class="name">Auto-namer</div><div class="body">The pipeline that calls <code>claude -p</code> on the PTY tail to produce a 3–5 word title for unpinned panes after every "done" event.</div></div>
+    <div class="term"><div class="name">Bridge</div><div class="body">The contextBridge surface — <code>window.electronAPI</code>. If it fails to load, the renderer shows the "BridgeMissing" fallback.</div></div>
+    <div class="term"><div class="name">CSP</div><div class="body">Content Security Policy — applied only in production builds (Vite HMR needs <code>'unsafe-eval'</code> in dev).</div></div>
+    <div class="term"><div class="name">conpty</div><div class="body">Windows' modern PTY API. node-pty uses it. Several known quirks (orphan processes, AttachConsole errors) come from here — see CLAUDE.md "Windows quirks".</div></div>
+  </div>
+</section>
+
+<hr class="sep">
+<p style="color:var(--text3);font-size:12px;text-align:center">
+  When in doubt: name the file + the class, e.g. "the <code>.sb-item-dot</code> in Sidebar.jsx".
+</p>
+
+</main>
+
+<script>
+const links = document.querySelectorAll('nav.toc a');
+const sections = document.querySelectorAll('main section');
+const byId = new Map();
+links.forEach(a => byId.set(a.getAttribute('href').slice(1), a));
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    if (e.isIntersecting) {
+      links.forEach(a => a.classList.remove('active'));
+      const t = byId.get(e.target.id);
+      if (t) t.classList.add('active');
+    }
+  }
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => io.observe(s));
+</script>
+</body>
+</html>

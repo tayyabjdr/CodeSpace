@@ -10,6 +10,20 @@
   -webkit-app-region: drag;
 }
 
+/* Embedded mode — same form, but hosted inside a workspace pane (the user
+   clicked the sidebar's "+" to start a new draft workspace). Drop the fixed
+   positioning, the window-drag handle, and the heavy z-index so it sits
+   inside the body-main grid-wrap area like any other workspace content. */
+.onboarding.ob-embedded {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  -webkit-app-region: no-drag;
+}
+
 .onboarding.ob-exit {
   animation: fadeOut 0.45s ease 0.55s forwards;
 }

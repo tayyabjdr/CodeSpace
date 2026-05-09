@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ONBOARDING_BOOT_DELAY_MS } from '../constants.js'
 import AppIcon from './AppIcon.jsx'
 import './Onboarding.css'
@@ -50,10 +50,18 @@ function TerminalPreview({ count }) {
   )
 }
 
-export default function Onboarding({ onLaunch }) {
-  const [name, setName] = useState('')
+export default function Onboarding({
+  onLaunch,
+  mode = 'standalone',
+  onDiscard,
+  onNameChange,
+  initialName = '',
+  initialDir = ''
+}) {
+  const embedded = mode === 'embedded'
+  const [name, setName] = useState(initialName)
   const [selectedCount, setSelectedCount] = useState(2)
-  const [projectDir, setProjectDir] = useState('')
+  const [projectDir, setProjectDir] = useState(initialDir)
   const [launching, setLaunching] = useState(false)
   const [isolated, setIsolated] = useState(false)
   const [isRepo, setIsRepo] = useState(true)
@@ -65,17 +73,33 @@ export default function Onboarding({ onLaunch }) {
     return () => { cancelled = true }
   }, [projectDir])
 
-  useEffect(() => {
-    window.electronAPI.getDesktopPath().then(p => setProjectDir(p || ''))
-  }, [])
+  // Tracks whether the user has typed in the name field directly. Folder-name
+  // auto-fill should populate the input (so it's editable) but NOT bubble up
+  // to onNameChange — the sidebar should stay on its default ("New Workspace")
+  // until the user actually types or hits Initialize.
+  const userEditedNameRef = useRef(false)
 
-  // Auto-fill workspace name from folder name when directory changes,
-  // but only if the user hasn't typed their own name yet.
+  useEffect(() => {
+    if (projectDir) return
+    window.electronAPI.getDesktopPath().then(p => setProjectDir(p || ''))
+  }, [projectDir])
+
+  // Auto-fill workspace name from the selected folder's basename. Tracks
+  // every directory change until the user types in the name field, so
+  // browsing Desktop → Socials updates the name from "Desktop" to "Socials".
   useEffect(() => {
     if (!projectDir) return
+    if (userEditedNameRef.current) return
     const folder = projectDir.split(/[\\/]/).filter(Boolean).pop() || ''
-    setName(prev => prev.trim() === '' ? folder : prev)
+    setName(folder)
   }, [projectDir])
+
+  // Bubble up name changes so an embedded host (e.g. sidebar workspace label)
+  // can stay in sync — both with the user's typing and with the folder-driven
+  // auto-fill, so the sidebar item renames as the user browses folders.
+  useEffect(() => {
+    onNameChange?.(name)
+  }, [name, onNameChange])
 
   const handleBrowse = async () => {
     const dir = await window.electronAPI.selectDirectory()
@@ -95,18 +119,23 @@ export default function Onboarding({ onLaunch }) {
     setTimeout(() => onLaunch(selectedCount, projectDir, name.trim(), isolated), ONBOARDING_BOOT_DELAY_MS)
   }
 
+  const handleClose = () => {
+    if (embedded) onDiscard?.()
+    else window.electronAPI.windowClose()
+  }
+
   const dirLabel = projectDir
     ? projectDir.split(/[\\/]/).filter(Boolean).pop() || projectDir
     : '—'
 
   return (
-    <div className={`onboarding${launching ? ' ob-exit' : ''}`}>
+    <div className={`onboarding${embedded ? ' ob-embedded' : ''}${launching ? ' ob-exit' : ''}`}>
       <button
         type="button"
         className="ob-close"
-        title="Close"
-        aria-label="Close"
-        onClick={() => window.electronAPI.windowClose()}
+        title={embedded ? 'Discard draft' : 'Close'}
+        aria-label={embedded ? 'Discard draft' : 'Close'}
+        onClick={handleClose}
         disabled={launching}
       >
         <CloseIcon />
@@ -128,7 +157,10 @@ export default function Onboarding({ onLaunch }) {
               <input
                 className="ob-input"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={e => {
+                  userEditedNameRef.current = true
+                  setName(e.target.value)
+                }}
                 placeholder="e.g. CodeSpace"
                 spellCheck={false}
                 autoComplete="off"

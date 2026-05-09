@@ -1,21 +1,16 @@
-// Global "done sound" volume + mute state, persisted to localStorage.
-// Read by playDoneSound() in TerminalPane and by the toolbar UI.
+// Global "done sound" volume, persisted to localStorage. Volume === 0 IS
+// muted — there is no separate mute flag.
 
 const STORAGE_KEY = 'codespace.volume.v1'
-const DEFAULT_SOUND = 'chirp'
 
 function loadInitial() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { volume: 50, muted: false, sound: DEFAULT_SOUND }
+    if (!raw) return { volume: 50 }
     const parsed = JSON.parse(raw)
-    return {
-      volume: clamp(Number(parsed.volume), 0, 100, 50),
-      muted: parsed.muted === true,
-      sound: typeof parsed.sound === 'string' && parsed.sound ? parsed.sound : DEFAULT_SOUND
-    }
+    return { volume: clamp(Number(parsed.volume), 0, 100, 50) }
   } catch {
-    return { volume: 50, muted: false, sound: DEFAULT_SOUND }
+    return { volume: 50 }
   }
 }
 
@@ -43,31 +38,10 @@ export function getState() {
 
 export function setVolume(v) {
   const next = clamp(Math.round(Number(v)), 0, 100, state.volume)
-  // Adjusting the slider auto-unmutes — matches the mockup interaction.
-  const muted = state.muted && next === state.volume ? state.muted : false
-  if (next === state.volume && muted === state.muted) return
-  state = { volume: next, muted }
+  if (next === state.volume) return
+  state = { volume: next }
   persist()
   emit()
-}
-
-export function setMuted(m) {
-  const next = !!m
-  if (next === state.muted) return
-  state = { ...state, muted: next }
-  persist()
-  emit()
-}
-
-export function setSound(id) {
-  if (typeof id !== 'string' || !id || state.sound === id) return
-  state = { ...state, sound: id }
-  persist()
-  emit()
-}
-
-export function getSoundChoice() {
-  return state.sound
 }
 
 export function subscribe(callback) {
@@ -77,9 +51,9 @@ export function subscribe(callback) {
 
 // Effective playback amplitude for the AudioContext gain node.
 // Maps 0–100 → 0–0.4. A pure sine sounds noticeably quieter than a real
-// notification dingdone; 0.4 at 100% lands in the typical UI-sound range
+// notification ding; 0.4 at 100% lands in the typical UI-sound range
 // (~0.3–0.5). 50% default ≈ 0.2, comfortably audible without being startling.
 export function getDoneSoundGain() {
-  if (state.muted || state.volume === 0) return 0
+  if (state.volume === 0) return 0
   return 0.4 * (state.volume / 100)
 }

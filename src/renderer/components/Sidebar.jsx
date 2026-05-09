@@ -49,6 +49,7 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
         {workspaces.map((ws, i) => {
           const isActive = ws.id === activeId
           const isNotifying = notifyingIds?.has(ws.id) ?? false
+          const isDraft = !!ws.unconfigured
           const count = ws.spawned ? (ws.terminals?.length ?? 0) : ws.agentCount
           return (
             <div
@@ -57,7 +58,7 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
               role="option"
               tabIndex={isActive ? 0 : -1}
               aria-selected={isActive}
-              className={`sb-item${isActive ? ' active' : ''}`}
+              className={`sb-item${isActive ? ' active' : ''}${isDraft ? ' draft' : ''}`}
               onClick={() => onSelect(ws.id)}
               onKeyDown={(e) => handleKeyDown(e, i)}
             >
@@ -75,7 +76,7 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
               )}
               <span className="sb-item-status" aria-hidden>
                 {isNotifying && <span className="sb-item-dot" title="An agent finished" />}
-                <span className="sb-item-count">{count}</span>
+                <span className="sb-item-count">{isDraft ? '✦' : count}</span>
               </span>
               <button
                 className="sb-item-delete"

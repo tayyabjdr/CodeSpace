@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as volumeStore from '../volume-store.js'
-import { playDoneSound, SOUND_OPTIONS } from '../done-sound.js'
+import { playDoneSound } from '../done-sound.js'
 import './VolumeControl.css'
 
 const SpeakerHigh = () => (
@@ -26,26 +26,20 @@ const SpeakerMuted = () => (
   </svg>
 )
 
-function pickSpeaker(volume, muted) {
-  if (muted || volume === 0) return <SpeakerMuted />
+function pickSpeaker(volume) {
+  if (volume === 0) return <SpeakerMuted />
   if (volume < 50) return <SpeakerLow />
   return <SpeakerHigh />
 }
 
 export default function VolumeControl() {
-  const [{ volume, muted, sound }, setState] = useState(volumeStore.getState())
+  const [{ volume }, setState] = useState(volumeStore.getState())
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
 
-  const pickSound = (id) => {
-    if (muted) volumeStore.setMuted(false)
-    volumeStore.setSound(id)
-    playDoneSound(id)
-  }
-
   useEffect(() => volumeStore.subscribe(setState), [])
 
-  // Close popover on outside click / Escape.
+  // Close on outside click / Escape.
   useEffect(() => {
     if (!open) return
     const onDown = (e) => {
@@ -61,10 +55,32 @@ export default function VolumeControl() {
     }
   }, [open])
 
+  const muted = volume === 0
   const fill = `${volume}%`
 
   return (
-    <div className="vol" ref={rootRef}>
+    <div className={`vol${open ? ' is-open' : ''}`} ref={rootRef}>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={volume}
+        tabIndex={open ? 0 : -1}
+        aria-hidden={!open}
+        onChange={(e) => volumeStore.setVolume(e.target.value)}
+        // Preview the ding when the user finishes adjusting — covers
+        // mouse release, touch release, and keyboard arrow tweaks.
+        onMouseUp={playDoneSound}
+        onTouchEnd={playDoneSound}
+        onKeyUp={(e) => {
+          if (e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown') {
+            playDoneSound()
+          }
+        }}
+        className={`vol-slider${muted ? ' is-muted' : ''}`}
+        style={{ '--vol-fill': fill }}
+        aria-label="Sound volume"
+      />
       <button
         type="button"
         className={`vol-trigger${open ? ' is-open' : ''}${muted ? ' is-muted' : ''}`}
@@ -73,66 +89,8 @@ export default function VolumeControl() {
         aria-label="Notification sound"
         aria-expanded={open}
       >
-        {pickSpeaker(volume, muted)}
+        {pickSpeaker(volume)}
       </button>
-
-      {open && (
-        <div className="vol-pop" role="dialog" aria-label="Notification sound">
-          <div className="vol-pop-row">
-            <span className="vol-pop-label">
-              Sound: <span className="vol-pop-pct">{muted ? 'muted' : `${volume}%`}</span>
-            </span>
-            <button
-              type="button"
-              className={`vol-pop-mute${muted ? ' is-muted' : ''}`}
-              onClick={() => volumeStore.setMuted(!muted)}
-              title={muted ? 'Unmute' : 'Mute'}
-              aria-pressed={muted}
-            >
-              {muted ? <SpeakerLow /> : <SpeakerMuted />}
-            </button>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={volume}
-            onChange={(e) => {
-              if (muted) volumeStore.setMuted(false)
-              volumeStore.setVolume(e.target.value)
-            }}
-            // Preview the ding when the user finishes adjusting — covers
-            // mouse release, touch release, and keyboard arrow tweaks.
-            onMouseUp={playDoneSound}
-            onTouchEnd={playDoneSound}
-            onKeyUp={(e) => {
-              if (e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown') {
-                playDoneSound()
-              }
-            }}
-            className={`vol-pop-slider${muted ? ' is-muted' : ''}`}
-            style={{ '--vol-fill': fill }}
-            aria-label="Sound volume"
-          />
-
-          <div className="vol-pop-divider" />
-          <div className="vol-pop-tone-label">Tone</div>
-          <div className="vol-pop-sounds" role="radiogroup" aria-label="Notification tone">
-            {SOUND_OPTIONS.map(opt => (
-              <button
-                key={opt.id}
-                type="button"
-                role="radio"
-                aria-checked={sound === opt.id}
-                className={`vol-pop-sound${sound === opt.id ? ' is-active' : ''}`}
-                onClick={() => pickSound(opt.id)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
