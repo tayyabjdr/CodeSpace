@@ -18,6 +18,14 @@ if (process.env['ELECTRON_RENDERER_URL']) {
 }
 
 function createWindow() {
+  // In dev, electron.exe's default icon would otherwise show in the taskbar.
+  // Setting BrowserWindow.icon overrides that. In production the icon is
+  // already baked into the packaged .exe by electron-builder (build.win.icon),
+  // so this path only matters for `npm run dev`.
+  const devIconPath = process.env['ELECTRON_RENDERER_URL']
+    ? join(__dirname, '../../build/icon.ico')
+    : undefined
+
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -26,6 +34,7 @@ function createWindow() {
     center: true,
     frame: false,
     backgroundColor: '#0a0b0d',
+    icon: devIconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

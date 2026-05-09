@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import VolumeControl from './VolumeControl.jsx'
+import AppIcon from './AppIcon.jsx'
 import './Toolbar.css'
 
 const MinusIcon = () => (
@@ -36,13 +37,6 @@ const CodeIcon = () => (
   </svg>
 )
 
-const TerminalIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="4 17 10 11 4 5" />
-    <line x1="12" y1="19" x2="20" y2="19" />
-  </svg>
-)
-
 export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor }) {
   const [isMaximized, setIsMaximized] = useState(false)
 
@@ -56,7 +50,7 @@ export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor 
     <div className="titlebar">
       <div className="titlebar-left">
         <span className="titlebar-mark" aria-hidden>
-          <TerminalIcon />
+          <AppIcon size={16} />
         </span>
         <span className="titlebar-name">CodeSpace</span>
       </div>

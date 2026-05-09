@@ -11,7 +11,8 @@
     "release": "electron-vite build && electron-builder --publish always",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "electron-rebuild -f -w node-pty"
+    "build:icon": "node scripts/build-icon.js",
+    "postinstall": "electron-rebuild -f -w node-pty && node scripts/build-icon.js"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.1",
@@ -43,8 +44,10 @@
     "electron-rebuild": "^3.2.9",
     "electron-vite": "^2.3.0",
     "jsdom": "^24.0.0",
+    "png-to-ico": "^2.1.8",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "sharp": "^0.33.5",
     "vitest": "^2.0.0"
   },
   "build": {
@@ -58,7 +61,8 @@
       }
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "files": [
       "out/**/*",
