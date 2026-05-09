@@ -48,10 +48,11 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     setEditing(false)
   }
 
-  // Clear done when this pane becomes attended (workspace active + focused).
-  useEffect(() => {
-    if (isFocused) doneTracker.noteFocus(id)
-  }, [isFocused, id])
+  // No auto-clear on isFocused — switching back to a workspace re-mounts its
+  // focusedTerminalId pane already focused, and we don't want that passive
+  // refocus to wipe the done flag before the user has seen which pane finished.
+  // Done is cleared by handleFocus (mousedown on the pane) and by the window
+  // focus handler in App.jsx for OS-level alt-tab returns.
 
   const handleUserInput = useCallback((data) => {
     doneTracker.noteUserInput(id, data)
@@ -124,7 +125,7 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
         'pane',
         isFocused ? 'focused' : '',
         exitCode !== null ? 'exited' : '',
-        done && !isFocused ? 'done' : '',
+        done ? 'done' : '',
         dragging ? 'dragging' : '',
         dragOver ? 'drag-over' : ''
       ].filter(Boolean).join(' ')}
@@ -188,7 +189,7 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
             <span className="tp-branch-text">{branch}</span>
           </button>
         )}
-        {done && !isFocused && (
+        {done && (
           <svg
             className="done-tick"
             width="14"
@@ -230,7 +231,7 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
       ) : (
         <div className="xterm-container" ref={containerRef} />
       )}
-      {done && !isFocused && !error && (
+      {done && !error && (
         <div className="pane-done-pulse" aria-hidden>
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="pane-done-pulse-cell" />
