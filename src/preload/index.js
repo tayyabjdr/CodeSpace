@@ -49,6 +49,11 @@ const api = {
     revealInFolder: (absPath) => ipcRenderer.send('editor:revealInFolder', absPath),
   },
 
+  agentName: {
+    hasKey:    () => ipcRenderer.invoke('agentName:hasKey'),
+    summarize: (tail) => ipcRenderer.invoke('agentName:summarize', tail),
+  },
+
   onUpdateReady: (callback) => {
     const handler = (_event, info) => callback(info)
     ipcRenderer.on('update:ready', handler)

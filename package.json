@@ -28,7 +28,8 @@
     "@codemirror/view": "^6.41.1",
     "@lezer/highlight": "^1.2.3",
     "electron-updater": "^6.3.0",
-    "node-pty": "^1.0.0"
+    "node-pty": "^1.0.0",
+    "strip-ansi": "^7.2.0"
   },
   "devDependencies": {
     "@fontsource-variable/geist": "^5.2.8",

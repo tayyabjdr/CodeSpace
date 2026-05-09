@@ -3,6 +3,7 @@ import { statSync } from 'fs'
 import { isAbsolute } from 'path'
 import { createSession, writeSession, resizeSession, killSession, isClaudeAvailable } from './pty-manager.js'
 import * as editorFs from './editor-fs.js'
+import * as autoNamer from './auto-namer.js'
 
 function isValidCwd(cwd) {
   if (typeof cwd !== 'string' || cwd.length === 0) return false
@@ -96,6 +97,9 @@ export function registerHandlers(mainWindow) {
       }
     })
   })
+
+  ipcMain.handle('agentName:hasKey',    async () => autoNamer.hasKey())
+  ipcMain.handle('agentName:summarize', async (_event, tail) => autoNamer.summarize(tail))
 
   // If the renderer goes away (window close, devtools reload, crash) drop
   // every subscription so we don't post events into a destroyed webContents.
