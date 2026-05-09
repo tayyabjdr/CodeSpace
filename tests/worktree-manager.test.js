@@ -76,3 +76,36 @@ describe('worktree-manager / ensureGitignoreExcludes', () => {
     expect(matches.length).toBe(1)
   })
 })
+
+import { readMeta, writeMeta, META_DEFAULT } from '../src/main/worktree-manager.js'
+
+describe('worktree-manager / meta file', () => {
+  let root, repoDir
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'cs-wt-meta-'))
+    repoDir = join(root, 'repo')
+    mkdirSync(repoDir)
+  })
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('readMeta returns default shape when file missing', () => {
+    expect(readMeta(repoDir)).toEqual({ version: 1, gitignoreTouched: false, agents: {} })
+  })
+
+  it('round-trips agent entries', () => {
+    const m = { version: 1, gitignoreTouched: true, agents: { 'a-1': { branch: 'cs/x/abcd1234', baseSha: 'deadbeef', createdAt: '2026-05-09T00:00:00.000Z' } } }
+    writeMeta(repoDir, m)
+    expect(readMeta(repoDir)).toEqual(m)
+  })
+
+  it('returns default and quarantines a corrupt meta file', () => {
+    const dir2 = join(root, 'corrupt')
+    mkdirSync(join(dir2, '.codespace', 'worktrees'), { recursive: true })
+    writeFileSync(join(dir2, '.codespace', 'worktrees', '.cs-meta.json'), '{not json')
+    expect(readMeta(dir2)).toEqual(META_DEFAULT)
+  })
+})

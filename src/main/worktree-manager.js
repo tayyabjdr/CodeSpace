@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync } from 'fs'
 import { join } from 'path'
 
 let gitAvailable = null
@@ -42,4 +42,43 @@ export function ensureGitignoreExcludes(repoDir) {
     body = '.codespace/\n'
   }
   writeFileSync(path, body, 'utf8')
+}
+
+export const META_DEFAULT = Object.freeze({ version: 1, gitignoreTouched: false, agents: {} })
+
+function metaDir(repoDir) {
+  return join(repoDir, '.codespace', 'worktrees')
+}
+
+function metaPath(repoDir) {
+  return join(metaDir(repoDir), '.cs-meta.json')
+}
+
+export function readMeta(repoDir) {
+  const p = metaPath(repoDir)
+  if (!existsSync(p)) return { ...META_DEFAULT }
+  let raw
+  try { raw = readFileSync(p, 'utf8') }
+  catch { return { ...META_DEFAULT } }
+  let parsed
+  try { parsed = JSON.parse(raw) }
+  catch {
+    try { renameSync(p, p + '.corrupt-' + Date.now()) } catch {}
+    return { ...META_DEFAULT }
+  }
+  if (!parsed || typeof parsed !== 'object' || !parsed.agents) return { ...META_DEFAULT }
+  return {
+    version: 1,
+    gitignoreTouched: !!parsed.gitignoreTouched,
+    agents: { ...parsed.agents }
+  }
+}
+
+export function writeMeta(repoDir, data) {
+  const dir = metaDir(repoDir)
+  mkdirSync(dir, { recursive: true })
+  const p = metaPath(repoDir)
+  const tmp = p + '.tmp'
+  writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8')
+  renameSync(tmp, p)
 }
