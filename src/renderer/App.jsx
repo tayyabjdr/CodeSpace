@@ -198,7 +198,7 @@ function AppInner() {
     }))
   }, [activeId])
 
-  const handleOnboardingLaunch = useCallback((count, dir, name) => {
+  const handleOnboardingLaunch = useCallback((count, dir, name, isolated) => {
     const resolvedName = (name && name.trim())
       || dir.split(/[\\/]/).filter(Boolean).pop()
       || 'Workspace'
@@ -207,6 +207,7 @@ function AppInner() {
       name: resolvedName,
       dir,
       agentCount: count,
+      isolated: !!isolated,
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,

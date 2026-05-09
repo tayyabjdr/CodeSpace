@@ -449,3 +449,41 @@
   background: rgba(255, 255, 255, 0.1);
   margin: 0 6px;
 }
+
+.ob-isolation { margin-top: 16px; }
+.ob-toggle {
+  display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+}
+.ob-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.ob-toggle-track {
+  flex: 0 0 auto; width: 32px; height: 18px; border-radius: 999px;
+  background: var(--cs-border-subtle, #1b1e24);
+  border: 1px solid var(--cs-border, #2b3038);
+  position: relative; transition: background 180ms ease;
+}
+.ob-toggle-track::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--cs-text-dim, #b0b6bf);
+  transition: transform 180ms ease, background 180ms ease;
+}
+.ob-toggle input:checked + .ob-toggle-track { background: var(--cs-cyan-dim, #1e3a44); }
+.ob-toggle input:checked + .ob-toggle-track::after { transform: translateX(14px); background: var(--cs-cyan, #67e8f9); }
+.ob-toggle-text { display: flex; flex-direction: column; gap: 2px; }
+.ob-toggle-title { font-size: 13px; color: var(--cs-text-primary, #e6e9ef); }
+.ob-toggle-help { font-size: 11.5px; color: var(--cs-text-dim, #8c93a0); line-height: 1.45; }
+.ob-toggle-help code {
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-size: 11px; padding: 0 4px; border-radius: 3px;
+  background: var(--cs-bg-elevated, #11151b); color: var(--cs-text-primary, #e6e9ef);
+}
+.ob-isolation-error {
+  margin: 8px 0 0; padding: 8px 10px; border-radius: 6px;
+  background: rgba(255, 99, 99, 0.08);
+  border: 1px solid rgba(255, 99, 99, 0.22);
+  color: #ffb4b4; font-size: 12px; line-height: 1.45;
+}
+.ob-isolation-error code {
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-size: 11.5px; background: rgba(0,0,0,0.25); padding: 0 4px; border-radius: 3px;
+}
