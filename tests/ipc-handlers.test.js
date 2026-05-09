@@ -22,10 +22,20 @@ vi.mock('../src/main/pty-manager.js', () => ({
   killSession: vi.fn()
 }))
 
+vi.mock('../src/main/worktree-manager.js', () => ({
+  isGitAvailable: vi.fn(() => true),
+  isGitRepo:      vi.fn(() => true),
+  create:         vi.fn(async () => ({ path: 'C:/repo/.codespace/worktrees/aid', branch: 'cs/x/abcd1234', baseSha: 'sha' })),
+  close:          vi.fn(async () => ({ ok: true })),
+  closeAllForWorkspace: vi.fn(async () => {}),
+  checkDirty:     vi.fn(async () => ({ dirty: false }))
+}))
+
 import { ipcMain } from 'electron'
 import { createSession, writeSession, resizeSession, killSession } from '../src/main/pty-manager.js'
 import { registerHandlers } from '../src/main/ipc-handlers.js'
 import * as editorFs from '../src/main/editor-fs.js'
+import * as wt from '../src/main/worktree-manager.js'
 
 function makeMockWindow() {
   return {
@@ -182,5 +192,41 @@ describe('editor IPC channels', () => {
     registerHandlers(mockWindow)
     const handler = getHandler('handle', 'editor:pathExists')
     await expect(handler({}, 'relative.txt')).rejects.toThrow(/must be absolute/)
+  })
+})
+
+describe('ipc-handlers / worktree', () => {
+  let mockWindow
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockWindow = makeMockWindow()
+  })
+
+  function getHandler(method, channel) {
+    return ipcMain[method].mock.calls.find(c => c[0] === channel)?.[1]
+  }
+
+  it('registers worktree:* handlers', () => {
+    registerHandlers(mockWindow)
+    for (const ch of ['worktree:isGitAvailable', 'worktree:isGitRepo', 'worktree:create', 'worktree:close', 'worktree:closeAll', 'worktree:checkDirty']) {
+      expect(ipcMain.handle).toHaveBeenCalledWith(ch, expect.any(Function))
+    }
+  })
+
+  it('worktree:create rejects non-absolute repoDir', async () => {
+    registerHandlers(mockWindow)
+    const fn = getHandler('handle', 'worktree:create')
+    const r = await fn({}, { repoDir: 'relative/path', workspaceName: 'X', agentId: 'aid' })
+    expect(r).toEqual({ error: 'invalid-args' })
+    expect(wt.create).not.toHaveBeenCalled()
+  })
+
+  it('worktree:create surfaces error code from manager', async () => {
+    wt.create.mockRejectedValueOnce(Object.assign(new Error('boom'), { code: 'no-commits' }))
+    registerHandlers(mockWindow)
+    const fn = getHandler('handle', 'worktree:create')
+    const r = await fn({}, { repoDir: 'C:/repo', workspaceName: 'X', agentId: 'aid' })
+    expect(r).toEqual({ error: 'no-commits' })
   })
 })
