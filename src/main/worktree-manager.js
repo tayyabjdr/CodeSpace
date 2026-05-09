@@ -56,17 +56,17 @@ function metaPath(repoDir) {
 
 export function readMeta(repoDir) {
   const p = metaPath(repoDir)
-  if (!existsSync(p)) return { ...META_DEFAULT }
+  if (!existsSync(p)) return { ...META_DEFAULT, agents: { ...META_DEFAULT.agents } }
   let raw
   try { raw = readFileSync(p, 'utf8') }
-  catch { return { ...META_DEFAULT } }
+  catch { return { ...META_DEFAULT, agents: { ...META_DEFAULT.agents } } }
   let parsed
   try { parsed = JSON.parse(raw) }
   catch {
     try { renameSync(p, p + '.corrupt-' + Date.now()) } catch {}
-    return { ...META_DEFAULT }
+    return { ...META_DEFAULT, agents: { ...META_DEFAULT.agents } }
   }
-  if (!parsed || typeof parsed !== 'object' || !parsed.agents) return { ...META_DEFAULT }
+  if (!parsed || typeof parsed !== 'object' || !parsed.agents) return { ...META_DEFAULT, agents: { ...META_DEFAULT.agents } }
   return {
     version: 1,
     gitignoreTouched: !!parsed.gitignoreTouched,

@@ -108,4 +108,11 @@ describe('worktree-manager / meta file', () => {
     writeFileSync(join(dir2, '.codespace', 'worktrees', '.cs-meta.json'), '{not json')
     expect(readMeta(dir2)).toEqual(META_DEFAULT)
   })
+
+  it('default returns are independent across calls', () => {
+    const m1 = readMeta(join(root, 'doesnotexist1'))
+    m1.agents['x'] = { branch: 'cs/x/aaaa' }
+    const m2 = readMeta(join(root, 'doesnotexist2'))
+    expect(m2.agents).toEqual({})
+  })
 })
