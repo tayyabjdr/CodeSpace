@@ -21,6 +21,15 @@
   --cs-text-muted:     rgba(255, 255, 255, 0.28);
   --cs-text-dim:       rgba(255, 255, 255, 0.18);
 
+  /* Icon tones — solid greys composited from the text-opacity scale over
+     --cs-bg-sidebar (#0a0c0f). SVG strokes that cross (+, ×, restore) would
+     alpha-stack and look darker at intersections if we used the rgba scale,
+     so all icon coloring should pull from these tokens instead. */
+  --cs-icon-muted:     #4f5052;  /* ≈ text-muted    */
+  --cs-icon-tertiary:  #707274;  /* ≈ text-tertiary */
+  --cs-icon-secondary: #c9cacb;  /* ≈ text-secondary */
+  --cs-icon-primary:   #ebebec;  /* ≈ text-primary  */
+
   /* Accents */
   --cs-green:        #86efac;
   --cs-green-bg:     rgba(34, 197, 94, 0.09);

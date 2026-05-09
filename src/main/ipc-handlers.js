@@ -84,6 +84,19 @@ export function registerHandlers(mainWindow) {
     }
   })
 
+  // Hand off http(s) URLs to the OS's default browser. We refuse anything that
+  // isn't an http/https URL — file://, javascript:, etc. could expose local
+  // resources or fire arbitrary code if a renderer ever sent a hostile string.
+  ipcMain.on('shell:openExternal', (_event, url) => {
+    if (typeof url !== 'string' || url.length > 2048) return
+    if (!/^https?:\/\//i.test(url)) return
+    shell.openExternal(url).catch(err => {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[ipc] openExternal failed:', err)
+      }
+    })
+  })
+
   // If the renderer goes away (window close, devtools reload, crash) drop
   // every subscription so we don't post events into a destroyed webContents.
   mainWindow.webContents.on('destroyed', () => {

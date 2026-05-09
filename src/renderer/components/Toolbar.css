@@ -23,7 +23,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--cs-text-secondary);
+  color: var(--cs-icon-secondary);
 }
 
 .titlebar-name {
@@ -120,14 +120,14 @@
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--cs-icon-tertiary);
   cursor: pointer;
   transition: background var(--cs-transition), color var(--cs-transition);
 }
 
 .titlebar-btn:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--cs-icon-primary);
 }
 
 .titlebar-close:hover {

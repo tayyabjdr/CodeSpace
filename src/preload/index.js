@@ -56,6 +56,8 @@ const api = {
   },
 
   installUpdate: () => ipcRenderer.invoke('update:install'),
+
+  openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
 }
 
 try {

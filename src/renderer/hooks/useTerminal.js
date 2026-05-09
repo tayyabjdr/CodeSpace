@@ -216,6 +216,63 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     }
   }, []) // intentionally empty — runs once on mount
 
+  // xterm linkProvider — Ctrl/Cmd-click on http(s) URLs to open in the OS's
+  // default browser. Independent of the path provider below; both providers
+  // can run on the same line and xterm will render both ranges as links.
+  useEffect(() => {
+    if (!termRef.current || !ptyId) return
+    const term = termRef.current
+
+    // Trailing characters that are almost always punctuation in surrounding
+    // prose, not part of the URL. The regex captures aggressively, then we
+    // peel these off the end. Closing brackets are paired — strip them only
+    // when the URL has no matching opening bracket.
+    const URL_RE = /\bhttps?:\/\/[^\s<>"'`{}|\\^[\]]+/gi
+    const TRAIL_PUNCT = /[.,;:!?]+$/
+    function trimUrl(raw) {
+      let url = raw.replace(TRAIL_PUNCT, '')
+      for (const [open, close] of [['(', ')'], ['[', ']']]) {
+        while (url.endsWith(close) && (url.split(open).length - 1) < (url.split(close).length - 1)) {
+          url = url.slice(0, -1)
+        }
+      }
+      return url
+    }
+
+    function getBufferLine(y) {
+      const line = term.buffer.active.getLine(y - 1)
+      return line ? line.translateToString(true) : ''
+    }
+
+    const disposable = term.registerLinkProvider({
+      provideLinks(bufferLineNumber, callback) {
+        const text = getBufferLine(bufferLineNumber)
+        const links = []
+        for (const m of text.matchAll(URL_RE)) {
+          const url = trimUrl(m[0])
+          if (!url) continue
+          const start = m.index
+          const end = start + url.length
+          links.push({
+            range: {
+              start: { x: start + 1, y: bufferLineNumber },
+              end:   { x: end,       y: bufferLineNumber }
+            },
+            text: url,
+            activate: (event) => {
+              if (!(event.ctrlKey || event.metaKey)) return
+              window.electronAPI?.openExternal?.(url)
+            },
+            hover: () => {},
+            leave: () => {},
+          })
+        }
+        callback(links.length === 0 ? undefined : links)
+      }
+    })
+    return () => disposable.dispose()
+  }, [ptyId])
+
   // xterm linkProvider — Ctrl/Cmd-click on parsed paths to open in editor.
   // Reads cwd / workspaceDir / onOpenFile from linkOptsRef so the provider
   // doesn't re-register when those change.

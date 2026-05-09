@@ -1,17 +1,17 @@
 .editor-resizer {
-  width: 4px;
-  background: transparent;
+  width: 0;
   cursor: col-resize;
   flex-shrink: 0;
   position: relative;
-  transition: background var(--cs-transition);
 }
 .editor-resizer::after {
   content: '';
   position: absolute;
   inset: 0 -3px;
+  background: transparent;
+  transition: background var(--cs-transition);
 }
-.editor-resizer:hover,
-.editor-resizer.dragging {
+.editor-resizer:hover::after,
+.editor-resizer.dragging::after {
   background: rgba(103, 232, 249, 0.45);
 }
