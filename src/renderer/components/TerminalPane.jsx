@@ -230,6 +230,13 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
       ) : (
         <div className="xterm-container" ref={containerRef} />
       )}
+      {done && !isFocused && !error && (
+        <div className="pane-done-pulse" aria-hidden>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="pane-done-pulse-cell" />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

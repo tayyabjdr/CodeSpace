@@ -18,10 +18,11 @@
   border-color: var(--cs-border-mid);
 }
 
-/* Done state — header carries the signal: the title bar background turns
-   into a saturated cyan→green gradient that pops against the dark surface.
-   Pane border stays default. The status dot paints its own circle on top
-   of the header, so its background is unaffected. */
+/* Done state — header is a static cyan→green gradient that pops, while the
+   pane body itself breathes with a soft cyan-green halo (border + outer glow)
+   on the same calm 1.6s ease cadence as the onboarding agent-card cells.
+   The status dot paints its own circle on top of the header, so its
+   background is unaffected. */
 .pane.done .pane-header {
   background: linear-gradient(
     90deg,
@@ -31,6 +32,42 @@
   border-bottom-color: rgba(134, 239, 172, 0.55);
 }
 
+/* Body pulse — a 4×2 grid of invisible cells overlays the pane body and
+   each cell fades a soft white in and out on the same 1.6s ease-in-out
+   cadence as the onboarding agent-card cells, staggered 80ms apart so
+   the highlight rolls across the body as a wave. pointer-events:none so
+   the xterm underneath stays fully interactive. */
+.pane.done {
+  position: relative;
+}
+
+.pane-done-pulse {
+  position: absolute;
+  inset: var(--cs-header-h) 0 0 0;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.pane-done-pulse-cell {
+  animation: panePulseCell 1.6s ease-in-out infinite;
+}
+
+.pane-done-pulse-cell:nth-child(1) { animation-delay:   0ms; }
+.pane-done-pulse-cell:nth-child(2) { animation-delay:  80ms; }
+.pane-done-pulse-cell:nth-child(3) { animation-delay: 160ms; }
+.pane-done-pulse-cell:nth-child(4) { animation-delay: 240ms; }
+.pane-done-pulse-cell:nth-child(5) { animation-delay: 320ms; }
+.pane-done-pulse-cell:nth-child(6) { animation-delay: 400ms; }
+.pane-done-pulse-cell:nth-child(7) { animation-delay: 480ms; }
+.pane-done-pulse-cell:nth-child(8) { animation-delay: 560ms; }
+
+@keyframes panePulseCell {
+  0%, 100% { background: rgba(255, 255, 255, 0.012); }
+  50%      { background: rgba(255, 255, 255, 0.038); }
+}
+
 .pane.done .pane-label {
   color: var(--cs-text-primary);
 }
@@ -38,6 +75,23 @@
 /* The green check would disappear into the gradient; darken it for contrast. */
 .pane.done .done-tick {
   color: var(--cs-bg-base, #0a0b0d);
+}
+
+.pane.done .pane-add-btn,
+.pane.done .close-btn {
+  color: var(--cs-text-primary);
+}
+
+/* Hover states must punch through the bright gradient — the default low-alpha
+   washes are invisible on it, so use solid accent fills. */
+.pane.done .pane-add-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.pane.done .close-btn:hover {
+  background: var(--cs-red);
+  color: #ffffff;
 }
 
 /* Drag source — fades the original */

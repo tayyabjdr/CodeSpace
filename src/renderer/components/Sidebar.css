@@ -148,6 +148,22 @@
   background: var(--cs-status-live);
   box-shadow: 0 0 6px rgba(134, 239, 172, 0.45);
   transition: opacity var(--cs-transition);
+  animation: sbItemDotPulse 1.8s ease-in-out infinite;
+  margin-right: 2px;
+}
+
+/* Subtle breathe — the dot scales gently and its green glow expands and
+   relaxes so a finished workspace catches the eye from across the rail
+   without ever feeling like flicker. */
+@keyframes sbItemDotPulse {
+  0%, 100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 4px rgba(134, 239, 172, 0.30);
+  }
+  50% {
+    transform: scale(1.10);
+    box-shadow: 0 0 11px rgba(134, 239, 172, 0.65);
+  }
 }
 
 .sb-item-count {
