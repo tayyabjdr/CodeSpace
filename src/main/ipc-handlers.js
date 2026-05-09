@@ -144,7 +144,10 @@ export function registerHandlers(mainWindow) {
 
   ipcMain.handle('worktree:wipeAll', async (_e, args) => {
     if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
-    try { await worktree.wipeAll(args); return { ok: true } }
+    try {
+      const result = await worktree.wipeAll(args)
+      return { ok: true, kept: result?.kept ?? [] }
+    }
     catch (err) { return { error: err.code || 'unknown' } }
   })
 
