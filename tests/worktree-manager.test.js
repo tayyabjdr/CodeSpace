@@ -77,7 +77,7 @@ describe('worktree-manager / ensureGitignoreExcludes', () => {
   })
 })
 
-import { readMeta, writeMeta, META_DEFAULT, create } from '../src/main/worktree-manager.js'
+import { readMeta, writeMeta, META_DEFAULT, create, checkDirty, close } from '../src/main/worktree-manager.js'
 
 describe('worktree-manager / meta file', () => {
   let root, repoDir
@@ -171,5 +171,60 @@ describe('worktree-manager / create', () => {
     execFileSync('git', ['init', '-q'], { cwd: empty })
     await expect(create({ repoDir: empty, workspaceName: 'X', agentId: 'eeeeeeee-0000-0000-0000-000000000000' }))
       .rejects.toMatchObject({ code: 'no-commits' })
+  })
+})
+
+describe('worktree-manager / checkDirty + close', () => {
+  let root, repoDir
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'cs-wt-close-'))
+    repoDir = join(root, 'repo')
+    mkdirSync(repoDir)
+    execFileSync('git', ['init', '-q'], { cwd: repoDir })
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'init'], { cwd: repoDir })
+  })
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('checkDirty returns false on a fresh worktree', async () => {
+    const id = 'cd111111-0000-0000-0000-000000000000'
+    await create({ repoDir, workspaceName: 'X', agentId: id })
+    expect(await checkDirty({ repoDir, agentId: id })).toEqual({ dirty: false })
+  })
+
+  it('checkDirty returns true when worktree has untracked file', async () => {
+    const id = 'cd222222-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'X', agentId: id })
+    writeFileSync(join(r.path, 'scratch.txt'), 'hi')
+    expect(await checkDirty({ repoDir, agentId: id })).toEqual({ dirty: true })
+  })
+
+  it('checkDirty returns { missing: true } when meta has no entry', async () => {
+    expect(await checkDirty({ repoDir, agentId: 'nope-0000-0000-0000-000000000000' })).toEqual({ missing: true })
+  })
+
+  it('close removes a clean worktree and prunes the branch (no commits beyond base)', async () => {
+    const id = 'cd333333-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'X', agentId: id })
+    await close({ repoDir, agentId: id })
+    expect(existsSync(r.path)).toBe(false)
+    const branches = execFileSync('git', ['-C', repoDir, 'branch', '--list', r.branch], { encoding: 'utf8' })
+    expect(branches.trim()).toBe('')
+    expect(readMeta(repoDir).agents[id]).toBeUndefined()
+  })
+
+  it('close removes worktree but keeps branch when commits exist beyond base', async () => {
+    const id = 'cd444444-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'X', agentId: id })
+    writeFileSync(join(r.path, 'a.txt'), 'a')
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', '-C', r.path, 'add', 'a.txt'])
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', '-C', r.path, 'commit', '-m', 'a'])
+    await close({ repoDir, agentId: id })
+    expect(existsSync(r.path)).toBe(false)
+    const branches = execFileSync('git', ['-C', repoDir, 'branch', '--list', r.branch], { encoding: 'utf8' })
+    expect(branches).toContain(r.branch)
   })
 })

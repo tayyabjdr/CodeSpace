@@ -153,3 +153,48 @@ export async function create({ repoDir, workspaceName, agentId }) {
 
   return { path: wtPath, branch, baseSha }
 }
+
+function metaEntry(repoDir, agentId) {
+  const m = readMeta(repoDir)
+  return { meta: m, entry: m.agents[agentId] }
+}
+
+export async function checkDirty({ repoDir, agentId }) {
+  const { entry } = metaEntry(repoDir, agentId)
+  if (!entry) return { missing: true }
+  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+  if (!existsSync(wtPath)) return { missing: true }
+  let out
+  try { out = execGit(['-C', wtPath, 'status', '--porcelain']) }
+  catch { return { dirty: false } }
+  return { dirty: out.trim().length > 0 }
+}
+
+export async function close({ repoDir, agentId }) {
+  const m = readMeta(repoDir)
+  const entry = m.agents[agentId]
+  if (!entry) return { ok: true, missing: true }
+  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+
+  let aheadCount = 0
+  if (existsSync(wtPath)) {
+    try {
+      const out = execGit(['-C', repoDir, 'rev-list', '--count', `${entry.baseSha}..${entry.branch}`])
+      aheadCount = parseInt(out.trim(), 10) || 0
+    } catch {}
+  }
+
+  try { execGit(['-C', repoDir, 'worktree', 'remove', '--force', wtPath]) }
+  catch {}
+
+  try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}
+
+  if (aheadCount === 0) {
+    try { execGit(['-C', repoDir, 'branch', '-D', entry.branch]) } catch {}
+  }
+
+  delete m.agents[agentId]
+  writeMeta(repoDir, m)
+
+  return { ok: true, branchKept: aheadCount > 0 }
+}
