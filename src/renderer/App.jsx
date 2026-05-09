@@ -688,7 +688,12 @@ function AppInner() {
                 <div className="empty-workspace">
                   <span className="empty-mark">✦</span>
                   <p className="empty-title">No agents in this workspace</p>
-                  <button className="empty-btn" onClick={addAgent}>+ New Agent</button>
+                  <button className="empty-btn" onClick={addAgent}>
+                    <svg className="empty-btn-plus" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M6 1.5v9M1.5 6h9" />
+                    </svg>
+                    <span>New Agent</span>
+                  </button>
                 </div>
               ) : terminals.map(t => (
                 <TerminalPane
