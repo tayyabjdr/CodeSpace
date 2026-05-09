@@ -58,16 +58,6 @@ function BridgeMissing() {
   )
 }
 
-function makeAgents(count, cwd, startNum = 1) {
-  return Array.from({ length: count }, (_, i) => ({
-    id: makeId(),
-    shell: 'claude',
-    agentNum: startNum + i,
-    cwd,
-    ptyId: null
-  }))
-}
-
 export default function App() {
   if (typeof window === 'undefined' || !window.electronAPI) {
     return <BridgeMissing />
@@ -94,6 +84,33 @@ function AppInner() {
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
+
+  const materializeAgents = useCallback(async (workspace, count, startNum) => {
+    const agents = []
+    for (let i = 0; i < count; i++) {
+      const id = makeId()
+      let cwd = workspace.dir
+      let branch = null
+      if (workspace.isolated) {
+        const r = await window.electronAPI.worktree.create({
+          repoDir: workspace.dir,
+          workspaceName: workspace.name,
+          agentId: id
+        })
+        if (r?.error) {
+          console.error('worktree.create failed', r)
+          continue
+        }
+        cwd = r.path
+        branch = r.branch
+      }
+      agents.push({
+        id, shell: 'claude', agentNum: startNum + i,
+        cwd, ptyId: null, autoName: null, branch
+      })
+    }
+    return agents
+  }, [])
 
   // Load persisted workspaces + defaults on first mount.
   useEffect(() => {
@@ -185,18 +202,26 @@ function AppInner() {
   // Depend only on activeId so identity churn on `workspaces` doesn't re-fire.
   useEffect(() => {
     if (!activeId) return
-    setWorkspaces(prev => prev.map(w => {
-      if (w.id !== activeId || w.spawned) return w
-      const terminals = makeAgents(w.agentCount, w.dir, 1)
-      return {
-        ...w,
-        terminals,
-        agentCounter: w.agentCount,
-        spawned: true,
-        focusedTerminalId: terminals[0]?.id ?? null
-      }
-    }))
-  }, [activeId])
+    let cancelled = false
+    ;(async () => {
+      const w0 = workspaces.find(x => x.id === activeId)
+      if (!w0 || w0.spawned) return
+      const terminals = await materializeAgents(w0, w0.agentCount, 1)
+      if (cancelled) return
+      setWorkspaces(prev => prev.map(w => {
+        if (w.id !== activeId || w.spawned) return w
+        return {
+          ...w,
+          terminals,
+          agentCounter: w.agentCount,
+          spawned: true,
+          focusedTerminalId: terminals[0]?.id ?? null
+        }
+      }))
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, materializeAgents])
 
   const handleOnboardingLaunch = useCallback((count, dir, name, isolated) => {
     const resolvedName = (name && name.trim())
@@ -309,23 +334,19 @@ function AppInner() {
     setWorkspaces(prev => prev.map(w => w.id === activeId ? updater(w) : w))
   }, [activeId])
 
-  const addAgent = useCallback(() => {
+  const addAgent = useCallback(async () => {
     if (!activeId) return
-    updateActive(w => {
-      const nextNum = w.agentCounter + 1
-      return {
-        ...w,
-        agentCounter: nextNum,
-        terminals: [...w.terminals, {
-          id: makeId(),
-          shell: 'claude',
-          agentNum: nextNum,
-          cwd: w.dir,
-          ptyId: null
-        }]
-      }
-    })
-  }, [activeId, updateActive])
+    const w = workspaces.find(x => x.id === activeId)
+    if (!w) return
+    const nextNum = w.agentCounter + 1
+    const [agent] = await materializeAgents(w, 1, nextNum)
+    if (!agent) return // creation failed; abort silently (already logged)
+    setWorkspaces(prev => prev.map(x => x.id === activeId ? {
+      ...x,
+      agentCounter: Math.max(x.agentCounter, nextNum),
+      terminals: [...x.terminals, agent]
+    } : x))
+  }, [activeId, workspaces, materializeAgents])
 
   const removeTerminal = useCallback((termId) => {
     setWorkspaces(prev => prev.map(w => {
