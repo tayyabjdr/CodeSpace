@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog, clipboard, session } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
-import { mkdirSync } from 'fs'
+import { mkdirSync, readFileSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
 import { loadWorkspaces, saveWorkspaces, consumeCorruptBackupNotice } from './workspaces-store.js'
@@ -17,6 +17,19 @@ if (process.env['ELECTRON_RENDERER_URL']) {
   app.setPath('sessionData', devUserData)
 }
 
+// Sync peek so we can decide window state BEFORE first paint — async
+// loadWorkspaces() would land after the window is already on screen at
+// 1400×900, causing a visible flash before maximize.
+function hasPersistedWorkspaces() {
+  try {
+    const raw = readFileSync(join(app.getPath('userData'), 'workspaces.json'), 'utf8')
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed?.workspaces) && parsed.workspaces.length > 0
+  } catch {
+    return false
+  }
+}
+
 function createWindow() {
   // In dev, electron.exe's default icon would otherwise show in the taskbar.
   // Setting BrowserWindow.icon overrides that. In production the icon is
@@ -26,6 +39,8 @@ function createWindow() {
     ? join(__dirname, '../../build/icon.ico')
     : undefined
 
+  const startMaximized = hasPersistedWorkspaces()
+
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -33,6 +48,7 @@ function createWindow() {
     minHeight: 600,
     center: true,
     frame: false,
+    show: false,
     backgroundColor: '#0a0b0d',
     icon: devIconPath,
     webPreferences: {
@@ -42,6 +58,12 @@ function createWindow() {
       sandbox: true
     }
   })
+
+  // Maximize before first paint so the window renders at full size from
+  // the start rather than briefly flashing at 1400×900.
+  if (startMaximized) win.maximize()
+
+  win.once('ready-to-show', () => win.show())
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
