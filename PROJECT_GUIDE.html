@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CodeSpace — Project Reference</title>
+<style>
+:root {
+  --bg:#0a0b0d; --surface:#0d0f12; --elev:#11151b; --side:#0a0c0f;
+  --border:#1b1e24; --border-mid:#262a32; --border-hover:#2b3038;
+  --text:rgba(255,255,255,0.92); --text2:rgba(255,255,255,0.78);
+  --text3:rgba(255,255,255,0.42); --muted:rgba(255,255,255,0.28);
+  --cyan:#67e8f9; --green:#86efac; --amber:#f59e0b; --red:#ef4444;
+  --mono:ui-monospace,"Cascadia Code","Consolas",monospace;
+  --ui:"Segoe UI Variable","Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--ui);
+  font-feature-settings:"tnum" on;scroll-behavior:smooth}
+body{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+/* Sidebar nav */
+nav.toc{position:sticky;top:0;height:100vh;overflow-y:auto;
+  background:var(--side);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc h1{font-size:14px;font-weight:600;letter-spacing:0.02em;
+  color:var(--cyan);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+nav.toc .v{font-size:10px;color:var(--text3);font-family:var(--mono);
+  font-weight:400;letter-spacing:0;border:1px solid var(--border);
+  padding:1px 5px;border-radius:4px;background:var(--elev)}
+nav.toc h2{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;
+  color:var(--text3);margin:18px 0 6px;font-weight:500}
+nav.toc a{display:block;padding:5px 8px;color:var(--text2);
+  text-decoration:none;font-size:13px;border-radius:5px;transition:all 0.12s}
+nav.toc a:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+nav.toc a.active{background:rgba(103,232,249,0.08);color:var(--cyan)}
+
+main{padding:48px 56px 96px;max-width:1100px;line-height:1.6}
+section{margin-bottom:64px;scroll-margin-top:32px}
+section h2{font-size:24px;font-weight:600;margin-bottom:6px;
+  color:var(--text);display:flex;align-items:baseline;gap:12px}
+section h2 .ix{font-family:var(--mono);font-size:13px;color:var(--cyan);
+  font-weight:400}
+section .lede{color:var(--text3);margin-bottom:24px;font-size:14px}
+section h3{font-size:15px;font-weight:600;margin:24px 0 8px;color:var(--text)}
+section h4{font-size:13px;font-weight:600;margin:16px 0 6px;
+  color:var(--text2);text-transform:uppercase;letter-spacing:0.06em}
+p{color:var(--text2);font-size:14px;margin-bottom:10px}
+ul,ol{margin:8px 0 12px 22px}
+li{color:var(--text2);font-size:14px;margin-bottom:5px}
+strong{color:var(--text);font-weight:600}
+code{font-family:var(--mono);font-size:0.88em;
+  background:var(--elev);padding:1.5px 6px;border-radius:4px;
+  border:1px solid var(--border);color:var(--cyan)}
+pre{background:var(--elev);border:1px solid var(--border);border-radius:8px;
+  padding:14px 18px;overflow-x:auto;margin:10px 0 14px;font-size:12.5px;
+  line-height:1.55;color:var(--text2);font-family:var(--mono)}
+pre code{background:transparent;border:none;padding:0;color:inherit}
+a.link{color:var(--cyan);text-decoration:none;border-bottom:1px dashed
+  rgba(103,232,249,0.35)}
+a.link:hover{border-bottom-color:var(--cyan)}
+
+/* Components */
+.tag{display:inline-block;font-size:10.5px;font-family:var(--mono);
+  text-transform:uppercase;letter-spacing:0.06em;padding:2px 7px;
+  border-radius:4px;border:1px solid var(--border);
+  background:var(--elev);color:var(--text2);vertical-align:middle}
+.tag.cyan{color:var(--cyan);border-color:rgba(103,232,249,0.3)}
+.tag.green{color:var(--green);border-color:rgba(134,239,172,0.3)}
+.tag.amber{color:var(--amber);border-color:rgba(245,158,11,0.3)}
+.tag.red{color:var(--red);border-color:rgba(239,68,68,0.3)}
+.tag.muted{color:var(--text3)}
+
+table{width:100%;border-collapse:collapse;margin:12px 0 16px;font-size:13px}
+th,td{padding:9px 12px;text-align:left;
+  border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+th{font-weight:600;color:var(--text);background:var(--elev);
+  font-size:11px;text-transform:uppercase;letter-spacing:0.06em}
+td code{font-size:0.92em}
+tr:hover{background:rgba(255,255,255,0.015)}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:16px 20px;margin:12px 0}
+.card h4{margin-top:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:12px;margin:14px 0}
+
+/* Architecture diagram */
+.arch{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:16px 0 4px}
+.proc{background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:18px}
+.proc.main{border-color:rgba(103,232,249,0.25)}
+.proc.preload{border-color:rgba(245,158,11,0.25)}
+.proc.renderer{border-color:rgba(134,239,172,0.25)}
+.proc-label{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;
+  text-transform:uppercase;margin-bottom:4px}
+.proc.main .proc-label{color:var(--cyan)}
+.proc.preload .proc-label{color:var(--amber)}
+.proc.renderer .proc-label{color:var(--green)}
+.proc-title{font-weight:600;font-size:14px;margin-bottom:10px}
+.proc ul{margin:6px 0 0 16px}
+.proc li{font-size:12.5px;margin-bottom:3px}
+
+/* Flow diagram */
+.flow{margin:18px 0;padding:18px;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;overflow-x:auto}
+.flow svg{display:block;margin:0 auto}
+
+/* Tree */
+.tree{font-family:var(--mono);font-size:12.5px;background:var(--elev);
+  border:1px solid var(--border);border-radius:8px;padding:14px 18px;
+  margin:10px 0;line-height:1.85}
+.tree .dir{color:var(--cyan)}
+.tree .file{color:var(--text2)}
+.tree .note{color:var(--text3);margin-left:6px;font-size:11.5px}
+
+/* Issue badge */
+.issue{display:flex;gap:10px;padding:10px 14px;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;margin:6px 0;font-size:13px}
+.issue.crit{border-left:3px solid var(--red)}
+.issue.high{border-left:3px solid var(--amber)}
+.issue.med{border-left:3px solid var(--cyan)}
+.issue .num{font-family:var(--mono);color:var(--text3);font-size:12px;
+  min-width:22px}
+.issue .body{flex:1;color:var(--text2)}
+.issue .body strong{color:var(--text)}
+
+/* Keyboard */
+kbd{display:inline-block;font-family:var(--mono);font-size:11px;
+  padding:1px 6px;background:var(--elev);border:1px solid var(--border-mid);
+  border-bottom-width:2px;border-radius:4px;color:var(--text);
+  vertical-align:middle}
+
+/* Status row */
+.statusrow{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0}
+.stat{flex:1;min-width:180px;padding:14px 18px;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px}
+.stat .num{font-size:22px;font-weight:600;color:var(--cyan);
+  font-family:var(--mono)}
+.stat .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;
+  letter-spacing:0.08em;margin-top:2px}
+
+hr.sep{border:none;border-top:1px solid var(--border);margin:32px 0}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--text3);margin:0 6px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <h1>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="#67e8f9" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <polyline points="7 8 11 12 7 16"/><line x1="12" y1="17" x2="17" y2="17"/>
+    </svg>
+    CodeSpace <span class="v">v1.0</span>
+  </h1>
+  <h2>Map</h2>
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#source-tree">Source tree</a>
+  <h2>Subsystems</h2>
+  <a href="#main-process">Main process</a>
+  <a href="#preload-bridge">Preload bridge</a>
+  <a href="#renderer">Renderer</a>
+  <a href="#ipc">IPC channels</a>
+  <a href="#pty-flow">PTY data flow</a>
+  <a href="#done-flow">Done + auto-rename</a>
+  <a href="#editor-flow">Editor pane flow</a>
+  <a href="#workspace-shape">Workspace state shape</a>
+  <a href="#persistence">Persistence</a>
+  <a href="#onboarding">Onboarding + drafts</a>
+  <a href="#grid">Grid layout</a>
+  <a href="#components">Component map</a>
+  <h2>UX surface</h2>
+  <a href="#shortcuts">Keyboard</a>
+  <a href="#design-tokens">Design tokens</a>
+  <h2>Build &amp; release</h2>
+  <a href="#build">Build pipeline</a>
+  <a href="#git-flow">Git flow</a>
+  <a href="#auto-update">Auto-update</a>
+  <a href="#tests">Tests</a>
+  <h2>Caveats</h2>
+  <a href="#windows">Windows quirks</a>
+  <a href="#issues">Known issues</a>
+  <a href="#docs">Specs &amp; plans</a>
+</nav>
+
+<main>
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">A reference for every named piece of CodeSpace — so you can
+    point at any of it by name without guessing.</p>
+
+  <p><strong>CodeSpace</strong> is a Windows-only Electron desktop app. It runs
+    a grid of <code>xterm.js</code> terminals, each one backed by a real
+    <code>node-pty</code> PTY hosting the Claude CLI. Multiple
+    <em>workspaces</em> can run side by side in one window — switching unmounts
+    the xterm UI but the PTYs keep buffering, so a hidden agent can finish a
+    task and chime even while you're elsewhere.</p>
+
+  <div class="statusrow">
+    <div class="stat"><div class="num">3</div><div class="lbl">Processes (main / preload / renderer)</div></div>
+    <div class="stat"><div class="num">~16</div><div class="lbl">Renderer components</div></div>
+    <div class="stat"><div class="num">8</div><div class="lbl">Max agents per workspace</div></div>
+    <div class="stat"><div class="num">Win</div><div class="lbl">Target platform (NSIS installer)</div></div>
+  </div>
+
+  <p><strong>Mental model.</strong> The whole app boils down to:
+    <em>Workspace → Terminals → PTY → xterm</em>. Workspaces own
+    persistence and PTY lifecycle; terminals are the visible panes; the PTY
+    pool decouples those two so React mounts/unmounts don't affect the shell.</p>
+</section>
+
+<section id="architecture">
+  <h2>Architecture <span class="ix">3 processes</span></h2>
+  <p class="lede">All renderer&nbsp;↔&nbsp;main traffic goes through a single
+    contextBridge surface (<code>window.electronAPI</code>) defined in
+    <code>src/preload/index.js</code>.</p>
+
+  <div class="arch">
+    <div class="proc main">
+      <div class="proc-label">Main · Node</div>
+      <div class="proc-title">src/main/</div>
+      <ul>
+        <li><code>index.js</code> — BrowserWindow, CSP, quit handling</li>
+        <li><code>pty-manager.js</code> — single Map of live PTYs</li>
+        <li><code>ipc-handlers.js</code> — registers <code>pty:*</code>, <code>editor:*</code>, <code>agentName:*</code></li>
+        <li><code>workspaces-store.js</code> — atomic JSON persistence</li>
+        <li><code>auto-namer.js</code> — shells out to <code>claude -p</code></li>
+        <li><code>auto-updater.js</code> — electron-updater bootstrap</li>
+        <li><code>editor-fs.js</code> — read/write file (20 MB cap, binary probe)</li>
+      </ul>
+    </div>
+
+    <div class="proc preload">
+      <div class="proc-label">Preload · sandbox</div>
+      <div class="proc-title">src/preload/index.js</div>
+      <ul>
+        <li>Single <code>contextBridge.exposeInMainWorld('electronAPI', …)</code></li>
+        <li>PTY: <code>createPty</code>, <code>writePty</code>, <code>resizePty</code>, <code>killPty</code>, <code>onPtyData</code>, <code>onPtyExit</code></li>
+        <li>Window: minimize / maximize / close / ensureMaximized</li>
+        <li>Editor: <code>editor.readFile</code>, <code>editor.writeFile</code>, <code>editor.pathExists</code>, <code>revealInFolder</code></li>
+        <li>Agent name: <code>agentName.hasKey</code>, <code>agentName.summarize</code></li>
+        <li>Update: <code>onUpdateReady</code>, <code>installUpdate</code></li>
+        <li>Misc: clipboard, openExternal, selectDirectory, getDesktopPath</li>
+      </ul>
+    </div>
+
+    <div class="proc renderer">
+      <div class="proc-label">Renderer · React 18</div>
+      <div class="proc-title">src/renderer/</div>
+      <ul>
+        <li><code>App.jsx</code> — top-level state machine, all workspaces</li>
+        <li><code>pty-pool.js</code> — fan-out + 64KB ring per PTY</li>
+        <li><code>done-tracker.js</code> — silence-based done detector (module-scope)</li>
+        <li><code>auto-namer.js</code> — subscribes to done events</li>
+        <li><code>volume-store.js</code> — done-sound volume in localStorage</li>
+        <li><code>components/</code> — Toolbar, Sidebar, TerminalPane, Onboarding, EditorPane, ConfirmDialog, …</li>
+        <li><code>hooks/</code> — useTerminal, useEditor, useFocusTrap</li>
+      </ul>
+    </div>
+  </div>
+
+  <p style="margin-top:12px"><strong>One window, one BrowserWindow.</strong>
+    1400×900 default; frameless (<code>frame:false</code>). Sandbox + contextIsolation on.
+    CSP applied in production only (Vite HMR needs eval in dev).</p>
+</section>
+
+<section id="source-tree">
+  <h2>Source tree</h2>
+  <p class="lede">Every tracked source file with a one-line purpose. Use these
+    paths verbatim when pointing at things.</p>
+
+  <h3>Repo root</h3>
+<pre class="tree">
+<span class="dir">CodeSpace/</span>
+├── package.json                      <span class="note">scripts, electron-builder config, deps</span>
+├── electron.vite.config.js           <span class="note">main / preload / renderer build targets</span>
+├── vitest.config.js                  <span class="note">jsdom test env</span>
+├── CLAUDE.md                         <span class="note">project instructions for Claude Code</span>
+├── DESIGN_SYSTEM.md
+├── theme-preview.html                <span class="note">palette decision doc</span>
+├── volume-mockup.html
+├── .gitignore                        <span class="note">node_modules, out, dist, .DS_Store, .claude/</span>
+└── PROJECT_GUIDE.html                <span class="note">this file</span>
+</pre>
+
+  <h3>Main process — <code>src/main/</code></h3>
+<pre class="tree">
+<span class="dir">src/main/</span>
+├── index.js                  <span class="note">BrowserWindow, CSP, win:* IPC, will-quit timing</span>
+├── pty-manager.js            <span class="note">Map&lt;id, IPty&gt;, defensive write/resize/kill</span>
+├── ipc-handlers.js           <span class="note">registers all pty/editor/agentName channels</span>
+├── workspaces-store.js       <span class="note">atomic write (.tmp + rename), corrupt-quarantine</span>
+├── auto-namer.js             <span class="note">spawns `claude -p` to title panes</span>
+├── auto-updater.js           <span class="note">electron-updater, 10s startup delay</span>
+└── editor-fs.js              <span class="note">readFile (20MB cap, binary probe), writeFile</span>
+</pre>
+
+  <h3>Preload — <code>src/preload/</code></h3>
+<pre class="tree">
+<span class="dir">src/preload/</span>
+└── index.js                  <span class="note">single window.electronAPI surface</span>
+</pre>
+
+  <h3>Renderer — <code>src/renderer/</code></h3>
+<pre class="tree">
+<span class="dir">src/renderer/</span>
+├── main.jsx                  <span class="note">React entry, font + xterm CSS imports</span>
+├── index.html                <span class="note">root div, module script tag</span>
+├── App.jsx                   <span class="note">top-level state machine — read this first</span>
+├── App.css                   <span class="note">app shell layout, grid styles</span>
+├── design-tokens.css         <span class="note">--cs-* custom properties (palette, fonts, radii)</span>
+├── codemirror-theme.js       <span class="note">CM6 theme + highlight style from --cs-* tokens</span>
+├── constants.js              <span class="note">DONE_SILENCE_MS=4000, debounce timings, etc.</span>
+├── pty-pool.js               <span class="note">PTY fan-out + 64KB ring + spawn-gap throttle</span>
+├── done-tracker.js           <span class="note">module-scope silence-based "done" detector</span>
+├── done-sound.js             <span class="note">singleton AudioContext + 440Hz triangle ding</span>
+├── auto-namer.js             <span class="note">renderer side: subscribe to done, summarize tail</span>
+├── volume-store.js           <span class="note">localStorage-backed volume (0–100, 0=mute)</span>
+├── editor-state.js           <span class="note">defaultEditorState, clampWidth, mergeEditor</span>
+├── path-parser.js            <span class="note">regex matcher for file paths in terminal output</span>
+├── path-resolver.js          <span class="note">resolves rel paths against cwd / workspaceDir</span>
+├── <span class="dir">hooks/</span>
+│   ├── useTerminal.js        <span class="note">xterm + linkProvider + Ctrl+wheel font zoom</span>
+│   ├── useEditor.js          <span class="note">CodeMirror 6 setup, language detection, jumpToLine</span>
+│   └── useFocusTrap.js       <span class="note">Tab/Shift+Tab cycle for dialogs</span>
+└── <span class="dir">components/</span>
+    ├── AppIcon.jsx           <span class="note">SVG &gt;_ logo (gradient + cyan stroke)</span>
+    ├── Toolbar.jsx           <span class="note">title bar with min/max/close + editor toggle</span>
+    ├── Sidebar.jsx           <span class="note">workspace list + new-workspace button</span>
+    ├── Onboarding.jsx        <span class="note">first-launch + draft-workspace form</span>
+    ├── NewWorkspaceModal.jsx <span class="note">(currently unused — see git history)</span>
+    ├── TerminalPane.jsx      <span class="note">single agent pane: header + xterm + drag/swap</span>
+    ├── EditorPane.jsx        <span class="note">right-docked file viewer/editor</span>
+    ├── EditorResizer.jsx     <span class="note">draggable separator, double-click resets</span>
+    ├── ConfirmDialog.jsx     <span class="note">dialog with optional 3rd action (Save/Discard/Cancel)</span>
+    ├── VolumeControl.jsx     <span class="note">slider + speaker glyph in toolbar</span>
+    └── UpdateToast.jsx       <span class="note">"Update ready" prompt above AppInner</span>
+</pre>
+
+  <h3>Tests — <code>tests/</code></h3>
+<pre class="tree">
+<span class="dir">tests/</span>
+├── setup.js
+├── ipc-handlers.test.js
+├── editor-fs.test.js
+├── editor-state.test.js
+├── pty-manager.test.js
+├── path-parser.test.js
+├── path-resolver.test.js
+└── <span class="dir">components/</span>
+    ├── App.test.jsx
+    ├── EditorPane.test.jsx
+    ├── EditorResizer.test.jsx
+    ├── TerminalPane.test.jsx
+    └── Toolbar.test.jsx
+</pre>
+
+  <h3>Other</h3>
+<pre class="tree">
+<span class="dir">build/</span>
+├── icon.svg                  <span class="note">source-of-truth icon (cyan &gt;_ on bluish gradient)</span>
+├── icon.ico                  <span class="note">multi-resolution ICO baked by scripts/build-icon.js</span>
+└── icon-preview.html
+
+<span class="dir">scripts/</span>
+└── build-icon.js             <span class="note">SVG → multi-size PNGs → ICO (run via postinstall)</span>
+
+<span class="dir">docs/superpowers/</span>
+├── <span class="dir">specs/</span>                  <span class="note">design specs (one per feature)</span>
+└── <span class="dir">plans/</span>                  <span class="note">implementation plans (one per feature)</span>
+
+<span class="dir">notes/</span>
+└── 2026-05-08-improvement-research.md
+</pre>
+</section>
+
+<section id="main-process">
+  <h2>Main process <span class="ix">src/main/</span></h2>
+
+  <h3 id="main-index">index.js</h3>
+  <p>BrowserWindow factory. Notable behaviors:</p>
+  <ul>
+    <li><strong>Dev userData isolation</strong> — when <code>ELECTRON_RENDERER_URL</code> is set, redirects userData to <code>%APPDATA%/CodeSpace-dev/</code> so a running dev session can't clobber the installed app's <code>workspaces.json</code>.</li>
+    <li><strong>1400×900, frameless, sandbox</strong>. Window has <code>minWidth:720</code>, <code>minHeight:600</code>.</li>
+    <li><strong>Window IPC</strong>: <code>win:minimize</code>, <code>win:maximize</code>, <code>win:close</code>, <code>win:ensureMaximized</code>, <code>win:ensureRestored</code>, <code>win:maximize-changed</code> (push event).</li>
+    <li><strong>uncaughtException swallow</strong> for known node-pty Windows errors: <code>Cannot resize a pty that has already exited</code>, <code>Cannot write/kill ...</code>, <code>AttachConsole failed</code>. Anchored to start of message so unrelated errors still surface.</li>
+    <li><strong>CSP</strong> applied only in production (Vite HMR needs <code>'unsafe-eval'</code> in dev). Locked-down: <code>default-src 'self'</code>, no remote anything except <code>data:</code> for fonts/images.</li>
+    <li><strong>will-quit hold</strong> — preventDefault, run <code>killAllSessions()</code>, wait 600 ms for conpty teardown, then <code>app.exit(0)</code>. Otherwise child <code>powershell.exe</code> / <code>claude.exe</code> may orphan.</li>
+    <li><strong>Clipboard</strong> capped at 1 MB writes (<code>CLIPBOARD_WRITE_MAX_BYTES</code>).</li>
+  </ul>
+
+  <h3 id="pty-manager">pty-manager.js</h3>
+  <p>Single source of truth for live PTYs.</p>
+  <ul>
+    <li><code>const sessions = new Map()</code> — id → IPty.</li>
+    <li>Three shells: <code>powershell</code>, <code>cmd</code>, <strong><code>claude</code></strong> (default for new agents). The Claude shell runs <code>powershell.exe -NoLogo -NoProfile -Command 'claude --dangerously-skip-permissions'</code>.</li>
+    <li><code>checkClaudeAvailable()</code> uses <code>where claude.exe</code> once per process; result cached.</li>
+    <li><strong>Trust prompt auto-accept</strong> — for the <code>claude</code> shell, the first chunk containing <code>"Yes, I trust this folder"</code> triggers an auto-press of Enter (80 ms later).</li>
+    <li><strong>Defensive write/resize/kill</strong> — every call checks <code>proc._exited</code> first, then wraps the native call in try/catch. <code>onExit</code> sets the flag.</li>
+    <li><code>killAllSessions()</code> iterates a snapshot of keys (avoids mutation-during-iteration).</li>
+  </ul>
+
+  <h3 id="ipc-handlers">ipc-handlers.js</h3>
+  <p>Registers all renderer-callable channels. Validates renderer input
+    (<code>isValidCwd</code>, <code>assertAbsPath</code>) before crossing into
+    privileged code. PTY data fans out via per-id channels:
+    <code>pty:data:&lt;id&gt;</code> and <code>pty:exit:&lt;id&gt;</code>.</p>
+  <ul>
+    <li>Tracks <code>ptyDisposables: Map&lt;ptyId, [dataDisp, exitDisp]&gt;</code> — disposed on <code>pty:kill</code> and on renderer <code>destroyed</code>.</li>
+    <li><code>shell:openExternal</code> rejects anything not <code>http(s)://</code>, caps URL at 2048 chars.</li>
+    <li>If Claude isn't on PATH, <code>pty:create</code> with <code>shell:'claude'</code> resolves with <code>{ error: 'claude-missing' }</code>; renderer surfaces a friendly card in <code>useTerminal.js</code>.</li>
+  </ul>
+
+  <h3 id="workspaces-store">workspaces-store.js</h3>
+  <p>Persisted state lives in <code>app.getPath('userData')/workspaces.json</code>.</p>
+  <ul>
+    <li><strong>Schema</strong> (per workspace): <code>{ id, name, dir, agentCount, editor? }</code>. <code>editor</code> sub-object: <code>{ open, file, line, width }</code>.</li>
+    <li><code>agentCount</code> clamped to <code>[1, 8]</code> on load.</li>
+    <li><strong>Atomic write</strong> — write to <code>.tmp</code>, then <code>fs.rename</code>. Power-loss-safe.</li>
+    <li><strong>Corrupt-quarantine</strong> — JSON parse fail or non-array <code>workspaces</code> → rename original to <code>workspaces.json.corrupt-&lt;ISO timestamp&gt;</code>, return <code>{ workspaces:[], activeWorkspaceId:null }</code>. Path surfaced via <code>consumeCorruptBackupNotice()</code> (one-shot).</li>
+  </ul>
+
+  <h3 id="auto-namer-main">auto-namer.js</h3>
+  <p>Generates 3–5 word terminal titles by shelling out to the user's
+    already-authenticated Claude CLI (<code>claude -p
+    --dangerously-skip-permissions</code>) — piggybacks on the user's Claude Max
+    subscription instead of needing a separate API key.</p>
+  <ul>
+    <li>30 s timeout, <code>spawn(...)</code> with <code>shell:true, windowsHide:true</code>.</li>
+    <li>System prompt: "You name terminal tabs. Reply with 3 to 5 words, Title Case…".</li>
+    <li>Sanitizes: trims, strips quotes, drops trailing <code>.!?</code>, caps at 40 chars.</li>
+    <li><code>hasKey()</code> → still named that for renderer compat, now answers "is claude.exe on PATH".</li>
+  </ul>
+
+  <h3 id="auto-updater">auto-updater.js</h3>
+  <p>electron-updater. Skipped in dev. Configured for GitHub Releases
+    (<code>publish.provider: 'github'</code> in package.json).</p>
+  <ul>
+    <li><code>autoDownload:true</code>, <code>autoInstallOnAppQuit:true</code>.</li>
+    <li>First check delayed 10 s after launch (don't race PTY spawn).</li>
+    <li>On <code>update-downloaded</code> → <code>win.webContents.send('update:ready', { version })</code> → renderer's <code>UpdateToast</code> shows.</li>
+    <li>Errors are console-only (no UI failure path by design).</li>
+  </ul>
+
+  <h3 id="editor-fs">editor-fs.js</h3>
+  <p>File I/O for the editor pane.</p>
+  <ul>
+    <li><code>MAX_BYTES = 20 MB</code> — files larger return <code>{ ok:false, reason:'too-large' }</code>.</li>
+    <li><strong>Binary probe</strong> — first 8 KB scanned for <code>0x00</code>; if found → <code>reason:'binary'</code>.</li>
+    <li>Failure reasons: <code>not-found | denied | too-large | binary | unknown</code>. Renderer copy lives in <code>EditorPane.jsx</code> (<code>REASON_COPY</code>).</li>
+  </ul>
+</section>
+
+<section id="preload-bridge">
+  <h2>Preload bridge <span class="ix">window.electronAPI</span></h2>
+  <p>Single contextBridge surface. If <code>exposeInMainWorld</code> throws,
+    the renderer detects <code>!window.electronAPI</code> and shows
+    <code>BridgeMissing</code> (App.jsx) — a fail-closed plain-style screen.</p>
+  <p>The full IPC channel reference is in
+    <a class="link" href="#ipc">§ IPC channels</a> below.</p>
+</section>
+
+<section id="renderer">
+  <h2>Renderer <span class="ix">React 18 + xterm.js + CodeMirror 6</span></h2>
+
+  <h3>App.jsx — top-level state</h3>
+  <p>Holds:</p>
+  <pre><code>workspaces: Workspace[]   // see <a class="link" href="#workspace-shape">§ Workspace state shape</a>
+activeId: string | null
+pendingDelete: string | null              // workspace id awaiting confirm
+pendingDirtyAction: { kind, payload }     // unsaved-edit prompt action</code></pre>
+
+  <p>Key behaviors layered on top:</p>
+  <ul>
+    <li><strong>Lazy spawn</strong>: terminals are created in an <code>useEffect</code> keyed only on <code>activeId</code> the first time you visit a workspace. On reload <code>spawned:false</code>; only <code>{id, name, dir, agentCount}</code> are persisted.</li>
+    <li><strong>Persistence</strong>: 500 ms debounced save (<code>PERSIST_DEBOUNCE_MS</code>). Drafts (<code>unconfigured:true</code>) are filtered out.</li>
+    <li><strong>Done-tracker sync</strong>: <code>useEffect</code> rebuilds the <code>termId → ptyId</code> map across <em>all</em> workspaces and pushes it into <code>doneTracker.syncTracked</code> + <code>autoNamer.syncTracked</code>. Hidden workspaces still chime.</li>
+    <li><strong>Attended-check</strong>: <code>doneTracker.setAttendedCheck</code> returns true only when (workspace is active) && (pane is focused) && (<code>document.hasFocus()</code>). Without that last clause, alt-tabbing away suppresses sounds for the focused pane.</li>
+    <li><strong>Delete workspace</strong>: persistence saved <em>before</em> PTY teardown. PTY kills are staggered 80 ms apart to dodge a CRT assertion node-pty throws when many conpty children exit in the same tick.</li>
+    <li><strong>Dirty-prompt</strong>: switching workspace / opening a new file / closing the editor while editor.dirty triggers <code>ConfirmDialog</code> with Save / Discard / Cancel.</li>
+  </ul>
+
+  <h3>useTerminal.js</h3>
+  <p>Wires xterm.js to the PTY pool. Owns:</p>
+  <ul>
+    <li><strong>Mount</strong>: spawn PTY at the renderer's measured <code>cols × rows</code>, register Ctrl+V/Ctrl+Shift+C clipboard interceptors, attach to pool.</li>
+    <li><strong>Resize</strong>: <code>ResizeObserver</code> → <code>fitAddon.fit()</code> → <code>resizePty</code>.</li>
+    <li><strong>Ctrl+wheel font zoom</strong>: rAF-coalesces wheel ticks into a single <code>onFontSizeChange</code> step, then debounces <code>fit()</code>+SIGWINCH by <code>FONT_RESIZE_DEBOUNCE_MS = 180</code> so a scroll burst doesn't stack TUI redraws.</li>
+    <li><strong>Two link providers</strong> — one for <code>http(s)://</code> URLs (Ctrl+click → <code>shell:openExternal</code>), one for parsed file paths (Ctrl+click → resolve via <a class="link" href="#path-system">path system</a> → open in editor pane).</li>
+    <li><strong>data-modifierCtrl</strong> attribute toggled on the host so <code>.xterm-link</code> picks up <code>cursor:pointer</code> only when Ctrl is held.</li>
+  </ul>
+
+  <h3 id="path-system">Path system — path-parser.js + path-resolver.js</h3>
+  <ul>
+    <li><strong>Parser</strong>: regex matches three pattern classes in order — Windows-absolute (<code>C:\…</code>), POSIX-absolute (<code>/…</code>), relative — and rejects ranges already claimed by an earlier pattern. Strips trailing punctuation but preserves <code>:line</code> / <code>:line:col</code> suffixes. Filters out flags, version strings, and <code>1.2.3</code>-shaped tokens.</li>
+    <li><strong>Resolver</strong>: pure async function. Tries the path against the focused pane's <code>cwd</code>, falls back to <code>workspaceDir</code>. Uses <code>electronApi.pathExists</code> for probing. Returns <code>{ path, line, col }</code> or null.</li>
+  </ul>
+</section>
+
+<section id="ipc">
+  <h2>IPC channels <span class="ix">all flows</span></h2>
+  <p class="lede">Every channel is registered in
+    <code>src/main/ipc-handlers.js</code> or <code>src/main/index.js</code>,
+    surfaced through <code>src/preload/index.js</code>.</p>
+
+  <h3>PTY</h3>
+  <table>
+    <thead><tr><th>Channel</th><th>Direction</th><th>Payload / return</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>pty:create</code></td><td>invoke</td><td>{shell, cwd, cols, rows} → {ptyId} or {error}</td><td>Spawn a new PTY at measured size</td></tr>
+      <tr><td><code>pty:write</code></td><td>send</td><td>{ptyId, data}</td><td>User keystrokes / pasted text</td></tr>
+      <tr><td><code>pty:resize</code></td><td>send</td><td>{ptyId, cols, rows}</td><td>SIGWINCH to PTY</td></tr>
+      <tr><td><code>pty:kill</code></td><td>send</td><td>{ptyId}</td><td>Terminate (workspace delete only)</td></tr>
+      <tr><td><code>pty:data:&lt;id&gt;</code></td><td>recv</td><td>string</td><td>Per-PTY output channel</td></tr>
+      <tr><td><code>pty:exit:&lt;id&gt;</code></td><td>recv</td><td>exitCode</td><td>Per-PTY exit notification</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Window</h3>
+  <table>
+    <thead><tr><th>Channel</th><th>Direction</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>win:minimize</code></td><td>send</td><td>BrowserWindow.minimize()</td></tr>
+      <tr><td><code>win:maximize</code></td><td>send</td><td>Toggle maximize/unmaximize</td></tr>
+      <tr><td><code>win:close</code></td><td>send</td><td>BrowserWindow.close()</td></tr>
+      <tr><td><code>win:ensureMaximized</code></td><td>send</td><td>Maximize if not already</td></tr>
+      <tr><td><code>win:ensureRestored</code></td><td>send</td><td>Unmaximize, set 1400×900, center</td></tr>
+      <tr><td><code>win:maximize-changed</code></td><td>recv</td><td>Boolean isMaximized push</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Workspaces &amp; dialog</h3>
+  <table>
+    <tbody>
+      <tr><td><code>workspaces:load</code></td><td>invoke</td><td>→ {workspaces, activeWorkspaceId, corruptBackupPath}</td></tr>
+      <tr><td><code>workspaces:save</code></td><td>invoke</td><td>{workspaces, activeWorkspaceId} → atomic write</td></tr>
+      <tr><td><code>dialog:selectDirectory</code></td><td>invoke</td><td>OS folder picker</td></tr>
+      <tr><td><code>app:getDesktopPath</code></td><td>invoke</td><td>Default Desktop path for onboarding</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Editor</h3>
+  <table>
+    <tbody>
+      <tr><td><code>editor:readFile</code></td><td>invoke</td><td>absPath → {ok, content?, reason?}</td></tr>
+      <tr><td><code>editor:writeFile</code></td><td>invoke</td><td>(absPath, content) → {ok, reason?}</td></tr>
+      <tr><td><code>editor:pathExists</code></td><td>invoke</td><td>absPath → boolean</td></tr>
+      <tr><td><code>editor:revealInFolder</code></td><td>send</td><td>OS file-explorer reveal</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Agent name (auto-namer)</h3>
+  <table>
+    <tbody>
+      <tr><td><code>agentName:hasKey</code></td><td>invoke</td><td>→ boolean (claude.exe on PATH)</td></tr>
+      <tr><td><code>agentName:summarize</code></td><td>invoke</td><td>tail → {ok, name?, reason?}</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Auto-update / clipboard / shell</h3>
+  <table>
+    <tbody>
+      <tr><td><code>update:ready</code></td><td>recv</td><td>{version} push when DL'd</td></tr>
+      <tr><td><code>update:install</code></td><td>invoke</td><td>quitAndInstall()</td></tr>
+      <tr><td><code>clipboard:readText</code></td><td>invoke</td><td>OS clipboard contents</td></tr>
+      <tr><td><code>clipboard:writeText</code></td><td>send</td><td>Capped at 1 MB</td></tr>
+      <tr><td><code>shell:openExternal</code></td><td>send</td><td>Only http(s):// ≤2048 chars</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="pty-flow">
+  <h2>PTY data flow <span class="ix">decoupled lifecycles</span></h2>
+  <p class="lede">The single most important architectural piece. Workspace
+    switches must <em>not</em> kill PTYs.</p>
+
+  <div class="flow">
+    <svg width="900" height="320" viewBox="0 0 900 320">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#67e8f9"/>
+        </marker>
+        <marker id="arrowG" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#86efac"/>
+        </marker>
+      </defs>
+
+      <!-- Main process -->
+      <rect x="20" y="20" width="200" height="120" rx="8" fill="#0d0f12" stroke="#67e8f9" stroke-opacity="0.4"/>
+      <text x="120" y="42" fill="#67e8f9" font-family="ui-monospace" font-size="10" text-anchor="middle" letter-spacing="2">MAIN</text>
+      <text x="120" y="62" fill="#fff" font-size="12" text-anchor="middle" font-weight="600">node-pty IPty</text>
+      <text x="120" y="82" fill="rgba(255,255,255,0.6)" font-size="11" text-anchor="middle">powershell.exe</text>
+      <text x="120" y="98" fill="rgba(255,255,255,0.6)" font-size="11" text-anchor="middle">→ claude --dangerously…</text>
+      <text x="120" y="124" fill="rgba(255,255,255,0.4)" font-size="10" text-anchor="middle">pty.onData → webContents.send</text>
+
+      <!-- Preload (fan-in/out) -->
+      <rect x="280" y="20" width="200" height="120" rx="8" fill="#0d0f12" stroke="#f59e0b" stroke-opacity="0.4"/>
+      <text x="380" y="42" fill="#f59e0b" font-family="ui-monospace" font-size="10" text-anchor="middle" letter-spacing="2">PRELOAD</text>
+      <text x="380" y="62" fill="#fff" font-size="12" text-anchor="middle" font-weight="600">electronAPI</text>
+      <text x="380" y="82" fill="rgba(255,255,255,0.6)" font-size="11" text-anchor="middle">onPtyData(id, cb)</text>
+      <text x="380" y="98" fill="rgba(255,255,255,0.6)" font-size="11" text-anchor="middle">writePty / resizePty</text>
+
+      <!-- Pty pool -->
+      <rect x="540" y="20" width="200" height="160" rx="8" fill="#0d0f12" stroke="#86efac" stroke-opacity="0.5"/>
+      <text x="640" y="42" fill="#86efac" font-family="ui-monospace" font-size="10" text-anchor="middle" letter-spacing="2">RENDERER POOL</text>
+      <text x="640" y="62" fill="#fff" font-size="12" text-anchor="middle" font-weight="600">pty-pool.js</text>
+      <text x="640" y="84" fill="rgba(255,255,255,0.7)" font-size="11" text-anchor="middle">buffers (64KB ring)</text>
+      <text x="640" y="100" fill="rgba(255,255,255,0.7)" font-size="11" text-anchor="middle">liveListeners: Set&lt;cb&gt;</text>
+      <text x="640" y="116" fill="rgba(255,255,255,0.7)" font-size="11" text-anchor="middle">exitCodes / cleanups</text>
+      <text x="640" y="142" fill="rgba(255,255,255,0.4)" font-size="10" text-anchor="middle">attach() replays ring</text>
+      <text x="640" y="158" fill="rgba(255,255,255,0.4)" font-size="10" text-anchor="middle">then live data fan-out</text>
+
+      <!-- Listeners -->
+      <rect x="780" y="20" width="100" height="50" rx="6" fill="#0d0f12" stroke="#1b1e24"/>
+      <text x="830" y="42" fill="#fff" font-size="11" text-anchor="middle">xterm</text>
+      <text x="830" y="58" fill="rgba(255,255,255,0.5)" font-size="10" text-anchor="middle">(when mounted)</text>
+
+      <rect x="780" y="85" width="100" height="50" rx="6" fill="#0d0f12" stroke="#1b1e24"/>
+      <text x="830" y="107" fill="#fff" font-size="11" text-anchor="middle">done-tracker</text>
+      <text x="830" y="123" fill="rgba(255,255,255,0.5)" font-size="10" text-anchor="middle">always</text>
+
+      <rect x="780" y="150" width="100" height="50" rx="6" fill="#0d0f12" stroke="#1b1e24"/>
+      <text x="830" y="172" fill="#fff" font-size="11" text-anchor="middle">auto-namer</text>
+      <text x="830" y="188" fill="rgba(255,255,255,0.5)" font-size="10" text-anchor="middle">on done</text>
+
+      <!-- Arrows main → preload → pool → listeners -->
+      <line x1="220" y1="80" x2="280" y2="80" stroke="#67e8f9" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="480" y1="80" x2="540" y2="80" stroke="#67e8f9" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="740" y1="45" x2="780" y2="45" stroke="#86efac" stroke-width="1.5" marker-end="url(#arrowG)"/>
+      <line x1="740" y1="110" x2="780" y2="110" stroke="#86efac" stroke-width="1.5" marker-end="url(#arrowG)"/>
+      <line x1="740" y1="175" x2="780" y2="175" stroke="#86efac" stroke-width="1.5" marker-end="url(#arrowG)"/>
+
+      <!-- Reverse user input -->
+      <text x="380" y="170" fill="rgba(255,255,255,0.5)" font-size="11" text-anchor="middle" font-style="italic">user keystrokes / paste</text>
+      <line x1="540" y1="195" x2="220" y2="195" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
+
+      <!-- Lifecycle note -->
+      <rect x="20" y="240" width="860" height="60" rx="6" fill="#11151b" stroke="#1b1e24"/>
+      <text x="40" y="262" fill="#67e8f9" font-family="ui-monospace" font-size="10" letter-spacing="1">PTY LIFECYCLE</text>
+      <text x="40" y="282" fill="rgba(255,255,255,0.7)" font-size="11">PTY is created on first attach, killed only on workspace delete (or app quit).</text>
+      <text x="40" y="298" fill="rgba(255,255,255,0.7)" font-size="11">A TerminalPane unmount detaches its listener but the PTY keeps running and the ring keeps filling.</text>
+    </svg>
+  </div>
+
+  <h3>Concrete sequence: workspace switch</h3>
+  <ol>
+    <li>User clicks workspace B in the sidebar.</li>
+    <li><code>App.jsx</code> sets <code>activeId = B</code>.</li>
+    <li>Workspace A's <code>TerminalPane</code> components unmount → <code>useTerminal</code>'s cleanup runs <code>detach()</code> + <code>term.dispose()</code>. <strong>PTY is not killed.</strong></li>
+    <li>Workspace B's first-visit triggers lazy spawn (in App's <code>useEffect</code> keyed on <code>activeId</code>) — terminals get created in state, then mounted.</li>
+    <li>For each new pane, <code>useTerminal</code> calls <code>ptyPool.createPty</code> if <code>ptyId</code> is null, else <code>ptyPool.attach</code>; the ring buffer is replayed into xterm so the user sees recent context immediately.</li>
+  </ol>
+
+  <h3>Spawn throttle</h3>
+  <p>Claude CLI runs on Bun; spawning many in the same tick has been observed to
+    panic Bun's HTTP client thread init on Windows. <code>pty-pool.createPty</code>
+    enforces a <strong>200 ms</strong> minimum gap (<code>MIN_SPAWN_GAP_MS</code>)
+    between createPty calls. The slot is reserved synchronously so concurrent
+    callers each get their own delayed start.</p>
+</section>
+
+<section id="done-flow">
+  <h2>Done detection + auto-rename <span class="ix">silence-based</span></h2>
+
+  <h3>How "done" is detected</h3>
+  <p>Implemented in <code>done-tracker.js</code>, <strong>module-scope</strong>
+    (not per-component) so it survives unmount.</p>
+  <ol>
+    <li>User types Enter in a pane → <code>noteUserInput</code> sees <code>\r</code> or <code>\n</code> → adds <code>termId</code> to <code>awaiting</code>.</li>
+    <li>Each PTY data chunk (while awaiting) resets a <strong>4 s silence timer</strong> (<code>DONE_SILENCE_MS</code>).</li>
+    <li>When the timer fires: pane is "done" — if <em>not attended</em> (the active+focused pane in a focused window), play the ding, add to <code>doneSet</code>, notify subscribers.</li>
+    <li>Either way, fire <code>doneListeners</code> — auto-namer subscribes here.</li>
+    <li>Focusing the pane (or <code>window.focus</code> with that pane focused) calls <code>noteFocus</code> which clears <code>doneSet</code> for that termId.</li>
+  </ol>
+
+  <h3>Sidebar notification dot</h3>
+  <p>App.jsx computes <code>notifyingWorkspaceIds</code> from
+    <code>doneTermIds</code> (cyan ring next to inactive workspaces with at
+    least one done pane).</p>
+
+  <h3>Auto-rename pipeline</h3>
+  <p>Renderer-side <code>auto-namer.js</code> subscribes to
+    <code>doneTracker.onDone</code>:</p>
+  <ol>
+    <li>Skip if pane is pinned (manual name) or already in flight.</li>
+    <li>Read PTY ring (<code>ptyPool.getRing</code>) → <code>stripAnsi</code> → take last 4096 chars.</li>
+    <li>Skip if tail is identical to last attempt (no-op suppress).</li>
+    <li>IPC <code>agentName.summarize(tail)</code> — main spawns <code>claude -p</code> with the system prompt.</li>
+    <li>Sanitized result emitted via subscribers; App.jsx writes <code>autoName</code> onto the terminal.</li>
+  </ol>
+
+  <h3>Display priority</h3>
+  <p>In <code>TerminalPane.jsx</code>:
+    <code>name?.trim() || autoName?.trim() || "Agent NN"</code> (where NN is
+    <code>agentNum</code> zero-padded).</p>
+
+  <h3>Done sound</h3>
+  <p><code>done-sound.js</code>: singleton <code>AudioContext</code>, 440 Hz
+    triangle wave with 60 ms attack and 950 ms exponential release. Volume
+    routed through <code>volume-store.js</code> (localStorage,
+    <code>codespace.volume.v1</code>, 0–100 → gain 0–0.4 linear).</p>
+</section>
+
+<section id="editor-flow">
+  <h2>Editor pane flow <span class="ix">CodeMirror 6, lazy-loaded</span></h2>
+  <p>The editor pane is <code>React.lazy</code>-imported (CodeMirror is heavy
+    and not needed at first paint).</p>
+
+  <h3>Opening a file</h3>
+  <ol>
+    <li>User Ctrl+clicks a path in xterm → <code>useTerminal</code>'s path linkProvider activates.</li>
+    <li><code>resolvePath</code> (renderer) checks focused cwd, then workspaceDir, via <code>editor.pathExists</code>.</li>
+    <li><code>onOpenFile({path, line, col})</code> bubbles up to App's <code>openFileInEditor</code>.</li>
+    <li>If editor is dirty and current file ≠ new file → set <code>pendingDirtyAction = { kind: 'open-file', payload }</code> → ConfirmDialog with Save/Discard/Cancel.</li>
+    <li>Otherwise <code>setEditorPatch({ open:true, file:path, line, dirty:false })</code>.</li>
+    <li>App's <code>useEffect</code> on <code>editorFile</code> calls <code>editor.readFile</code> → either renders content or an error card (REASON_COPY in <code>EditorPane.jsx</code>).</li>
+  </ol>
+
+  <h3>useEditor hook</h3>
+  <ul>
+    <li>Plain mode threshold: <strong>2 MB</strong> (<code>PLAIN_MODE_THRESHOLD</code>) — disables line numbers, active-line highlight, syntax highlighting.</li>
+    <li>Languages auto-detected by extension: js/jsx/mjs/cjs/ts/tsx → JS w/ JSX + TypeScript flag; json, md/markdown, html/htm, css.</li>
+    <li>Font size lives in a <code>Compartment</code> so tweaking it doesn't rebuild the EditorView.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>S</kbd> binding → <code>onSave(view.state.doc.toString())</code>.</li>
+    <li>Dirty tracking: compares current doc against <code>lastSavedRef</code>; emits <code>onDirtyChange</code>.</li>
+    <li><code>jumpToLine(line)</code> exposed for <code>initialLine</code> on file open.</li>
+  </ul>
+
+  <h3>Resizer</h3>
+  <p><code>EditorResizer.jsx</code> — pointer-captured drag, double-click resets
+    to default. Width clamped via <code>editor-state.clampWidth</code> against
+    <code>bodyWidth</code>: <code>[320 px, body × 0.7]</code>, default
+    <code>body × 0.45</code>.</p>
+
+  <h3>External-file chip</h3>
+  <p>If editor file path doesn't start with <code>workspaceDir</code> (case
+    insensitive) the header shows an <span class="tag">EXTERNAL</span> chip.
+    Plain-mode files show a <span class="tag">PLAIN</span> chip.</p>
+</section>
+
+<section id="workspace-shape">
+  <h2>Workspace state shape <span class="ix">canonical reference</span></h2>
+  <p>Only the <strong>persisted</strong> fields survive across launches.
+    Everything else is session-only — repopulated lazily.</p>
+
+<pre><code>type Workspace = {
+  // Persisted (workspaces.json)
+  id: string                 // crypto.randomUUID()
+  name: string               // user-edited; defaults to folder basename
+  dir: string                // absolute path; cwd for spawned PTYs
+  agentCount: number         // 1..8 (clamped on load)
+  editor?: {                 // optional — only if user opened the editor
+    open: boolean
+    file: string | null      // last-open file
+    line: number | null      // jump-to line
+    width: number            // px, clamped to [320, body*0.7]
+  }
+
+  // Session-only (recreated each launch)
+  terminals: Terminal[]      // [] until lazy spawn
+  agentCounter: number       // monotonic for naming "Agent NN"
+  focusedTerminalId: string | null
+  spawned: boolean           // becomes true on first activation
+  fontSize: number           // 8..28, default 13
+  unconfigured?: boolean     // true for *drafts* — see § Onboarding
+}
+
+type Terminal = {
+  id: string                 // crypto.randomUUID() — also the autoNamer key
+  shell: 'claude' | 'powershell' | 'cmd'
+  agentNum: number           // display index (1-based)
+  cwd: string
+  ptyId: string | null       // populated by handlePtyReady
+  autoName: string | null    // last summarize() result
+  name?: string              // manual rename — pins the pane (no auto-rename)
+}</code></pre>
+
+  <p><strong>Pinning rule</strong>: <code>terminal.name</code> with a non-empty
+    trimmed value → pane is "pinned" → auto-namer skips it
+    (<code>auto-namer.js</code> → <code>isPinned</code>).</p>
+</section>
+
+<section id="persistence">
+  <h2>Persistence</h2>
+
+  <h3>File location</h3>
+  <ul>
+    <li><strong>Production</strong>: <code>%APPDATA%\CodeSpace\workspaces.json</code></li>
+    <li><strong>Dev</strong>: <code>%APPDATA%\CodeSpace-dev\workspaces.json</code> (redirected in <code>main/index.js</code>)</li>
+  </ul>
+
+  <h3>Write path</h3>
+  <ol>
+    <li>Renderer dispatches state-shape changes (workspace add/delete, name edit, agent count, editor open/file/line/width).</li>
+    <li><code>App.jsx</code> debounces by <strong>500 ms</strong> (<code>PERSIST_DEBOUNCE_MS</code>) → invokes <code>workspaces:save</code>.</li>
+    <li><code>workspaces-store.saveWorkspaces</code> writes to <code>workspaces.json.tmp</code>, then <code>fs.rename</code> → atomic.</li>
+    <li><strong>Workspace delete</strong> bypasses the debounce — saves <em>before</em> killing PTYs.</li>
+  </ol>
+
+  <h3>Read path</h3>
+  <ol>
+    <li>App mount → <code>loadWorkspaces()</code>.</li>
+    <li>If <code>ENOENT</code> → empty state.</li>
+    <li>If JSON parse error or invalid shape → quarantine (rename to <code>.corrupt-&lt;ISO&gt;</code>) → empty state. Path is exposed once via <code>consumeCorruptBackupNotice</code> and bundled into the <code>workspaces:load</code> response (currently consumed only as a side-effect; no UI banner yet).</li>
+    <li>Otherwise sanitize + clamp: <code>id/name/dir → String</code>, <code>agentCount → max(1, min(8, n))</code>, <code>editor</code> rebuilt from <code>{open, file, line, width}</code>.</li>
+  </ol>
+
+  <h3>Volume persistence</h3>
+  <p>Separate from workspaces. <code>localStorage["codespace.volume.v1"]</code>
+    holds <code>{ volume: 0–100 }</code>.</p>
+</section>
+
+<section id="onboarding">
+  <h2>Onboarding + drafts</h2>
+
+  <h3>Two modes for the same component</h3>
+  <p><code>Onboarding.jsx</code> renders in two modes:</p>
+  <ul>
+    <li><strong><code>mode="standalone"</code></strong> — full-screen first-launch: shown when <code>workspaces.length === 0</code>. Submit → <code>onLaunch(count, dir, name)</code> → App creates the workspace and replaces this with the main shell.</li>
+    <li><strong><code>mode="embedded"</code></strong> — rendered inside the workspace grid area when the active workspace is a <em>draft</em> (<code>unconfigured:true</code>). Submit → <code>onLaunch</code> → <code>handleInitializeDraft</code> mutates the existing draft into a real workspace in one state update.</li>
+  </ul>
+
+  <h3>Draft lifecycle</h3>
+  <ol>
+    <li>Sidebar "+" or "New Workspace" → <code>handleStartDraft</code> creates <code>{ id, name:'Untitled', dir:'', agentCount:0, unconfigured:true, ... }</code>.</li>
+    <li>Drafts <strong>do not persist</strong> (filtered out by <code>App.jsx</code>'s save effect).</li>
+    <li>Live name typing bubbles up via <code>onNameChange</code> → sidebar label updates as you type.</li>
+    <li>Initialize → name + dir + count populated, <code>unconfigured:false</code>, terminals spawned in same setState.</li>
+    <li>Discard / close button → <code>handleDiscardDraft</code> removes it.</li>
+  </ol>
+
+  <h3>Folder default</h3>
+  <p>Project directory defaults to the OS Desktop path
+    (<code>app:getDesktopPath</code>). Workspace name auto-fills from the
+    selected folder's basename — but only if the user hasn't typed their own.</p>
+</section>
+
+<section id="grid">
+  <h2>Grid layout</h2>
+  <p>Both <code>App.jsx</code> and <code>Onboarding.jsx</code>'s
+    <code>colsFor()</code> implement the same column math.</p>
+
+  <table>
+    <thead><tr><th>Agent count</th><th>Cols</th><th>Rows</th><th>Layout</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>1</td><td>1</td><td>1×1</td></tr>
+      <tr><td>2</td><td>2</td><td>1</td><td>2×1</td></tr>
+      <tr><td>3</td><td>3</td><td>1</td><td>3×1</td></tr>
+      <tr><td>4</td><td>2</td><td>2</td><td>2×2</td></tr>
+      <tr><td>5–6</td><td>3</td><td>2</td><td>3×2</td></tr>
+      <tr><td>7–8</td><td>4</td><td>2</td><td>4×2 (max)</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Important:</strong> both <code>grid-template-columns</code>
+    <em>and</em> <code>grid-template-rows</code> are explicit — equal-height
+    rows regardless of when xterm fits.</p>
+
+  <h3>Drag-to-swap</h3>
+  <ul>
+    <li>Header is the drag handle (<code>draggable={!editing}</code>).</li>
+    <li>Pane is the drop target.</li>
+    <li>MIME type: <code>application/x-codespace-terminal</code> carries the source termId.</li>
+    <li>Reorder is a renderer-only swap of the active workspace's <code>terminals</code> array — same <code>key={t.id}</code> keeps xterm in place.</li>
+  </ul>
+
+  <h3>OS file drop</h3>
+  <p>Same drop target also accepts OS files (<code>Files</code> dataTransfer
+    type). Dropped paths are quoted (if they contain space or quote) and
+    written into the PTY so Claude CLI can attach them.</p>
+</section>
+
+<section id="components">
+  <h2>Component map</h2>
+  <div class="cards">
+
+    <div class="card">
+      <h4>Toolbar.jsx <span class="tag muted">titlebar</span></h4>
+      <p>Frameless title bar. Holds: AppIcon + "CodeSpace" wordmark, VolumeControl, editor toggle (Ctrl+E), divider, min/max/close.</p>
+    </div>
+
+    <div class="card">
+      <h4>Sidebar.jsx <span class="tag muted">workspaces rail</span></h4>
+      <p>Workspace listbox. Roving keyboard nav (<kbd>↑↓</kbd>, <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Enter</kbd>, <kbd>Del</kbd>). Notify-dot when an inactive workspace has done agents. Counts: spawned shows live <code>terminals.length</code>; otherwise <code>agentCount</code>.</p>
+    </div>
+
+    <div class="card">
+      <h4>Onboarding.jsx <span class="tag muted">first-launch + draft</span></h4>
+      <p>Two modes (<a class="link" href="#onboarding">§ Onboarding</a>). Workspace name + folder + agent count (1–8 selector with mini-grid previews). 850 ms boot animation hold before launching.</p>
+    </div>
+
+    <div class="card">
+      <h4>TerminalPane.jsx <span class="tag muted">single agent</span></h4>
+      <p>Header (status dot, label, done tick, +, ×) + xterm body + drag/swap + OS file drop. Double-click label to rename. Errors render in-place ("Claude CLI not found", "Folder no longer exists", etc.).</p>
+    </div>
+
+    <div class="card">
+      <h4>EditorPane.jsx <span class="tag muted">right dock</span></h4>
+      <p>States: empty, loading, content (CodeMirror), error. Header: dirty dot, filename, EXTERNAL/PLAIN chips, reveal-in-folder, close. Lazy-loaded.</p>
+    </div>
+
+    <div class="card">
+      <h4>EditorResizer.jsx <span class="tag muted">drag separator</span></h4>
+      <p>Pointer-captured drag. Double-click resets width to default fraction of body width.</p>
+    </div>
+
+    <div class="card">
+      <h4>ConfirmDialog.jsx <span class="tag muted">modal</span></h4>
+      <p>Used for delete-workspace confirm and unsaved-edit prompt. Optional <code>extraLabel</code> button → enables the Save/Discard/Cancel pattern. Focus-trapped, Escape cancels, Enter confirms only when focus is inside.</p>
+    </div>
+
+    <div class="card">
+      <h4>VolumeControl.jsx <span class="tag muted">toolbar widget</span></h4>
+      <p>Speaker icon (3 states) + slide-out range. Plays preview ding on commit (mouseup/touchend/keyup-arrows).</p>
+    </div>
+
+    <div class="card">
+      <h4>UpdateToast.jsx <span class="tag muted">install prompt</span></h4>
+      <p>Listens for <code>update:ready</code>. "Restart now" → <code>installUpdate()</code>. "Later" hides until next launch.</p>
+    </div>
+
+    <div class="card">
+      <h4>AppIcon.jsx <span class="tag muted">SVG glyph</span></h4>
+      <p>Cyan <code>&gt;_</code> on a bluish gradient with rounded rim. Shared between titlebar and onboarding splash.</p>
+    </div>
+
+    <div class="card">
+      <h4>NewWorkspaceModal.jsx <span class="tag muted">unused</span></h4>
+      <p>Predecessor to the embedded draft flow — kept on disk but not currently mounted by App.jsx. Tests still cover it.</p>
+    </div>
+
+    <div class="card">
+      <h4>ConfirmDialog patterns</h4>
+      <p>Two callsites: <code>pendingDeleteWorkspace</code> (destructive=true) and <code>pendingDirtyAction</code> (Save/Discard/Cancel).</p>
+    </div>
+  </div>
+</section>
+
+<section id="shortcuts">
+  <h2>Keyboard shortcuts</h2>
+  <p class="lede">Bound in <code>App.jsx</code>. Skipped when an editable
+    element has focus (renaming, modal inputs).</p>
+
+  <table>
+    <thead><tr><th>Shortcut</th><th>Action</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>T</kbd></td><td>New agent in active workspace</td><td>App.jsx → addAgent</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>W</kbd></td><td>Close focused agent</td><td>App.jsx → removeTerminal</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Toggle editor pane</td><td>App.jsx → setEditorPatch / closeEditor</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save (in editor)</td><td>useEditor.js keymap</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Paste into terminal</td><td>useTerminal.js (via clipboard IPC)</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd></td><td>Copy if selection (else SIGINT)</td><td>useTerminal.js</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>Wheel</kbd></td><td>Font zoom (whole workspace)</td><td>useTerminal.js + adjustFontSize</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>Click</kbd> on URL/path</td><td>Open in browser / editor pane</td><td>useTerminal linkProviders</td></tr>
+      <tr><td><kbd>Double-click</kbd> pane label</td><td>Rename agent (pins it)</td><td>TerminalPane.jsx</td></tr>
+      <tr><td><kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>Home</kbd>/<kbd>End</kbd></td><td>Sidebar nav</td><td>Sidebar.jsx</td></tr>
+      <tr><td><kbd>Del</kbd> / <kbd>Shift</kbd>+<kbd>Backspace</kbd></td><td>Delete workspace (in sidebar)</td><td>Sidebar.jsx</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Cancel modal</td><td>ConfirmDialog, NewWorkspaceModal</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Confirm modal (when focus inside)</td><td>ConfirmDialog</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="design-tokens">
+  <h2>Design tokens</h2>
+  <p class="lede">All UI colors come from <code>--cs-*</code> custom properties
+    in <code>design-tokens.css</code>. <strong>Never hardcode a color in a
+    component</strong> — pick a token.</p>
+
+  <h3>Surfaces &amp; borders</h3>
+  <table>
+    <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>--cs-bg-base</code></td><td>#0a0b0d</td><td>html/body background</td></tr>
+      <tr><td><code>--cs-bg-surface</code></td><td>#0d0f12</td><td>panes, terminal background</td></tr>
+      <tr><td><code>--cs-bg-elevated</code></td><td>#11151b</td><td>headers, cards, code blocks</td></tr>
+      <tr><td><code>--cs-bg-sidebar</code></td><td>#0a0c0f</td><td>sidebar, gutters</td></tr>
+      <tr><td><code>--cs-border</code></td><td>#1b1e24</td><td>default border</td></tr>
+      <tr><td><code>--cs-border-mid / --cs-border-hover</code></td><td>#262a32 / #2b3038</td><td>raised + interactive states</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Text (opacity scale)</h3>
+  <table>
+    <tbody>
+      <tr><td><code>--cs-text-primary</code></td><td>rgba(255,255,255,0.92)</td><td>body text</td></tr>
+      <tr><td><code>--cs-text-secondary</code></td><td>0.78</td><td>de-emphasized labels</td></tr>
+      <tr><td><code>--cs-text-tertiary</code></td><td>0.42</td><td>placeholders</td></tr>
+      <tr><td><code>--cs-text-muted</code></td><td>0.28</td><td>chrome dividers</td></tr>
+      <tr><td><code>--cs-text-dim</code></td><td>0.18</td><td>disabled</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Accents</h3>
+  <table>
+    <tbody>
+      <tr><td><code>--cs-cyan</code></td><td>#67e8f9</td><td>live counts, focus, primary accent</td></tr>
+      <tr><td><code>--cs-green</code></td><td>#86efac</td><td>status dot, "done" check, strings in syntax</td></tr>
+      <tr><td><code>--cs-amber</code></td><td>#f59e0b</td><td>numbers / warnings</td></tr>
+      <tr><td><code>--cs-red</code></td><td>#ef4444</td><td>destructive actions</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Icon tokens</strong> (<code>--cs-icon-*</code>) are solid greys
+    composited from the rgba scale over the sidebar bg, because alpha-stacking
+    intersecting strokes (e.g. the close <code>×</code>) looks darker at the
+    crossing.</p>
+
+  <h3>Type</h3>
+  <ul>
+    <li>UI: <strong>Geist Variable</strong> (<code>@fontsource-variable/geist</code>).</li>
+    <li>Mono: <strong>Geist Mono Variable</strong> (<code>@fontsource-variable/geist-mono</code>).</li>
+    <li>Imported in <code>main.jsx</code>; pulled by tokens via <code>--cs-font-ui</code> / <code>--cs-font-mono</code>.</li>
+  </ul>
+
+  <h3>Aesthetic rules</h3>
+  <ul>
+    <li>Animations are one-shot 200–500 ms ease curves. <strong>Avoid infinite/looping animations</strong> — they read as flicker on this palette.</li>
+    <li><code>frontend-design</code> skill should be invoked before any UI/visual changes — never invent a new visual language for a sub-component.</li>
+  </ul>
+</section>
+
+<section id="build">
+  <h2>Build pipeline</h2>
+
+  <h3>Scripts</h3>
+  <table>
+    <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run dev</code></td><td>electron-vite dev — hot reload (renderer); main/preload changes need a restart</td></tr>
+      <tr><td><code>npm run build</code></td><td>Builds main, preload, renderer to <code>out/</code></td></tr>
+      <tr><td><code>npm run preview</code></td><td>Run the built app</td></tr>
+      <tr><td><code>npm run package</code></td><td>electron-builder → NSIS installer (Windows)</td></tr>
+      <tr><td><code>npm run release</code></td><td>build + electron-builder --publish always (GitHub Releases)</td></tr>
+      <tr><td><code>npm test</code></td><td>vitest run (jsdom)</td></tr>
+      <tr><td><code>npm run test:watch</code></td><td>vitest watch</td></tr>
+      <tr><td><code>npm run build:icon</code></td><td>SVG → multi-size PNGs → ICO</td></tr>
+      <tr><td><code>postinstall</code></td><td>electron-rebuild node-pty + build:icon</td></tr>
+    </tbody>
+  </table>
+
+  <h3>electron-builder config</h3>
+  <ul>
+    <li><strong>appId</strong>: <code>com.controlDeck.codespace</code></li>
+    <li><strong>productName</strong>: <code>CodeSpace</code> (drives userData folder name)</li>
+    <li><strong>publish</strong>: GitHub <code>tayyabjdr/CodeSpace</code></li>
+    <li><strong>win.target</strong>: <code>nsis</code> with <code>build/icon.ico</code></li>
+    <li><strong>files</strong>: <code>out/**</code> + <code>node_modules/node-pty/**</code></li>
+    <li><strong>asarUnpack</strong>: <code>**/node_modules/node-pty/**</code> — required because the native conpty binary cannot run from inside an asar archive.</li>
+  </ul>
+
+  <h3>Icon pipeline</h3>
+  <p>SVG source at <code>build/icon.svg</code> → <code>scripts/build-icon.js</code>
+    rasterizes at 16/24/32/48/64/128/256 with <code>sharp</code>
+    (<code>density: 384</code> for stroke detail) → <code>png-to-ico</code>
+    bundles into <code>build/icon.ico</code>. Used by both electron-builder
+    (production .exe) and the dev BrowserWindow (taskbar).</p>
+
+  <h3>node-pty rebuild</h3>
+  <p>node-pty is a native module. Postinstall runs <code>electron-rebuild -f -w
+    node-pty</code>. On a fresh checkout this requires Python 3.12 + setuptools
+    and a patched <code>node_modules/node-pty/deps/winpty/src/winpty.gyp</code>
+    (see project memory).</p>
+</section>
+
+<section id="git-flow">
+  <h2>Git flow</h2>
+
+  <h3>Branch structure</h3>
+  <pre><code>master                          # primary branch (default)
+├── feat/empty-state-button     # current (uncommitted)
+├── feat/auto-rename-agents     # merged
+├── feat/ui-tweaks              # merged
+└── feat/app-shell-polish       # merged</code></pre>
+
+  <h3>Commit message convention</h3>
+  <p>Conventional-commits-ish, with a sub-scope:</p>
+  <pre><code>feat(auto-namer): main-process Haiku summarizer module
+feat(pty-pool):   export getRing for auto-namer
+feat(done-tracker): add onDone hook for auto-rename
+fix(ui):          ...
+refactor(auto-namer): use claude CLI subprocess instead of Anthropic SDK
+docs(auto-update): brainstorm spec + implementation plan
+chore:            ignore .claude/ (local Claude Code state)
+deps:             add @anthropic-ai/sdk and strip-ansi for auto-rename
+merge:            feat/&lt;branch&gt; — &lt;summary&gt;</code></pre>
+
+  <h3>Feature flow</h3>
+  <ol>
+    <li>Spec written under <code>docs/superpowers/specs/&lt;date&gt;-&lt;feature&gt;-design.md</code>.</li>
+    <li>Plan written under <code>docs/superpowers/plans/&lt;date&gt;-&lt;feature&gt;.md</code>.</li>
+    <li>Branch <code>feat/&lt;feature-slug&gt;</code> off master.</li>
+    <li>Small commits, scoped messages, one feature step at a time.</li>
+    <li>Merge with explicit <code>merge: feat/&lt;branch&gt; — &lt;one-line summary&gt;</code> commit.</li>
+  </ol>
+
+  <h3>Current state</h3>
+  <p>Branch <strong>feat/empty-state-button</strong> has uncommitted work
+    across these files (per <code>git status</code> at session start):</p>
+  <pre><code>M src/renderer/App.css
+M src/renderer/App.jsx
+M src/renderer/components/NewWorkspaceModal.css
+M src/renderer/components/NewWorkspaceModal.jsx
+M src/renderer/components/Onboarding.css
+M src/renderer/components/Onboarding.jsx
+M src/renderer/components/TerminalPane.css
+M src/renderer/components/Toolbar.css
+M src/renderer/components/Toolbar.jsx
+M src/renderer/components/VolumeControl.css
+M src/renderer/components/VolumeControl.jsx
+M src/renderer/done-sound.js
+M src/renderer/volume-store.js</code></pre>
+</section>
+
+<section id="auto-update">
+  <h2>Auto-update</h2>
+  <ul>
+    <li>Provider: <strong>GitHub Releases</strong> (owner <code>tayyabjdr</code>, repo <code>CodeSpace</code>).</li>
+    <li>Skipped in dev (<code>ELECTRON_RENDERER_URL</code> set).</li>
+    <li>First check 10 s after launch; downloads in background.</li>
+    <li>On <code>update-downloaded</code>: <code>UpdateToast</code> shows the new version + "Restart now" / "Later".</li>
+    <li>"Restart now" → <code>autoUpdater.quitAndInstall()</code>. "Later" hides until next launch — at next launch the update installs on quit (<code>autoInstallOnAppQuit:true</code>).</li>
+    <li>Errors are silent (console-only) by design.</li>
+  </ul>
+</section>
+
+<section id="tests">
+  <h2>Tests</h2>
+  <p>vitest with jsdom. Coverage exists for path parsing/resolving, IPC handlers,
+    editor FS, editor state, PTY manager, and several React components.
+    Use <code>npm run test:watch</code> while editing.</p>
+</section>
+
+<section id="windows">
+  <h2>Windows quirks</h2>
+  <p class="lede">Environment realities, not bugs to fix.</p>
+  <ul>
+    <li><code>conpty_console_list_agent.js: Error: AttachConsole failed</code> — node-pty child worker fails to attach a console. Swallowed. Cosmetic.</li>
+    <li>Multiple PTYs killed in quick succession can seg-fault main (exit 139). Mitigated by save-before-kill (<code>handleConfirmDelete</code>) and the staggered 80 ms kill loop.</li>
+    <li>Sometimes Claude spawns visibly outside the app — same conpty fallback. Tell the user to close the orphan; the in-app pane is fine.</li>
+    <li>node-pty native rebuild on fresh checkout needs Python 3.12 + setuptools and a patched <code>winpty.gyp</code>.</li>
+    <li>Switching from <code>powershell.exe -Command 'claude ...'</code> to <code>cmd.exe /c claude</code> may avoid some fallback paths but is untested.</li>
+  </ul>
+</section>
+
+<section id="issues">
+  <h2>Known issues — production readiness audit</h2>
+  <p class="lede">From <code>docs/superpowers/specs/2026-05-05-prod-readiness-audit.md</code>.
+    The first five are ship-blockers; some have already been addressed (atomic
+    write, corrupt-quarantine, asarUnpack, will-quit hold, cwd validation).
+    Cross-reference before claiming a fix.</p>
+
+  <h3>🔴 Ship-blockers</h3>
+  <div class="issue crit"><div class="num">1</div><div class="body"><strong>Non-atomic <code>workspaces.json</code> write</strong> — fix: write to <code>.tmp</code>, then <code>fs.rename</code>. <span class="tag green">DONE</span></div></div>
+  <div class="issue crit"><div class="num">2</div><div class="body"><strong>Corrupt JSON silently overwrites itself with empty</strong> — quarantine + banner. <span class="tag green">QUARANTINE DONE</span> (banner not yet wired)</div></div>
+  <div class="issue crit"><div class="num">3</div><div class="body"><strong>node-pty native binary breaks inside asar</strong> — needs <code>asarUnpack</code>. <span class="tag green">DONE</span></div></div>
+  <div class="issue crit"><div class="num">4</div><div class="body"><strong>Missing <code>before-quit</code> PTY cleanup</strong>. <span class="tag green">DONE</span> (will-quit + 600ms hold)</div></div>
+  <div class="issue crit"><div class="num">5</div><div class="body"><strong>Renderer can pass arbitrary <code>cwd</code></strong> with <code>--dangerously-skip-permissions</code> baked in. <span class="tag green">CWD VALIDATED</span></div></div>
+
+  <h3>🟠 High-impact bugs</h3>
+  <div class="issue high"><div class="num">6</div><div class="body"><strong>In-flight createPty + workspace delete = orphan PTY</strong> — track pending creates. <span class="tag green">cancelCreate</span> wired in pty-pool.js</div></div>
+  <div class="issue high"><div class="num">7</div><div class="body"><strong>handlePtyReady walks every workspace's terminals</strong> — should filter by active workspace.</div></div>
+  <div class="issue high"><div class="num">8</div><div class="body"><strong>activeWorkspace identity churn re-fires lazy-spawn effect</strong> — depend on primitives. <span class="tag green">DONE</span> (effect now keys on activeId)</div></div>
+  <div class="issue high"><div class="num">9</div><div class="body"><strong>Wheel zoom triggers full workspace re-render per tick</strong>. <span class="tag green">PARTIALLY</span> (rAF-coalesce + 180ms debounce)</div></div>
+  <div class="issue high"><div class="num">10</div><div class="body"><strong>uncaughtException swallow too broad</strong>. <span class="tag green">DONE</span> (anchored to start of message)</div></div>
+  <div class="issue high"><div class="num">11</div><div class="body"><strong>PTY exit subscriptions in main never released</strong>. <span class="tag green">DONE</span> (<code>ptyDisposables</code> map)</div></div>
+  <div class="issue high"><div class="num">12</div><div class="body"><strong><code>window.electronAPI</code> assumed defined everywhere</strong>. <span class="tag green">DONE</span> (BridgeMissing fallback)</div></div>
+
+  <h3>🟡 Medium</h3>
+  <div class="issue med"><div class="num">13</div><div class="body">CSP + sandbox. <span class="tag green">DONE</span> (prod CSP, sandbox:true)</div></div>
+  <div class="issue med"><div class="num">14</div><div class="body"><code>key={activeId}</code> on <code>.grid</code> defeats pty-pool. <span class="tag green">DONE</span> (no such key)</div></div>
+  <div class="issue med"><div class="num">15</div><div class="body">Toolbar isMaximized desyncs from real window state. <span class="tag green">DONE</span> (<code>win:maximize-changed</code> push)</div></div>
+  <div class="issue med"><div class="num">16</div><div class="body">AudioContext per "done" ding. <span class="tag green">DONE</span> (singleton)</div></div>
+  <div class="issue med"><div class="num">17</div><div class="body">App-level Ctrl+T/W swallows keystrokes inside inputs. <span class="tag green">DONE</span> (isEditable guard)</div></div>
+  <div class="issue med"><div class="num">18</div><div class="body">Confirm dialog Enter fires regardless of focused button. <span class="tag green">DONE</span> (focus check)</div></div>
+  <div class="issue med"><div class="num">19</div><div class="body">Hardcoded 80×24 PTY initial cols/rows. <span class="tag green">DONE</span> (renderer passes measured size)</div></div>
+  <div class="issue med"><div class="num">20</div><div class="body">Persistence debounce too tight. <span class="tag green">DONE</span> (500 ms)</div></div>
+  <div class="issue med"><div class="num">21</div><div class="body">Ring buffer slice on every chunk. <span class="tag green">DONE</span> (slice only when &gt;1.5×)</div></div>
+  <div class="issue med"><div class="num">22</div><div class="body">Sidebar live-count is stale for inactive workspaces. <span class="tag green">DONE</span> (uses <code>agentCount</code> when not spawned)</div></div>
+  <div class="issue med"><div class="num">23</div><div class="body">No source maps disabled for prod. <span class="tag green">DONE</span> (sourcemap:false)</div></div>
+
+  <p style="margin-top:14px">Items <strong>7</strong> (handlePtyReady scope)
+    is the most concrete remaining audit item to my reading. Verify by
+    re-reading <code>App.jsx:handlePtyReady</code>.</p>
+</section>
+
+<section id="docs">
+  <h2>Specs &amp; plans</h2>
+  <p class="lede">Living docs. Every feature has both a spec (design intent)
+    and a plan (executable steps).</p>
+
+  <h3>Specs — <code>docs/superpowers/specs/</code></h3>
+  <ul>
+    <li><code>2026-04-28-codespace-terminals-design.md</code> — original feature design</li>
+    <li><code>2026-05-05-workspaces-design.md</code> — workspaces (left rail) design</li>
+    <li><code>2026-05-05-prod-readiness-audit.md</code> — <strong>start here</strong> for production hardening; items 1–5 are ship-blockers</li>
+    <li><code>2026-05-06-code-editor-pane-design.md</code> — editor pane spec</li>
+    <li><code>2026-05-08-auto-rename-agents-design.md</code> — auto-namer spec</li>
+    <li><code>2026-05-08-auto-update-design.md</code> — auto-update spec</li>
+  </ul>
+
+  <h3>Plans — <code>docs/superpowers/plans/</code></h3>
+  <ul>
+    <li><code>2026-04-28-codespace-terminals.md</code></li>
+    <li><code>2026-05-06-code-editor-pane.md</code></li>
+    <li><code>2026-05-08-auto-rename-agents.md</code></li>
+    <li><code>2026-05-08-auto-update.md</code></li>
+  </ul>
+
+  <h3>Other reference</h3>
+  <ul>
+    <li><code>CLAUDE.md</code> — project instructions for Claude Code</li>
+    <li><code>DESIGN_SYSTEM.md</code></li>
+    <li><code>theme-preview.html</code> — palette decision doc</li>
+    <li><code>volume-mockup.html</code></li>
+    <li><code>notes/2026-05-08-improvement-research.md</code></li>
+    <li><code>build/icon-preview.html</code></li>
+  </ul>
+</section>
+
+<hr class="sep">
+<p style="color:var(--text3);font-size:12px;text-align:center">
+  Generated as a navigation aid — names match the source as of feat/empty-state-button.
+  Re-read source before acting on anything time-sensitive.
+</p>
+
+</main>
+
+<script>
+// Highlight current TOC entry as you scroll.
+const links = document.querySelectorAll('nav.toc a');
+const sections = document.querySelectorAll('main section');
+const byId = new Map();
+links.forEach(a => byId.set(a.getAttribute('href').slice(1), a));
+
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    if (e.isIntersecting) {
+      links.forEach(a => a.classList.remove('active'));
+      const target = byId.get(e.target.id);
+      if (target) target.classList.add('active');
+    }
+  }
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => io.observe(s));
+</script>
+</body>
+</html>
