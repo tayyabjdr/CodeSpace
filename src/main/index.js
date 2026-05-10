@@ -78,9 +78,6 @@ function createWindow() {
   ipcMain.on('win:minimize', () => win.minimize())
   ipcMain.on('win:maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize())
   ipcMain.on('win:close', () => win.close())
-  ipcMain.on('win:flashFrame', () => {
-    if (!win.isDestroyed() && !win.isFocused()) win.flashFrame(true)
-  })
   win.on('focus', () => { if (!win.isDestroyed()) win.flashFrame(false) })
   ipcMain.on('win:ensureMaximized', () => { if (!win.isMaximized()) win.maximize() })
   ipcMain.on('win:ensureRestored', () => {

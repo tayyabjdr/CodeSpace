@@ -28,7 +28,6 @@ const api = {
   windowMinimize:    () => ipcRenderer.send('win:minimize'),
   windowMaximize:    () => ipcRenderer.send('win:maximize'),
   windowClose:       () => ipcRenderer.send('win:close'),
-  windowFlashFrame:  () => ipcRenderer.send('win:flashFrame'),
   windowEnsureMaximized: () => ipcRenderer.send('win:ensureMaximized'),
   windowEnsureRestored:  () => ipcRenderer.send('win:ensureRestored'),
   onMaximizeChanged: (callback) => {
