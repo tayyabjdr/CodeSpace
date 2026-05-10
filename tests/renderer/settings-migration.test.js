@@ -8,7 +8,7 @@ beforeEach(() => {
   window.electronAPI = {
     getSettings: vi.fn(async () => ({
       version: 1,
-      appearance: { defaultPaneFontSize: 14 },
+      appearance: { defaultPaneFontSize: 13 },
       notifications: { doneSoundVolume: 50, taskbarFlashOnDone: true },
       updates: { autoUpdate: true },
       agents: { dangerouslySkipPermissions: true }
@@ -17,7 +17,7 @@ beforeEach(() => {
       calls.push(patch)
       return {
         version: 1,
-        appearance: { defaultPaneFontSize: 14 },
+        appearance: { defaultPaneFontSize: 13 },
         notifications: { doneSoundVolume: patch?.notifications?.doneSoundVolume ?? 50, taskbarFlashOnDone: true },
         updates: { autoUpdate: true },
         agents: { dangerouslySkipPermissions: true }

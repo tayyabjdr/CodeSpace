@@ -7,7 +7,7 @@ const FILENAME = 'settings.json'
 export const DEFAULTS = {
   version: 1,
   appearance: {
-    defaultPaneFontSize: 14
+    defaultPaneFontSize: 13
   },
   notifications: {
     doneSoundVolume: 50,

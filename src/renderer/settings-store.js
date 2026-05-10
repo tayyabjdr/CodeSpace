@@ -2,7 +2,7 @@ const LEGACY_KEY = 'codespace.volume.v1'
 
 const DEFAULTS = {
   version: 1,
-  appearance: { defaultPaneFontSize: 14 },
+  appearance: { defaultPaneFontSize: 13 },
   notifications: { doneSoundVolume: 50, taskbarFlashOnDone: true },
   updates: { autoUpdate: true },
   agents: { dangerouslySkipPermissions: true }
