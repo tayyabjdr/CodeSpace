@@ -1,6 +1,7 @@
 import pty from 'node-pty'
 import { randomUUID } from 'crypto'
 import { execFileSync } from 'child_process'
+import { getCached } from './settings-store.js'
 
 let claudeAvailable = null
 function checkClaudeAvailable() {
@@ -18,18 +19,23 @@ export function isClaudeAvailable() {
   return checkClaudeAvailable()
 }
 
-const SHELLS = {
-  powershell: { file: 'powershell.exe', args: [] },
-  cmd: { file: 'cmd.exe', args: [] },
-  claude: { file: 'powershell.exe', args: ['-NoLogo', '-NoProfile', '-Command', 'claude --dangerously-skip-permissions'] }
+function shellSpec(shell) {
+  if (shell === 'cmd') return { file: 'cmd.exe', args: [] }
+  if (shell === 'claude') {
+    const skip = getCached().agents.dangerouslySkipPermissions
+    const cmd = skip ? 'claude --dangerously-skip-permissions' : 'claude'
+    return { file: 'powershell.exe', args: ['-NoLogo', '-NoProfile', '-Command', cmd] }
+  }
+  return { file: 'powershell.exe', args: [] }
 }
 
 const sessions = new Map()
 
 export function createSession(shell = 'powershell', cwd, cols, rows) {
-  const { file, args } = SHELLS[shell] ?? SHELLS.powershell
+  const { file, args } = shellSpec(shell)
   const id = randomUUID()
-  const env = shell === 'claude'
+  const skip = shell === 'claude' && getCached().agents.dangerouslySkipPermissions
+  const env = skip
     ? { ...process.env, CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS: '1' }
     : process.env
   const resolvedCwd = cwd || process.env.USERPROFILE || process.cwd()
@@ -54,7 +60,6 @@ export function createSession(shell = 'powershell', cwd, cols, rows) {
     })
   }
 
-  // Track exit so subsequent write/resize/kill calls are silent no-ops.
   proc._exited = false
   proc.onExit(() => { proc._exited = true })
 
