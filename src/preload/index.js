@@ -39,6 +39,11 @@ const api = {
   getDesktopPath:    () => ipcRenderer.invoke('app:getDesktopPath'),
   loadWorkspaces:    () => ipcRenderer.invoke('workspaces:load'),
   saveWorkspaces:    (state) => ipcRenderer.invoke('workspaces:save', state),
+  getSettings:     ()      => ipcRenderer.invoke('settings:get'),
+  setSettings:     (patch) => ipcRenderer.invoke('settings:set', patch),
+  getAppVersion:   ()      => ipcRenderer.invoke('app:version'),
+  checkForUpdates: ()      => ipcRenderer.invoke('updates:check'),
+  flashWindow:     ()      => ipcRenderer.invoke('window:flash'),
   readClipboardText: () => ipcRenderer.invoke('clipboard:readText'),
   writeClipboardText:(text) => ipcRenderer.send('clipboard:writeText', text),
 
