@@ -75,6 +75,7 @@ const api = {
   installUpdate: () => ipcRenderer.invoke('update:install'),
 
   openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
+  openLocalHtml: (absPath) => ipcRenderer.send('shell:openLocalHtml', absPath),
 }
 
 try {

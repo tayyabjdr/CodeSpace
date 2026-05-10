@@ -299,14 +299,21 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
           activate: async (event) => {
             if (!(event.ctrlKey || event.metaKey)) return
             const opts = linkOptsRef.current
-            if (!opts?.onOpenFile) return
             const resolved = await resolvePath(
               m.raw,
-              opts.cwdRef?.current,
-              opts.workspaceDirRef?.current,
+              opts?.cwdRef?.current,
+              opts?.workspaceDirRef?.current,
               window.electronAPI?.editor
             )
             if (!resolved) return
+            // Ctrl+Shift+click on an .html/.htm path → open the rendered page
+            // in the OS default browser. Plain Ctrl+click keeps the existing
+            // "open in editor" behaviour so source viewing still works.
+            if (event.shiftKey && /\.html?$/i.test(resolved.path)) {
+              window.electronAPI?.openLocalHtml?.(resolved.path)
+              return
+            }
+            if (!opts?.onOpenFile) return
             opts.onOpenFile({ path: resolved.path, line: resolved.line, col: resolved.col })
           },
           hover: () => {},
