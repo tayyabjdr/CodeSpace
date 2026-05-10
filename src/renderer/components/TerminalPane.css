@@ -77,6 +77,19 @@
   color: var(--cs-bg-base, #0a0b0d);
 }
 
+/* Same problem for the branch chip and the green running dot — both wash out
+   on the bright cyan→green header. Darken them so they read clearly. */
+.pane.done .tp-branch {
+  color: rgba(10, 11, 13, 0.78);
+}
+.pane.done .tp-branch:hover {
+  color: var(--cs-bg-base, #0a0b0d);
+  background: rgba(255, 255, 255, 0.22);
+}
+.pane.done .status-dot.status-running {
+  background: var(--cs-bg-base, #0a0b0d);
+}
+
 .pane.done .pane-add-btn,
 .pane.done .close-btn {
   color: var(--cs-text-primary);
