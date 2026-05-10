@@ -1,127 +1,290 @@
 .cs-settings-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: cs-fade-in 160ms ease;
+  animation: fadeIn 220ms ease;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
-@keyframes cs-fade-in { from { opacity: 0 } to { opacity: 1 } }
 
 .cs-settings-modal {
-  width: 480px;
+  width: 540px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 64px);
+  max-height: calc(100vh - 80px);
   overflow-y: auto;
-  background: var(--cs-bg-elevated);
+  background: var(--cs-bg-base);
   border: 1px solid var(--cs-border-mid);
-  border-radius: 10px;
+  border-radius: 14px;
   color: var(--cs-text-primary);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
-  font-family: var(--cs-font-ui), system-ui, sans-serif;
+  font-family: var(--cs-font-ui);
+  box-shadow:
+    0 28px 64px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: scaleIn 240ms cubic-bezier(0.2, 0, 0, 1);
+  color-scheme: dark;
 }
 
 .cs-settings-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 18px 22px 16px;
   border-bottom: 1px solid var(--cs-border);
 }
 .cs-settings-header h2 {
   margin: 0;
   font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  color: var(--cs-text-primary);
 }
 .cs-settings-close {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
-  color: var(--cs-text-dim);
-  font-size: 18px;
-  width: 24px;
-  height: 24px;
+  border-radius: 8px;
+  color: var(--cs-icon-tertiary);
   cursor: pointer;
-  border-radius: 4px;
+  transition: background var(--cs-transition), color var(--cs-transition);
 }
-.cs-settings-close:hover { color: var(--cs-text-primary); background: var(--cs-bg-surface); }
+.cs-settings-close:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
+}
+.cs-settings-close:focus-visible {
+  outline: 1px solid var(--cs-border-focus);
+  outline-offset: 1px;
+}
 
-.cs-settings-modal section {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--cs-border);
+.cs-settings-body {
+  padding: 18px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.cs-settings-modal section:last-child { border-bottom: none; }
-.cs-settings-modal h3 {
-  margin: 0 0 12px 0;
-  font-size: 11px;
-  font-weight: 500;
+
+/* Each section is a bordered card matching onboarding's .ob-col aesthetic */
+.cs-settings-card {
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: slideUp 0.45s ease both;
+}
+.cs-settings-card:nth-child(1) { animation-delay: 60ms; }
+.cs-settings-card:nth-child(2) { animation-delay: 100ms; }
+.cs-settings-card:nth-child(3) { animation-delay: 140ms; }
+.cs-settings-card:nth-child(4) { animation-delay: 180ms; }
+
+.cs-settings-card h3 {
+  margin: 0 0 -2px 0;
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--cs-text-secondary);
+  color: var(--cs-text-tertiary);
 }
 
 .cs-settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 6px 0;
-  font-size: 13px;
+  gap: 16px;
+  min-height: 32px;
 }
 .cs-settings-label {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   color: var(--cs-text-primary);
+  font-size: 13px;
+  min-width: 0;
 }
 .cs-settings-caption {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--cs-text-dim);
+  line-height: 1.5;
 }
+.cs-settings-caption code {
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  background: var(--cs-bg-elevated);
+  color: var(--cs-text-primary);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
 .cs-settings-control {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 .cs-settings-value {
-  font-size: 12px;
-  color: var(--cs-text-dim);
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  color: var(--cs-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  min-width: 42px;
+  text-align: right;
+}
+.cs-settings-value.error { color: var(--cs-red); }
+
+/* Status row sits below the toggles with its own muted treatment */
+.cs-settings-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--cs-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
-.cs-settings-value.error { color: #f87171; }
-.cs-settings-actions {
-  justify-content: flex-end;
+.cs-settings-status .cs-settings-value {
+  min-width: 0;
+  text-align: left;
 }
 
-.cs-settings-link {
+/* Version pill — cyan glowing meta with a leading dot, like onboarding's
+   .ob-label-meta. Active "live" feel without being noisy. */
+.cs-settings-version-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--cs-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
   color: var(--cs-cyan);
   text-decoration: none;
+  text-shadow: 0 0 12px var(--cs-cyan-glow);
+  transition: color var(--cs-transition);
 }
-.cs-settings-link:hover { text-decoration: underline; }
+.cs-settings-version-link::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cs-cyan);
+  box-shadow: 0 0 8px var(--cs-cyan-glow);
+}
+.cs-settings-version-link:hover { color: #a5f3fc; }
 
+/* Buttons — match .ob-browse-btn from onboarding */
 .cs-settings-btn {
-  background: var(--cs-bg-surface);
-  border: 1px solid var(--cs-border-mid);
-  color: var(--cs-text-primary);
-  font-size: 12px;
-  padding: 5px 10px;
+  font-family: var(--cs-font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--cs-text-secondary);
   border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
 }
-.cs-settings-btn:hover { border-color: var(--cs-cyan); }
-
-.cs-settings-modal select,
-.cs-settings-modal input[type="range"] {
-  background: var(--cs-bg-surface);
-  border: 1px solid var(--cs-border);
+.cs-settings-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
   color: var(--cs-text-primary);
-  font-size: 12px;
-  padding: 3px 6px;
-  border-radius: 4px;
 }
-.cs-settings-modal input[type="range"] {
+.cs-settings-btn:focus-visible {
+  outline: 1px solid var(--cs-cyan);
+  outline-offset: 2px;
+}
+
+/* Custom select — themed to match .ob-input geometry */
+.cs-settings-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: hsl(0 0% 6%);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.55' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  border: 1px solid var(--cs-border-mid);
+  color: var(--cs-text-primary);
+  font-family: var(--cs-font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 7px 30px 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 72px;
+  transition: border-color var(--cs-transition), background-color var(--cs-transition);
+}
+.cs-settings-select:hover {
+  border-color: var(--cs-border-hover);
+  background-color: hsl(0 0% 7%);
+}
+.cs-settings-select:focus-visible {
+  outline: none;
+  border-color: var(--cs-border-focus);
+  background-color: hsl(0 0% 7%);
+}
+
+/* Custom range slider (Chromium / Electron) — cyan track fill, glowing thumb */
+.cs-settings-range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 160px;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
   padding: 0;
-  width: 140px;
+  margin: 0;
+  --thumb-size: 12px;
+  --track-h: 3px;
+}
+.cs-settings-range::-webkit-slider-runnable-track {
+  height: var(--track-h);
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      to right,
+      var(--cs-cyan) 0%,
+      var(--cs-cyan) var(--fill, 50%),
+      var(--cs-border-mid) var(--fill, 50%),
+      var(--cs-border-mid) 100%
+    );
+}
+.cs-settings-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 999px;
+  background: var(--cs-bg-base);
+  border: 2px solid var(--cs-cyan);
+  margin-top: calc((var(--track-h) - var(--thumb-size)) / 2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 8px var(--cs-cyan-glow);
+  cursor: grab;
+  transition: transform 120ms ease, box-shadow var(--cs-transition);
+}
+.cs-settings-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.cs-settings-range:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+.cs-settings-range:focus-visible { outline: none; }
+.cs-settings-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--cs-cyan-glow), 0 0 12px var(--cs-cyan-glow);
 }

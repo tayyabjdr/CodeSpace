@@ -3,9 +3,17 @@ import Toggle from './Toggle.jsx'
 import { getSettings, setSettings, subscribe } from '../settings-store.js'
 import './SettingsModal.css'
 
-const FONT_SIZES = [10, 11, 12, 13, 14, 15, 16, 18, 20, 22]
+const FONT_MIN = 10
+const FONT_MAX = 22
 
 const RELEASES_URL = (v) => `https://github.com/tayyabjdr/CodeSpace/releases/tag/v${v}`
+
+const CloseGlyph = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <line x1="6" y1="6" x2="18" y2="18" />
+    <line x1="18" y1="6" x2="6" y2="18" />
+  </svg>
+)
 
 export default function SettingsModal({ open, onClose }) {
   const [s, setS] = useState(getSettings())
@@ -46,82 +54,99 @@ export default function SettingsModal({ open, onClose }) {
       >
         <header className="cs-settings-header">
           <h2>Settings</h2>
-          <button type="button" className="cs-settings-close" aria-label="Close" onClick={onClose}>×</button>
+          <button type="button" className="cs-settings-close" aria-label="Close" onClick={onClose}>
+            <CloseGlyph />
+          </button>
         </header>
 
-        <section>
-          <h3>Appearance</h3>
-          <Row label="Default pane font size">
-            <select
-              value={s.appearance.defaultPaneFontSize}
-              onChange={(e) => update({ appearance: { defaultPaneFontSize: Number(e.target.value) } })}
+        <div className="cs-settings-body">
+          <section className="cs-settings-card">
+            <h3>Appearance</h3>
+            <Row label="Default pane font size">
+              <input
+                type="range"
+                className="cs-settings-range"
+                style={{ '--fill': `${((s.appearance.defaultPaneFontSize - FONT_MIN) / (FONT_MAX - FONT_MIN)) * 100}%` }}
+                min={FONT_MIN}
+                max={FONT_MAX}
+                step={1}
+                value={s.appearance.defaultPaneFontSize}
+                onChange={(e) => update({ appearance: { defaultPaneFontSize: Number(e.target.value) } })}
+              />
+              <span className="cs-settings-value">{s.appearance.defaultPaneFontSize}px</span>
+            </Row>
+          </section>
+
+          <section className="cs-settings-card">
+            <h3>Notifications</h3>
+            <Row label="Done sound volume">
+              <input
+                type="range"
+                className="cs-settings-range"
+                style={{ '--fill': `${s.notifications.doneSoundVolume}%` }}
+                min={0}
+                max={100}
+                value={s.notifications.doneSoundVolume}
+                onChange={(e) => update({ notifications: { doneSoundVolume: Number(e.target.value) } })}
+              />
+              <span className="cs-settings-value">{s.notifications.doneSoundVolume}%</span>
+            </Row>
+            <Row label="Flash taskbar on done">
+              <Toggle
+                checked={s.notifications.taskbarFlashOnDone}
+                onChange={(v) => update({ notifications: { taskbarFlashOnDone: v } })}
+                ariaLabel="Flash taskbar on done"
+              />
+            </Row>
+          </section>
+
+          <section className="cs-settings-card">
+            <h3>Updates</h3>
+            <Row label="Version">
+              <div className="cs-settings-control">
+                {version ? (
+                  <a
+                    href="#"
+                    className="cs-settings-version-link"
+                    onClick={(e) => { e.preventDefault(); window.electronAPI?.openExternal?.(RELEASES_URL(version)) }}
+                  >v{version}</a>
+                ) : <span className="cs-settings-value">—</span>}
+                <button type="button" className="cs-settings-btn" onClick={onCheckUpdates}>
+                  Check
+                </button>
+              </div>
+            </Row>
+            <Row label="Auto-update">
+              <Toggle
+                checked={s.updates.autoUpdate}
+                onChange={(v) => update({ updates: { autoUpdate: v } })}
+                ariaLabel="Auto-update"
+              />
+            </Row>
+            {updateStatus && (
+              <div className="cs-settings-status">
+                {updateStatus.status === 'checking' && <span>Checking…</span>}
+                {updateStatus.status === 'downloading' && <span>Downloading v{updateStatus.version}…</span>}
+                {updateStatus.status === 'up-to-date' && <span>Up to date</span>}
+                {updateStatus.status === 'error' && <span className="cs-settings-value error">Couldn't check for updates</span>}
+              </div>
+            )}
+          </section>
+
+          <section className="cs-settings-card">
+            <h3>Agents</h3>
+            <Row
+              label="Skip permission prompts"
+              caption={<>Runs <code>claude</code> with <code>--dangerously-skip-permissions</code></>}
             >
-              {FONT_SIZES.map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </Row>
-        </section>
-
-        <section>
-          <h3>Notifications</h3>
-          <Row label="Done sound volume">
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={s.notifications.doneSoundVolume}
-              onChange={(e) => update({ notifications: { doneSoundVolume: Number(e.target.value) } })}
-            />
-            <span className="cs-settings-value">{s.notifications.doneSoundVolume}%</span>
-          </Row>
-          <Row label="Flash taskbar on done">
-            <Toggle
-              checked={s.notifications.taskbarFlashOnDone}
-              onChange={(v) => update({ notifications: { taskbarFlashOnDone: v } })}
-              ariaLabel="Flash taskbar on done"
-            />
-          </Row>
-        </section>
-
-        <section>
-          <h3>Updates</h3>
-          <Row label="Version">
-            {version ? (
-              <a
-                href="#"
-                className="cs-settings-link"
-                onClick={(e) => { e.preventDefault(); window.electronAPI?.openExternal?.(RELEASES_URL(version)) }}
-              >v{version}</a>
-            ) : <span className="cs-settings-value">—</span>}
-          </Row>
-          <Row label="Auto-update">
-            <Toggle
-              checked={s.updates.autoUpdate}
-              onChange={(v) => update({ updates: { autoUpdate: v } })}
-              ariaLabel="Auto-update"
-            />
-          </Row>
-          <div className="cs-settings-row cs-settings-actions">
-            {updateStatus?.status === 'downloading' && <span className="cs-settings-value">Downloading v{updateStatus.version}…</span>}
-            {updateStatus?.status === 'up-to-date' && <span className="cs-settings-value">Up to date</span>}
-            {updateStatus?.status === 'error' && <span className="cs-settings-value error">Couldn't check for updates</span>}
-            {updateStatus?.status === 'checking' && <span className="cs-settings-value">Checking…</span>}
-            <button type="button" className="cs-settings-btn" onClick={onCheckUpdates}>Check for updates</button>
-          </div>
-        </section>
-
-        <section>
-          <h3>Agents</h3>
-          <Row
-            label="Skip permission prompts"
-            caption="Runs claude with --dangerously-skip-permissions"
-          >
-            <Toggle
-              checked={s.agents.dangerouslySkipPermissions}
-              onChange={(v) => update({ agents: { dangerouslySkipPermissions: v } })}
-              ariaLabel="Skip permission prompts"
-            />
-          </Row>
-        </section>
+              <Toggle
+                checked={s.agents.dangerouslySkipPermissions}
+                onChange={(v) => update({ agents: { dangerouslySkipPermissions: v } })}
+                ariaLabel="Skip permission prompts"
+              />
+            </Row>
+          </section>
+        </div>
       </div>
     </div>
   )

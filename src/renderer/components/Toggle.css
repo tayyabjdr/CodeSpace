@@ -1,38 +1,42 @@
 .cs-toggle {
-  --w: 34px;
-  --h: 20px;
+  --w: 32px;
+  --h: 18px;
   --pad: 2px;
+  --thumb: 12px;
   position: relative;
   width: var(--w);
   height: var(--h);
   border-radius: 999px;
   background: var(--cs-bg-elevated);
-  border: 1px solid var(--cs-border);
+  border: 1px solid var(--cs-border-mid);
   cursor: pointer;
   padding: 0;
-  transition: background-color 200ms ease, border-color 200ms ease;
+  flex-shrink: 0;
+  transition: background-color 180ms ease, border-color 180ms ease;
 }
-.cs-toggle:hover { border-color: var(--cs-border-mid); }
+.cs-toggle:hover { border-color: var(--cs-border-hover); }
 .cs-toggle.on {
-  background: var(--cs-cyan);
-  border-color: var(--cs-cyan);
+  background: rgba(103, 232, 249, 0.14);
+  border-color: rgba(103, 232, 249, 0.5);
 }
 .cs-toggle.disabled { opacity: 0.5; cursor: not-allowed; }
+
 .cs-toggle-thumb {
   position: absolute;
   top: var(--pad);
   left: var(--pad);
-  width: calc(var(--h) - var(--pad) * 2 - 2px);
-  height: calc(var(--h) - var(--pad) * 2 - 2px);
+  width: var(--thumb);
+  height: var(--thumb);
   border-radius: 999px;
-  background: var(--cs-text-primary);
-  transition: transform 200ms ease;
+  background: var(--cs-text-dim);
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 .cs-toggle.on .cs-toggle-thumb {
   transform: translateX(calc(var(--w) - var(--h)));
-  background: #0a0b0d;
+  background: var(--cs-cyan);
+  box-shadow: 0 0 8px var(--cs-cyan-glow);
 }
 .cs-toggle:focus-visible {
-  outline: 2px solid var(--cs-cyan);
+  outline: 1px solid var(--cs-border-focus);
   outline-offset: 2px;
 }
