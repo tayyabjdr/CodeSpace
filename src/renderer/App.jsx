@@ -6,6 +6,8 @@ import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
+import SettingsModal from './components/SettingsModal.jsx'
+import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
@@ -82,6 +84,7 @@ function AppInner() {
   // editor / switches workspace while the active editor has unsaved changes.
   // shape: { kind: 'open-file' | 'close-pane' | 'switch-workspace', payload }
   const [pendingDirtyAction, setPendingDirtyAction] = useState(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
@@ -118,7 +121,8 @@ function AppInner() {
     let cancelled = false
     Promise.all([
       window.electronAPI.loadWorkspaces(),
-      window.electronAPI.getDesktopPath()
+      window.electronAPI.getDesktopPath(),
+      initSettings()
     ]).then(([state, desktop]) => {
       if (cancelled) return
       desktopPathRef.current = desktop || ''
@@ -128,7 +132,7 @@ function AppInner() {
         agentCounter: 0,
         focusedTerminalId: null,
         spawned: false,
-        fontSize: 13,
+        fontSize: getSettings().appearance.defaultPaneFontSize,
         editor: w.editor ? { ...defaultEditorState(), ...w.editor, dirty: false, scroll: 0 } : defaultEditorState()
       }))
       setWorkspaces(restored)
@@ -295,7 +299,7 @@ function AppInner() {
       agentCounter: 0,
       focusedTerminalId: null,
       spawned: false,
-      fontSize: 13,
+      fontSize: getSettings().appearance.defaultPaneFontSize,
       editor: defaultEditorState()
     }
     setWorkspaces([ws])
@@ -315,7 +319,7 @@ function AppInner() {
       agentCounter: 0,
       focusedTerminalId: null,
       spawned: false,
-      fontSize: 13,
+      fontSize: getSettings().appearance.defaultPaneFontSize,
       editor: defaultEditorState(),
       unconfigured: true
     }
@@ -757,6 +761,7 @@ function AppInner() {
           onSelect={handleSelectWorkspace}
           onCreate={handleStartDraft}
           onDelete={handleDeleteWorkspace}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
         <div className="body-main">
           <div className="grid-wrap">
@@ -846,6 +851,8 @@ function AppInner() {
           )}
         </div>
       </div>
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       {pendingDeleteWorkspace && (
         <ConfirmDialog

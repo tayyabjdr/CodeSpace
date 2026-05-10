@@ -243,41 +243,6 @@
   color: #ef4444;
 }
 
-/* New workspace button */
-
-.sb-new-btn {
-  margin: 8px 10px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 10px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 7px;
-  color: var(--cs-text-tertiary);
-  cursor: pointer;
-  font-family: var(--cs-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
-}
-
-.sb-new-btn svg {
-  color: var(--cs-icon-tertiary);
-}
-
-.sb-new-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--cs-text-primary);
-}
-
-.sb-new-btn:hover svg {
-  color: var(--cs-icon-primary);
-}
-
 .sb-iso {
   display: inline-flex; align-items: center;
   opacity: 0.9;
@@ -288,3 +253,37 @@
   opacity: 1;
   filter: drop-shadow(0 0 5px rgba(134, 239, 172, 0.4));
 }
+
+.sb-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--cs-border);
+  flex-shrink: 0;
+}
+.sb-footer-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cs-text-dim);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+.sb-footer-btn:hover {
+  color: var(--cs-text-primary);
+  border-color: var(--cs-border);
+  background: var(--cs-bg-elevated);
+}
+.sb-footer-version {
+  font-size: 11px;
+  color: var(--cs-text-dim);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.sb-footer-version:hover { color: var(--cs-cyan); }

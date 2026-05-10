@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import * as volumeStore from '../volume-store.js'
+import { getSettings, setSettings, subscribe } from '../settings-store.js'
 import { playDoneSound } from '../done-sound.js'
 import './VolumeControl.css'
 
@@ -33,11 +33,11 @@ function pickSpeaker(volume) {
 }
 
 export default function VolumeControl() {
-  const [{ volume }, setState] = useState(volumeStore.getState())
+  const [volume, setVolume] = useState(getSettings().notifications.doneSoundVolume)
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
 
-  useEffect(() => volumeStore.subscribe(setState), [])
+  useEffect(() => subscribe((s) => setVolume(s.notifications.doneSoundVolume)), [])
 
   // Close on outside click / Escape.
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function VolumeControl() {
         value={volume}
         tabIndex={open ? 0 : -1}
         aria-hidden={!open}
-        onChange={(e) => volumeStore.setVolume(e.target.value)}
+        onChange={(e) => setSettings({ notifications: { doneSoundVolume: Number(e.target.value) } })}
         // Preview the ding when the user finishes adjusting — covers
         // mouse release, touch release, and keyboard arrow tweaks.
         onMouseUp={playDoneSound}

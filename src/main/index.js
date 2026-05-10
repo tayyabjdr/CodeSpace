@@ -5,7 +5,9 @@ import { mkdirSync, readFileSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
 import { loadWorkspaces, saveWorkspaces, consumeCorruptBackupNotice } from './workspaces-store.js'
-import { setupAutoUpdater } from './auto-updater.js'
+import { setupAutoUpdater, reapplyAutoUpdaterSettings } from './auto-updater.js'
+import { loadSettings } from './settings-store.js'
+import { registerSettingsHandlers } from './settings-handlers.js'
 
 // Dev runs alongside an installed CodeSpace.app — same productName means
 // the same %APPDATA%\CodeSpace userData folder, so the two would clobber
@@ -136,7 +138,7 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught exception:', err)
 })
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   Menu.setApplicationMenu(null)
 
   // CSP — only outside dev mode, since Vite HMR needs eval/inline scripts.
@@ -160,6 +162,15 @@ app.whenReady().then(() => {
       })
     })
   }
+
+  await loadSettings()
+  registerSettingsHandlers({
+    onSettingsChange: (after, before) => {
+      if (after.updates.autoUpdate !== before.updates.autoUpdate) {
+        reapplyAutoUpdaterSettings()
+      }
+    }
+  })
 
   const win = createWindow()
   setupAutoUpdater(win)
