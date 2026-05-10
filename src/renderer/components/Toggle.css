@@ -1,0 +1,38 @@
+.cs-toggle {
+  --w: 34px;
+  --h: 20px;
+  --pad: 2px;
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+  border-radius: 999px;
+  background: var(--cs-bg-elevated);
+  border: 1px solid var(--cs-border);
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+.cs-toggle:hover { border-color: var(--cs-border-mid); }
+.cs-toggle.on {
+  background: var(--cs-cyan);
+  border-color: var(--cs-cyan);
+}
+.cs-toggle.disabled { opacity: 0.5; cursor: not-allowed; }
+.cs-toggle-thumb {
+  position: absolute;
+  top: var(--pad);
+  left: var(--pad);
+  width: calc(var(--h) - var(--pad) * 2 - 2px);
+  height: calc(var(--h) - var(--pad) * 2 - 2px);
+  border-radius: 999px;
+  background: var(--cs-text-primary);
+  transition: transform 200ms ease;
+}
+.cs-toggle.on .cs-toggle-thumb {
+  transform: translateX(calc(var(--w) - var(--h)));
+  background: #0a0b0d;
+}
+.cs-toggle:focus-visible {
+  outline: 2px solid var(--cs-cyan);
+  outline-offset: 2px;
+}
