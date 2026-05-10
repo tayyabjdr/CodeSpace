@@ -10,6 +10,7 @@
 import * as ptyPool from './pty-pool.js'
 import { DONE_SILENCE_MS } from './constants.js'
 import { playDoneSound } from './done-sound.js'
+import { getSettings } from './settings-store.js'
 
 const subs = new Map()           // termId -> { ptyId, detach }
 const awaiting = new Set()       // termId — Enter pressed, response pending
@@ -76,6 +77,9 @@ function trackTerm(termId, ptyId) {
         if (!isAttended(termId)) {
           doneSet.add(termId)
           playDoneSound()
+          if (getSettings().notifications.taskbarFlashOnDone) {
+            window.electronAPI?.flashWindow?.()
+          }
           notify()
         }
         for (const cb of doneListeners) {
