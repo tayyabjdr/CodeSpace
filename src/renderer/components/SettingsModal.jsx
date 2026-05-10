@@ -25,7 +25,9 @@ export default function SettingsModal({ open, onClose }) {
 
   if (!open) return null
 
-  const update = (patch) => setSettings(patch)
+  const update = (patch) => {
+    setSettings(patch).catch((err) => console.warn('[settings] save failed:', err))
+  }
 
   const onCheckUpdates = async () => {
     setUpdateStatus({ status: 'checking' })
