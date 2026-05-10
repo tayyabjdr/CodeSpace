@@ -10,6 +10,7 @@
   flex: 1;
   display: flex;
   min-height: 0;
+  background: var(--cs-bg-base);
 }
 
 .body-main {
@@ -17,6 +18,7 @@
   display: flex;
   min-height: 0;
   min-width: 0;
+  background: var(--cs-bg-base);
 }
 
 .grid-wrap {
@@ -24,6 +26,7 @@
   display: flex;
   min-height: 0;
   min-width: 0;
+  background: var(--cs-bg-base);
 }
 
 .grid {
@@ -33,6 +36,7 @@
   padding: 4px;
   min-height: 0;
   min-width: 0;
+  background: var(--cs-bg-base);
   animation: fadeIn 0.2s ease both;
 }
 

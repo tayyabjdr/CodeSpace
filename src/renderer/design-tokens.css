@@ -68,6 +68,11 @@
   padding: 0;
 }
 
+html {
+  background: var(--cs-bg-base);
+  color-scheme: dark;
+}
+
 body {
   background: var(--cs-bg-base);
   color: var(--cs-text-primary);
