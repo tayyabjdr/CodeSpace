@@ -1,23 +1,27 @@
 import { ipcMain } from 'electron'
 import pkg from 'electron-updater'
+import { getCached } from './settings-store.js'
 
 const { autoUpdater } = pkg
 
 // Delay before the first update check after launch. Keeps the updater's
-// network activity from racing with PTY spawn at startup. Empirically
-// chosen — long enough for the user to see the UI, short enough that
-// they're still here when the toast lands.
+// network activity from racing with PTY spawn at startup.
 const FIRST_CHECK_DELAY_MS = 10_000
 
-export function setupAutoUpdater(win) {
-  // Skip in dev mode. electron-vite sets ELECTRON_RENDERER_URL when running
-  // `npm run dev`, and we don't want a packaged-app updater check fighting
-  // the local dev server (and almost certainly failing because the dev
-  // build's version doesn't match a real release).
-  if (process.env.ELECTRON_RENDERER_URL) return
+let initialized = false
 
-  autoUpdater.autoDownload = true
-  autoUpdater.autoInstallOnAppQuit = true
+function applySettings() {
+  const enabled = getCached().updates.autoUpdate
+  autoUpdater.autoDownload = enabled
+  autoUpdater.autoInstallOnAppQuit = enabled
+}
+
+export function setupAutoUpdater(win) {
+  // Skip in dev mode — local builds never match a real release.
+  if (process.env.ELECTRON_RENDERER_URL) return
+  initialized = true
+
+  applySettings()
 
   autoUpdater.on('update-downloaded', (info) => {
     if (win.isDestroyed() || win.webContents.isDestroyed()) return
@@ -25,8 +29,6 @@ export function setupAutoUpdater(win) {
   })
 
   autoUpdater.on('error', (err) => {
-    // Silent — no UI on failure per design. Console-only so the dev can
-    // see what happened when running a packaged build with devtools open.
     console.warn('[auto-updater]', err?.message ?? err)
   })
 
@@ -34,9 +36,29 @@ export function setupAutoUpdater(win) {
     autoUpdater.quitAndInstall()
   })
 
+  ipcMain.handle('updates:check', async () => {
+    if (!initialized) return { status: 'error', message: 'Updater disabled in dev' }
+    try {
+      const result = await autoUpdater.checkForUpdates()
+      const available = result?.updateInfo?.version && result.updateInfo.version !== process.env.npm_package_version
+      if (autoUpdater.autoDownload && available) {
+        return { status: 'downloading', version: result.updateInfo.version }
+      }
+      return { status: 'up-to-date', version: result?.updateInfo?.version }
+    } catch (err) {
+      return { status: 'error', message: err?.message ?? String(err) }
+    }
+  })
+
   setTimeout(() => {
+    if (!getCached().updates.autoUpdate) return
     autoUpdater.checkForUpdates().catch((err) => {
       console.warn('[auto-updater] check failed:', err?.message ?? err)
     })
   }, FIRST_CHECK_DELAY_MS)
+}
+
+export function reapplyAutoUpdaterSettings() {
+  if (!initialized) return
+  applySettings()
 }

@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
 import { loadWorkspaces, saveWorkspaces, consumeCorruptBackupNotice } from './workspaces-store.js'
-import { setupAutoUpdater } from './auto-updater.js'
+import { setupAutoUpdater, reapplyAutoUpdaterSettings } from './auto-updater.js'
 import { loadSettings } from './settings-store.js'
 import { registerSettingsHandlers } from './settings-handlers.js'
 
@@ -164,7 +164,13 @@ app.whenReady().then(async () => {
   }
 
   await loadSettings()
-  registerSettingsHandlers({ onSettingsChange: () => {} })
+  registerSettingsHandlers({
+    onSettingsChange: (after, before) => {
+      if (after.updates.autoUpdate !== before.updates.autoUpdate) {
+        reapplyAutoUpdaterSettings()
+      }
+    }
+  })
 
   const win = createWindow()
   setupAutoUpdater(win)
