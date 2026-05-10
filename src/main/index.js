@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, dialog, clipboard, session } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, dialog, clipboard, session, screen } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
 import { mkdirSync, readFileSync } from 'fs'
@@ -43,29 +43,53 @@ function createWindow() {
 
   const startMaximized = hasPersistedWorkspaces()
 
+  // Construct at the work-area size so the post-show maximize() doesn't
+  // trigger a visible resize — bounds already match what maximized will be.
+  const initialBounds = startMaximized
+    ? screen.getPrimaryDisplay().workArea
+    : { width: 1400, height: 900 }
+
   const win = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    ...initialBounds,
     minWidth: 720,
     minHeight: 600,
-    center: true,
+    center: !startMaximized,
     frame: false,
     show: false,
+    // Default true makes Chromium paint one frame while hidden and then
+    // hibernate the renderer waiting to be shown — on Windows 11 the renderer
+    // then doesn't wake on win.show() for ~5.7s, freezing the task queue
+    // (rAF, IPC responses, microtasks). Skipping the hidden paint avoids the
+    // trap; we show on dom-ready below instead of ready-to-show (which is
+    // suppressed when this is false).
+    paintWhenInitiallyHidden: false,
     backgroundColor: '#0a0b0d',
     icon: devIconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      // Keep PTYs / terminals rendering at full rate when the app loses
+      // focus; otherwise Chromium throttles background renderers to ~1Hz
+      // and TUI output stutters.
+      backgroundThrottling: false
     }
   })
 
-  // Maximize before first paint so the window renders at full size from
-  // the start rather than briefly flashing at 1400×900.
-  if (startMaximized) win.maximize()
-
-  win.once('ready-to-show', () => win.show())
+  // Show on dom-ready: by then the inline <style> in index.html has parsed
+  // and every layer (BrowserWindow backgroundColor, html/body, design tokens)
+  // is dark, so there's no white flash. Waiting for ready-to-show is wrong
+  // here — calling win.maximize() before loadFile (the original approach)
+  // forces show on Windows and produces an empty pre-content flash, and
+  // deferring show until ready-to-show creates the hibernation deadlock
+  // described above. dom-ready is the sweet spot.
+  win.webContents.once('dom-ready', () => {
+    win.show()
+    // Bounds already match the maximized work area, so this only flips
+    // the OS maximize-state flag — no visible resize.
+    if (startMaximized) win.maximize()
+  })
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
