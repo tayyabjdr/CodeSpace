@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
-import { initSettings } from './settings-store.js'
+import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
@@ -130,7 +130,7 @@ function AppInner() {
         agentCounter: 0,
         focusedTerminalId: null,
         spawned: false,
-        fontSize: 13,
+        fontSize: getSettings().appearance.defaultPaneFontSize,
         editor: w.editor ? { ...defaultEditorState(), ...w.editor, dirty: false, scroll: 0 } : defaultEditorState()
       }))
       setWorkspaces(restored)
@@ -297,7 +297,7 @@ function AppInner() {
       agentCounter: 0,
       focusedTerminalId: null,
       spawned: false,
-      fontSize: 13,
+      fontSize: getSettings().appearance.defaultPaneFontSize,
       editor: defaultEditorState()
     }
     setWorkspaces([ws])
@@ -317,7 +317,7 @@ function AppInner() {
       agentCounter: 0,
       focusedTerminalId: null,
       spawned: false,
-      fontSize: 13,
+      fontSize: getSettings().appearance.defaultPaneFontSize,
       editor: defaultEditorState(),
       unconfigured: true
     }
