@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
+import SettingsModal from './components/SettingsModal.jsx'
 import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
@@ -83,6 +84,7 @@ function AppInner() {
   // editor / switches workspace while the active editor has unsaved changes.
   // shape: { kind: 'open-file' | 'close-pane' | 'switch-workspace', payload }
   const [pendingDirtyAction, setPendingDirtyAction] = useState(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
@@ -759,6 +761,7 @@ function AppInner() {
           onSelect={handleSelectWorkspace}
           onCreate={handleStartDraft}
           onDelete={handleDeleteWorkspace}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
         <div className="body-main">
           <div className="grid-wrap">
@@ -848,6 +851,8 @@ function AppInner() {
           )}
         </div>
       </div>
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       {pendingDeleteWorkspace && (
         <ConfirmDialog

@@ -1,0 +1,127 @@
+.cs-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: cs-fade-in 160ms ease;
+}
+@keyframes cs-fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+.cs-settings-modal {
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  background: var(--cs-bg-elevated);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 10px;
+  color: var(--cs-text-primary);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+  font-family: var(--cs-font-ui), system-ui, sans-serif;
+}
+
+.cs-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--cs-border);
+}
+.cs-settings-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.cs-settings-close {
+  background: transparent;
+  border: none;
+  color: var(--cs-text-dim);
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.cs-settings-close:hover { color: var(--cs-text-primary); background: var(--cs-bg-surface); }
+
+.cs-settings-modal section {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--cs-border);
+}
+.cs-settings-modal section:last-child { border-bottom: none; }
+.cs-settings-modal h3 {
+  margin: 0 0 12px 0;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cs-text-secondary);
+}
+
+.cs-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.cs-settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--cs-text-primary);
+}
+.cs-settings-caption {
+  font-size: 11px;
+  color: var(--cs-text-dim);
+}
+.cs-settings-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cs-settings-value {
+  font-size: 12px;
+  color: var(--cs-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.cs-settings-value.error { color: #f87171; }
+.cs-settings-actions {
+  justify-content: flex-end;
+}
+
+.cs-settings-link {
+  color: var(--cs-cyan);
+  text-decoration: none;
+}
+.cs-settings-link:hover { text-decoration: underline; }
+
+.cs-settings-btn {
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border-mid);
+  color: var(--cs-text-primary);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cs-settings-btn:hover { border-color: var(--cs-cyan); }
+
+.cs-settings-modal select,
+.cs-settings-modal input[type="range"] {
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border);
+  color: var(--cs-text-primary);
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+.cs-settings-modal input[type="range"] {
+  padding: 0;
+  width: 140px;
+}
