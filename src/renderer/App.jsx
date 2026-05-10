@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
+import { initSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
@@ -118,7 +119,8 @@ function AppInner() {
     let cancelled = false
     Promise.all([
       window.electronAPI.loadWorkspaces(),
-      window.electronAPI.getDesktopPath()
+      window.electronAPI.getDesktopPath(),
+      initSettings()
     ]).then(([state, desktop]) => {
       if (cancelled) return
       desktopPathRef.current = desktop || ''
