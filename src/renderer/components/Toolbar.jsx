@@ -65,15 +65,17 @@ export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor 
           <CodeIcon />
         </button>
         <span className="titlebar-divider" aria-hidden />
-        <button className="titlebar-btn" onClick={handleMinimize} title="Minimize">
-          <MinusIcon />
-        </button>
-        <button className="titlebar-btn" onClick={handleMaximize} title={isMaximized ? 'Restore' : 'Maximize'}>
-          {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
-        </button>
-        <button className="titlebar-btn titlebar-close" onClick={handleClose} title="Close">
-          <CloseIcon />
-        </button>
+        <div className="titlebar-window-controls">
+          <button className="titlebar-window-btn" onClick={handleMinimize} title="Minimize">
+            <MinusIcon />
+          </button>
+          <button className="titlebar-window-btn" onClick={handleMaximize} title={isMaximized ? 'Restore' : 'Maximize'}>
+            {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
+          </button>
+          <button className="titlebar-window-btn titlebar-close" onClick={handleClose} title="Close">
+            <CloseIcon />
+          </button>
+        </div>
       </div>
     </div>
   )

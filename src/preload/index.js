@@ -28,6 +28,7 @@ const api = {
   windowMinimize:    () => ipcRenderer.send('win:minimize'),
   windowMaximize:    () => ipcRenderer.send('win:maximize'),
   windowClose:       () => ipcRenderer.send('win:close'),
+  windowFlashFrame:  () => ipcRenderer.send('win:flashFrame'),
   windowEnsureMaximized: () => ipcRenderer.send('win:ensureMaximized'),
   windowEnsureRestored:  () => ipcRenderer.send('win:ensureRestored'),
   onMaximizeChanged: (callback) => {
@@ -79,6 +80,7 @@ const api = {
   installUpdate: () => ipcRenderer.invoke('update:install'),
 
   openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
+  openLocalHtml: (absPath) => ipcRenderer.send('shell:openLocalHtml', absPath),
 }
 
 try {

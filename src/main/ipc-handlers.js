@@ -99,6 +99,23 @@ export function registerHandlers(mainWindow) {
     })
   })
 
+  // Open a local .html/.htm file with the OS's default handler (the browser).
+  // Kept separate from shell:openExternal so the http(s)-only guard there
+  // stays tight — this channel only accepts absolute paths to files that
+  // both end in .html/.htm and actually exist.
+  ipcMain.on('shell:openLocalHtml', async (_event, absPath) => {
+    if (typeof absPath !== 'string' || absPath.length === 0 || absPath.length > 1024) return
+    if (!/\.html?$/i.test(absPath)) return
+    if (!isAbsolute(absPath)) return
+    try {
+      if (!statSync(absPath).isFile()) return
+    } catch { return }
+    const err = await shell.openPath(absPath)
+    if (err && process.env.NODE_ENV !== 'production') {
+      console.warn('[ipc] openLocalHtml failed:', err)
+    }
+  })
+
   ipcMain.handle('agentName:hasKey',    async () => autoNamer.hasKey())
   ipcMain.handle('agentName:summarize', async (_event, tail) => autoNamer.summarize(tail))
 

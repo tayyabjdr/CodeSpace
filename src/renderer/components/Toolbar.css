@@ -2,7 +2,7 @@
   height: var(--cs-toolbar-h);
   display: flex;
   align-items: center;
-  padding: 0 10px 0 14px;
+  padding: 0 0 0 14px;
   background: var(--cs-bg-sidebar);
   border-bottom: 1px solid var(--cs-border-mid);
   flex-shrink: 0;
@@ -130,11 +130,6 @@
   color: var(--cs-icon-primary);
 }
 
-.titlebar-close:hover {
-  background: var(--cs-red-hover-bg);
-  color: var(--cs-red-hover-fg);
-}
-
 .titlebar-editor-toggle.is-open {
   color: var(--cs-cyan);
   background: rgba(103, 232, 249, 0.08);
@@ -152,6 +147,43 @@
   height: 16px;
   background: var(--cs-border-mid);
   opacity: 0.6;
-  margin: 0 6px;
+  margin: 0 6px 0 4px;
   flex-shrink: 0;
+}
+
+/* Standard Windows controls — full-height flush squares against the right
+   edge, matching the pane title bar +/× treatment. Strokes use solid color +
+   opacity so the X intersection on the close icon doesn't compound darker. */
+.titlebar-window-controls {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  height: 100%;
+}
+
+.titlebar-window-btn {
+  width: var(--cs-toolbar-h);
+  height: var(--cs-toolbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  color: var(--cs-text-primary);
+  opacity: 0.45;
+  cursor: pointer;
+  transition: background var(--cs-transition), color var(--cs-transition), opacity var(--cs-transition);
+}
+
+.titlebar-window-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 1;
+}
+
+.titlebar-window-btn.titlebar-close:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
+  opacity: 1;
 }
