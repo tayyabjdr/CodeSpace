@@ -2,7 +2,7 @@
 // singleton AudioContext (Chrome caps live contexts around 6 — one-per-pane
 // runs out in a long session).
 
-import { getDoneSoundGain } from './volume-store.js'
+import { getDoneSoundGain } from './settings-store.js'
 
 let sharedAudioCtx = null
 
