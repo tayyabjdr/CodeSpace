@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
 import pkg from 'electron-updater'
 import { getCached } from './settings-store.js'
 
@@ -17,7 +17,21 @@ function applySettings() {
 }
 
 export function setupAutoUpdater(win) {
-  // Skip in dev mode — local builds never match a real release.
+  ipcMain.handle('updates:check', async () => {
+    if (!initialized) return { status: 'error', message: 'Updater disabled in dev' }
+    try {
+      const result = await autoUpdater.checkForUpdates()
+      const available = result?.updateInfo?.version && result.updateInfo.version !== app.getVersion()
+      if (autoUpdater.autoDownload && available) {
+        return { status: 'downloading', version: result.updateInfo.version }
+      }
+      return { status: 'up-to-date', version: result?.updateInfo?.version }
+    } catch (err) {
+      return { status: 'error', message: err?.message ?? String(err) }
+    }
+  })
+
+  // Skip the rest in dev mode — local builds never match a real release.
   if (process.env.ELECTRON_RENDERER_URL) return
   initialized = true
 
@@ -29,25 +43,13 @@ export function setupAutoUpdater(win) {
   })
 
   autoUpdater.on('error', (err) => {
+    // Silent — no UI on failure per design. Console-only so the dev can
+    // see what happened when running a packaged build with devtools open.
     console.warn('[auto-updater]', err?.message ?? err)
   })
 
   ipcMain.handle('update:install', () => {
     autoUpdater.quitAndInstall()
-  })
-
-  ipcMain.handle('updates:check', async () => {
-    if (!initialized) return { status: 'error', message: 'Updater disabled in dev' }
-    try {
-      const result = await autoUpdater.checkForUpdates()
-      const available = result?.updateInfo?.version && result.updateInfo.version !== process.env.npm_package_version
-      if (autoUpdater.autoDownload && available) {
-        return { status: 'downloading', version: result.updateInfo.version }
-      }
-      return { status: 'up-to-date', version: result?.updateInfo?.version }
-    } catch (err) {
-      return { status: 'error', message: err?.message ?? String(err) }
-    }
   })
 
   setTimeout(() => {
