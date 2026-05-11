@@ -24,6 +24,7 @@ export default function EditorPane({
   file, dirty, isExternal, isPlain,
   loadState, content, errorReason,
   width, fontSize, initialLine,
+  isFullscreen, onToggleFullscreen,
   onClose, onRevealInFolder, onRetry,
   onSave, onDirtyChange, onChange, onScroll,
 }) {
@@ -31,9 +32,17 @@ export default function EditorPane({
   const reason = errorReason ? REASON_COPY[errorReason] : null
 
   return (
-    <div className="editor-pane" style={width ? { flex: `0 0 ${width}px` } : undefined}>
+    <div
+      className={`editor-pane${isFullscreen ? ' fullscreen' : ''}`}
+      style={width && !isFullscreen ? { flex: `0 0 ${width}px` } : undefined}
+    >
       {file && (
-        <div className="editor-pane-header">
+        <div
+          className="editor-pane-header"
+          onDoubleClick={(e) => {
+            if (e.target === e.currentTarget) onToggleFullscreen?.()
+          }}
+        >
           <span
             data-testid="dirty-dot"
             className={`editor-dirty-dot ${dirty ? 'is-dirty' : ''}`}
@@ -44,6 +53,27 @@ export default function EditorPane({
           {isPlain && <span className="editor-chip">PLAIN</span>}
           <div className="editor-pane-actions">
             <button className="editor-icon-btn" title="Reveal in folder" onClick={handleReveal}>↗</button>
+            <button
+              className={`editor-icon-btn editor-fs-btn${isFullscreen ? ' is-active' : ''}`}
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              onClick={onToggleFullscreen}
+            >
+              {isFullscreen ? (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="9 4 9 9 4 9" />
+                  <polyline points="20 9 15 9 15 4" />
+                  <polyline points="15 20 15 15 20 15" />
+                  <polyline points="4 15 9 15 9 20" />
+                </svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="4 9 4 4 9 4" />
+                  <polyline points="15 4 20 4 20 9" />
+                  <polyline points="20 15 20 20 15 20" />
+                  <polyline points="9 20 4 20 4 15" />
+                </svg>
+              )}
+            </button>
             <button className="editor-icon-btn editor-close-btn" title="Close editor" onClick={onClose}>×</button>
           </div>
         </div>

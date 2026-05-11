@@ -21,6 +21,25 @@
   background: var(--cs-bg-base);
 }
 
+/* Fullscreen modes — one pane covers the entire body-main area (sidebar stays).
+   Terminal fullscreen: hide the EditorResizer + EditorPane; the grid template
+   is overridden to 1×1 in JSX, and non-fullscreen panes get .hidden-fs from
+   App.jsx, so the surviving pane fills the cell.
+   Editor fullscreen: hide the terminals' grid-wrap and the resizer; the editor
+   pane drops its inline flex-basis and stretches via flex:1. */
+.body-main.fs-terminal > .editor-resizer,
+.body-main.fs-terminal > .editor-pane,
+.body-main.fs-editor   > .grid-wrap,
+.body-main.fs-editor   > .editor-resizer {
+  display: none;
+}
+
+.body-main.fs-editor > .editor-pane.fullscreen {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-left: 0;
+}
+
 .grid-wrap {
   flex: 1;
   display: flex;

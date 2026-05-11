@@ -198,6 +198,7 @@
 }
 
 .pane-add-btn,
+.pane-fs-btn,
 .close-btn {
   background: none;
   border: none;
@@ -212,14 +213,39 @@
   padding: 0;
 }
 
-.pane-add-btn {
+.pane-add-btn,
+.pane-fs-btn {
   color: var(--cs-text-primary);
   opacity: 0.45;
 }
 
-.pane-add-btn:hover {
+.pane-add-btn:hover,
+.pane-fs-btn:hover {
   background: rgba(255, 255, 255, 0.06);
   opacity: 1;
+}
+
+/* Active (fullscreen on) state — cyan tint matches the focused-pane accent
+   already used elsewhere (the dirty-dot, the empty-btn hover glow). */
+.pane-fs-btn.is-active,
+.pane.fullscreen .pane-fs-btn {
+  color: var(--cs-cyan);
+  opacity: 1;
+}
+
+/* Done state — keep the icon legible on the bright gradient. */
+.pane.done .pane-fs-btn {
+  color: var(--cs-text-primary);
+  opacity: 0.85;
+}
+.pane.done .pane-fs-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* Pane is hidden behind another fullscreened pane in the same body. */
+.pane.hidden-fs {
+  display: none;
 }
 
 .close-btn {

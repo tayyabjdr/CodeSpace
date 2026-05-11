@@ -131,6 +131,7 @@ function AppInner() {
         terminals: [],          // session-only — lazy spawn
         agentCounter: 0,
         focusedTerminalId: null,
+        fullscreenPaneId: null,
         spawned: false,
         fontSize: getSettings().appearance.defaultPaneFontSize,
         editor: w.editor ? { ...defaultEditorState(), ...w.editor, dirty: false, scroll: 0 } : defaultEditorState()
@@ -298,6 +299,7 @@ function AppInner() {
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,
+      fullscreenPaneId: null,
       spawned: false,
       fontSize: getSettings().appearance.defaultPaneFontSize,
       editor: defaultEditorState()
@@ -318,6 +320,7 @@ function AppInner() {
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,
+      fullscreenPaneId: null,
       spawned: false,
       fontSize: getSettings().appearance.defaultPaneFontSize,
       editor: defaultEditorState(),
@@ -484,7 +487,8 @@ function AppInner() {
         ...x,
         terminals: remaining,
         agentCounter: remaining.length,
-        focusedTerminalId: x.focusedTerminalId === target.id ? null : x.focusedTerminalId
+        focusedTerminalId: x.focusedTerminalId === target.id ? null : x.focusedTerminalId,
+        fullscreenPaneId: x.fullscreenPaneId === target.id ? null : x.fullscreenPaneId
       }
     }))
   }, [])
@@ -518,6 +522,15 @@ function AppInner() {
     updateActive(w => ({
       ...w,
       terminals: w.terminals.map(t => t.id === termId ? { ...t, name } : t)
+    }))
+  }, [updateActive])
+
+  // Fullscreen toggle — fullscreenPaneId is either a terminal id, 'editor', or null.
+  // Clicking the same id again clears it; clicking a different one swaps to it.
+  const toggleFullscreen = useCallback((paneId) => {
+    updateActive(w => ({
+      ...w,
+      fullscreenPaneId: w.fullscreenPaneId === paneId ? null : paneId
     }))
   }, [updateActive])
 
@@ -585,7 +598,10 @@ function AppInner() {
       return
     }
     setEditorPatch({ open: false })
-  }, [activeWorkspace, setEditorPatch])
+    if (activeWorkspace?.fullscreenPaneId === 'editor') {
+      updateActive(w => ({ ...w, fullscreenPaneId: null }))
+    }
+  }, [activeWorkspace, setEditorPatch, updateActive])
 
   // Editor I/O state — scoped to the active workspace.
   const [editorLoadState, setEditorLoadState] = useState('empty')
@@ -733,14 +749,22 @@ function AppInner() {
 
   const terminals = activeWorkspace?.terminals ?? []
   const focusedId = activeWorkspace?.focusedTerminalId ?? null
+  const fullscreenId = activeWorkspace?.fullscreenPaneId ?? null
+  // Validate fullscreenId: drop stale ids that no longer exist (workspace switch
+  // can't carry an id that was never on this workspace, but defensively check).
+  const fsTerminalId = fullscreenId && fullscreenId !== 'editor'
+    && terminals.some(t => t.id === fullscreenId) ? fullscreenId : null
+  const fsEditor = fullscreenId === 'editor' && !!activeWorkspace?.editor?.open
+  const anyFullscreen = !!fsTerminalId || fsEditor
   const n = terminals.length
-  const cols =
+  const cols = anyFullscreen ? 1 : (
     n <= 1 ? 1 :
     n === 2 ? 2 :
     n === 3 ? 3 :
     n === 4 ? 2 :
     n <= 6 ? 3 : 4
-  const rows = Math.max(1, Math.ceil(n / cols))
+  )
+  const rows = anyFullscreen ? 1 : Math.max(1, Math.ceil(n / cols))
 
   return (
     <div className="app">
@@ -753,7 +777,7 @@ function AppInner() {
           else setEditorPatch({ open: true })
         }}
       />
-      <div className="app-body" ref={appBodyRef}>
+      <div className={`app-body${anyFullscreen ? ' is-fullscreen' : ''}`} ref={appBodyRef}>
         <Sidebar
           workspaces={workspaces}
           activeId={activeId}
@@ -763,7 +787,7 @@ function AppInner() {
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
         />
-        <div className="body-main">
+        <div className={`body-main${fsTerminalId ? ' fs-terminal' : ''}${fsEditor ? ' fs-editor' : ''}`}>
           <div className="grid-wrap">
             {activeWorkspace?.unconfigured ? (
               <Onboarding
@@ -813,6 +837,9 @@ function AppInner() {
                   onSwap={swapTerminals}
                   onOpenFile={openFileInEditor}
                   isFocused={focusedId === t.id}
+                  isFullscreen={fsTerminalId === t.id}
+                  isHiddenForFullscreen={anyFullscreen && fsTerminalId !== t.id}
+                  onToggleFullscreen={() => toggleFullscreen(t.id)}
                 />
               ))}
             </div>
@@ -838,6 +865,8 @@ function AppInner() {
                   errorReason={editorErrorReason}
                   width={activeWorkspace.editor.width || Math.round((bodyWidthRef.current || 1400) * EDITOR_DEFAULT_FRAC)}
                   fontSize={activeWorkspace?.fontSize ?? 13}
+                  isFullscreen={fsEditor}
+                  onToggleFullscreen={() => toggleFullscreen('editor')}
                   onSave={handleEditorSave}
                   onClose={closeEditor}
                   onRevealInFolder={(p) => window.electronAPI.editor.revealInFolder(p)}

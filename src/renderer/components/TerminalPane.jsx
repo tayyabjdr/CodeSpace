@@ -4,7 +4,7 @@ import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
 import './TerminalPane.css'
 
-export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, branch, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused }) {
+export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, branch, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused, isFullscreen, isHiddenForFullscreen, onToggleFullscreen }) {
   const containerRef = useRef(null)
   const done = useSyncExternalStore(
     doneTracker.subscribe,
@@ -127,7 +127,9 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
         exitCode !== null ? 'exited' : '',
         done ? 'done' : '',
         dragging ? 'dragging' : '',
-        dragOver ? 'drag-over' : ''
+        dragOver ? 'drag-over' : '',
+        isFullscreen ? 'fullscreen' : '',
+        isHiddenForFullscreen ? 'hidden-fs' : ''
       ].filter(Boolean).join(' ')}
       onMouseDownCapture={handleFocus}
       onDragOver={handleDragOver}
@@ -136,9 +138,15 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     >
       <div
         className="pane-header"
-        draggable={!editing}
+        draggable={!editing && !isFullscreen}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDoubleClick={(e) => {
+          // Ignore double-clicks on header children (label, buttons) — those
+          // have their own handlers (rename, etc.). Only the bare header area
+          // toggles fullscreen.
+          if (e.target === e.currentTarget) onToggleFullscreen?.()
+        }}
       >
         <span className={`status-dot ${exitCode !== null ? 'status-exited' : 'status-running'}`} />
         {editing ? (
@@ -194,6 +202,27 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
+          </button>
+          <button
+            className="pane-fs-btn"
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            onClick={e => { e.stopPropagation(); onToggleFullscreen?.() }}
+          >
+            {isFullscreen ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="9 4 9 9 4 9" />
+                <polyline points="20 9 15 9 15 4" />
+                <polyline points="15 20 15 15 20 15" />
+                <polyline points="4 15 9 15 9 20" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="4 9 4 4 9 4" />
+                <polyline points="15 4 20 4 20 9" />
+                <polyline points="20 15 20 20 15 20" />
+                <polyline points="9 20 4 20 4 15" />
+              </svg>
+            )}
           </button>
           <button
             className="close-btn"

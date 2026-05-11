@@ -100,6 +100,14 @@
   color: var(--cs-red-hover-fg);
 }
 
+.editor-fs-btn.is-active {
+  color: var(--cs-cyan);
+}
+.editor-fs-btn.is-active:hover {
+  color: var(--cs-cyan);
+  background: rgba(103, 232, 249, 0.08);
+}
+
 .editor-body {
   flex: 1;
   min-height: 0;
