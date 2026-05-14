@@ -270,6 +270,33 @@
   cursor: pointer;
 }
 
+/* Terminal viewport scrollbar — wider and higher-contrast than the global
+   6px/6%-white treatment so the thumb is actually grabbable for click-drag
+   scrollback. Scoped to .xterm-viewport so other scrollbars (sidebar, etc.)
+   keep the minimal global look. */
+.xterm-viewport::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+  min-height: 32px;
+}
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
+  background-clip: padding-box;
+}
+.xterm-viewport::-webkit-scrollbar-thumb:active {
+  background: rgba(103, 232, 249, 0.55);
+  background-clip: padding-box;
+}
+
 .pane-error {
   flex: 1;
   display: flex;
