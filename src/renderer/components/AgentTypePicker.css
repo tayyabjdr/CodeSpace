@@ -1,0 +1,84 @@
+.agent-picker {
+  position: fixed;
+  z-index: 1000;
+  min-width: 280px;
+  background: var(--cs-surface-1, #11151b);
+  border: 1px solid var(--cs-border-2, #2b3038);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: agent-picker-in 140ms ease-out;
+}
+
+@keyframes agent-picker-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.agent-picker-empty {
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--cs-text-dim, rgba(255,255,255,0.6));
+}
+.agent-picker-empty code {
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.agent-picker-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--cs-text-primary, rgba(255,255,255,0.92));
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.agent-picker-row:hover:not(.is-disabled) {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--cs-border-2, #2b3038);
+}
+.agent-picker-row.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.agent-picker-badge {
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-size: 10.5px;
+  text-transform: lowercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+}
+.agent-picker-badge-claude {
+  color: var(--cs-cyan, #67e8f9);
+  border-color: rgba(103, 232, 249, 0.4);
+  background: rgba(103, 232, 249, 0.08);
+}
+.agent-picker-badge-codex {
+  color: var(--cs-violet, #c4b5fd);
+  border-color: rgba(196, 181, 253, 0.4);
+  background: rgba(196, 181, 253, 0.08);
+}
+
+.agent-picker-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+.agent-picker-desc {
+  font-size: 11.5px;
+  color: var(--cs-text-dim, rgba(255,255,255,0.55));
+}
