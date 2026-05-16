@@ -8,6 +8,7 @@ import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
+import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
 import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
@@ -886,16 +887,7 @@ function AppInner() {
               }}
             >
               {terminals.length === 0 ? (
-                <div className="empty-workspace">
-                  <span className="empty-mark">✦</span>
-                  <p className="empty-title">No agents in this workspace</p>
-                  <button className="empty-btn" onClick={(e) => openPicker(e.currentTarget)}>
-                    <svg className="empty-btn-plus" viewBox="0 0 12 12" aria-hidden="true">
-                      <path d="M6 1.5v9M1.5 6h9" />
-                    </svg>
-                    <span>New Agent</span>
-                  </button>
-                </div>
+                <EmptyWorkspaceSetup availability={availability} onAdd={addAgents} />
               ) : terminals.map(t => (
                 <TerminalPane
                   key={t.id}
