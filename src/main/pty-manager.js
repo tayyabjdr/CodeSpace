@@ -19,11 +19,32 @@ export function isClaudeAvailable() {
   return checkClaudeAvailable()
 }
 
+let codexAvailable = null
+function checkCodexAvailable() {
+  if (codexAvailable !== null) return codexAvailable
+  try {
+    execFileSync('where', ['codex.exe'], { stdio: 'ignore', windowsHide: true })
+    codexAvailable = true
+  } catch {
+    codexAvailable = false
+  }
+  return codexAvailable
+}
+
+export function isCodexAvailable() {
+  return checkCodexAvailable()
+}
+
 function shellSpec(shell) {
   if (shell === 'cmd') return { file: 'cmd.exe', args: [] }
   if (shell === 'claude') {
     const skip = getCached().agents.dangerouslySkipPermissions
     const cmd = skip ? 'claude --dangerously-skip-permissions' : 'claude'
+    return { file: 'powershell.exe', args: ['-NoLogo', '-NoProfile', '-Command', cmd] }
+  }
+  if (shell === 'codex') {
+    const bypass = getCached().agents.codexDangerouslyBypassApprovals
+    const cmd = bypass ? 'codex --dangerously-bypass-approvals-and-sandbox' : 'codex'
     return { file: 'powershell.exe', args: ['-NoLogo', '-NoProfile', '-Command', cmd] }
   }
   return { file: 'powershell.exe', args: [] }
