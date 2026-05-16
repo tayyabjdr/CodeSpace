@@ -17,7 +17,8 @@ export const DEFAULTS = {
     autoUpdate: true
   },
   agents: {
-    dangerouslySkipPermissions: true
+    dangerouslySkipPermissions: true,
+    codexDangerouslyBypassApprovals: true
   }
 }
 
@@ -52,7 +53,8 @@ function validate(raw) {
       autoUpdate: typeof u.autoUpdate === 'boolean' ? u.autoUpdate : DEFAULTS.updates.autoUpdate
     },
     agents: {
-      dangerouslySkipPermissions: typeof g.dangerouslySkipPermissions === 'boolean' ? g.dangerouslySkipPermissions : DEFAULTS.agents.dangerouslySkipPermissions
+      dangerouslySkipPermissions: typeof g.dangerouslySkipPermissions === 'boolean' ? g.dangerouslySkipPermissions : DEFAULTS.agents.dangerouslySkipPermissions,
+      codexDangerouslyBypassApprovals: typeof g.codexDangerouslyBypassApprovals === 'boolean' ? g.codexDangerouslyBypassApprovals : DEFAULTS.agents.codexDangerouslyBypassApprovals
     }
   }
 }
