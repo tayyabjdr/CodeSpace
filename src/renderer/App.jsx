@@ -7,12 +7,13 @@ import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
+import AgentTypePicker from './components/AgentTypePicker.jsx'
 import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
-import { PERSIST_DEBOUNCE_MS } from './constants.js'
+import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
 import './design-tokens.css'
 import './App.css'
 
@@ -25,6 +26,15 @@ function isExternalToWorkspace(file, dir) {
 
 function makeId() {
   return crypto.randomUUID()
+}
+
+function countsToItems(counts) {
+  const c = Math.max(0, Number(counts?.claude) || 0)
+  const x = Math.max(0, Number(counts?.codex)  || 0)
+  return [
+    ...Array.from({ length: c }, () => ({ shell: 'claude' })),
+    ...Array.from({ length: x }, () => ({ shell: 'codex'  }))
+  ]
 }
 
 function BridgeMissing() {
@@ -85,13 +95,16 @@ function AppInner() {
   // shape: { kind: 'open-file' | 'close-pane' | 'switch-workspace', payload }
   const [pendingDirtyAction, setPendingDirtyAction] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [availability, setAvailability] = useState({ claude: true, codex: true })
+  const [pickerState, setPickerState] = useState(null) // null | { anchorRect: DOMRect|null }
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
 
-  const materializeAgents = useCallback(async (workspace, count, startNum) => {
+  const materializeAgents = useCallback(async (workspace, items, startNum) => {
     const agents = []
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
       const id = makeId()
       let cwd = workspace.dir
       let branch = null
@@ -109,7 +122,9 @@ function AppInner() {
         branch = r.branch
       }
       agents.push({
-        id, shell: 'claude', agentNum: startNum + i,
+        id,
+        shell: item.shell,
+        agentNum: startNum + i,
         cwd, ptyId: null, autoName: null, branch
       })
     }
@@ -128,6 +143,7 @@ function AppInner() {
       desktopPathRef.current = desktop || ''
       const restored = (state?.workspaces ?? []).map(w => ({
         ...w,
+        agentCounts: w.agentCounts ?? { claude: w.agentCount ?? 0, codex: 0 },
         terminals: [],          // session-only — lazy spawn
         agentCounter: 0,
         focusedTerminalId: null,
@@ -140,6 +156,15 @@ function AppInner() {
       setActiveId(state?.activeWorkspaceId ?? restored[0]?.id ?? null)
       setLoaded(true)
     })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    window.electronAPI?.agents?.getAvailability?.().then(av => {
+      if (cancelled || !av) return
+      setAvailability(av)
+    }).catch(() => {})
     return () => { cancelled = true }
   }, [])
 
@@ -163,11 +188,17 @@ function AppInner() {
       const persistable = workspaces.filter(w => !w.unconfigured)
       const activeIsDraft = workspaces.find(w => w.id === activeId)?.unconfigured
       window.electronAPI.saveWorkspaces({
-        workspaces: persistable.map(w => ({
-          id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount,
-          isolated: !!w.isolated,
-          editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
-        })),
+        workspaces: persistable.map(w => {
+          const claude = w.terminals.filter(t => t.shell === 'claude').length
+          const codex  = w.terminals.filter(t => t.shell === 'codex').length
+          const live = w.spawned ? { claude, codex } : (w.agentCounts ?? { claude: 0, codex: 0 })
+          return {
+            id: w.id, name: w.name, dir: w.dir,
+            agentCounts: live,
+            isolated: !!w.isolated,
+            editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
+          }
+        }),
         activeWorkspaceId: activeIsDraft ? (persistable[0]?.id ?? null) : activeId
       })
     }, PERSIST_DEBOUNCE_MS)
@@ -269,14 +300,15 @@ function AppInner() {
         } catch {}
         if (cancelled) return
       }
-      const terminals = await materializeAgents(w0, w0.agentCount, 1)
+      const items = countsToItems(w0.agentCounts)
+      const terminals = await materializeAgents(w0, items, 1)
       if (cancelled) return
       setWorkspaces(prev => prev.map(w => {
         if (w.id !== activeId || w.spawned) return w
         return {
           ...w,
           terminals,
-          agentCounter: w.agentCount,
+          agentCounter: items.length,
           spawned: true,
           focusedTerminalId: terminals[0]?.id ?? null
         }
@@ -286,7 +318,7 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, materializeAgents])
 
-  const handleOnboardingLaunch = useCallback((count, dir, name, isolated) => {
+  const handleOnboardingLaunch = useCallback((counts, dir, name, isolated) => {
     const resolvedName = (name && name.trim())
       || dir.split(/[\\/]/).filter(Boolean).pop()
       || 'Workspace'
@@ -294,7 +326,7 @@ function AppInner() {
       id: makeId(),
       name: resolvedName,
       dir,
-      agentCount: count,
+      agentCounts: counts,
       isolated: !!isolated,
       terminals: [],
       agentCounter: 0,
@@ -316,7 +348,7 @@ function AppInner() {
       id: makeId(),
       name: 'New Workspace',
       dir: '',
-      agentCount: 0,
+      agentCounts: { claude: 0, codex: 0 },
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,
@@ -333,22 +365,23 @@ function AppInner() {
   // Initialize a draft → real workspace. Sets identity, spawns terminals,
   // and clears the unconfigured flag in a single state update so persistence
   // and lazy-spawn see a consistent post-init state.
-  const handleInitializeDraft = useCallback(async (count, dir, name, isolated) => {
+  const handleInitializeDraft = useCallback(async (counts, dir, name, isolated) => {
     const resolvedName = (name && name.trim()) || 'New Workspace'
     const draft = workspaces.find(w => w.id === activeId && w.unconfigured)
     if (!draft) return
-    const provisional = { ...draft, name: resolvedName, dir, agentCount: count, isolated: !!isolated }
-    const terminals = await materializeAgents(provisional, count, 1)
+    const provisional = { ...draft, name: resolvedName, dir, agentCounts: counts, isolated: !!isolated }
+    const items = countsToItems(counts)
+    const terminals = await materializeAgents(provisional, items, 1)
     setWorkspaces(prev => prev.map(w => {
       if (w.id !== activeId || !w.unconfigured) return w
       return {
         ...w,
         name: resolvedName,
         dir,
-        agentCount: count,
+        agentCounts: counts,
         isolated: !!isolated,
         terminals,
-        agentCounter: count,
+        agentCounter: items.length,
         spawned: true,
         focusedTerminalId: terminals[0]?.id ?? null,
         unconfigured: false
@@ -395,11 +428,17 @@ function AppInner() {
 
     // Persist deletion FIRST, before any PTY teardown that could crash native code.
     window.electronAPI.saveWorkspaces({
-      workspaces: nextWorkspaces.map(w => ({
-        id: w.id, name: w.name, dir: w.dir, agentCount: w.agentCount,
-        isolated: !!w.isolated,
-        editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
-      })),
+      workspaces: nextWorkspaces.map(w => {
+        const claude = w.terminals.filter(t => t.shell === 'claude').length
+        const codex  = w.terminals.filter(t => t.shell === 'codex').length
+        const live = w.spawned ? { claude, codex } : (w.agentCounts ?? { claude: 0, codex: 0 })
+        return {
+          id: w.id, name: w.name, dir: w.dir,
+          agentCounts: live,
+          isolated: !!w.isolated,
+          editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
+        }
+      }),
       activeWorkspaceId: nextActiveId
     })
 
@@ -454,19 +493,31 @@ function AppInner() {
     setWorkspaces(prev => prev.map(w => w.id === activeId ? updater(w) : w))
   }, [activeId])
 
-  const addAgent = useCallback(async () => {
+  const addAgent = useCallback(async (shell = 'claude') => {
     if (!activeId) return
     const w = workspaces.find(x => x.id === activeId)
     if (!w || w.unconfigured) return
+    if (!AGENT_TYPES.includes(shell)) return
+    if (!availability[shell]) return
     const nextNum = w.agentCounter + 1
-    const [agent] = await materializeAgents(w, 1, nextNum)
-    if (!agent) return // creation failed; abort silently (already logged)
+    const [agent] = await materializeAgents(w, [{ shell }], nextNum)
+    if (!agent) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
       agentCounter: Math.max(x.agentCounter, nextNum),
       terminals: [...x.terminals, agent]
     } : x))
-  }, [activeId, workspaces, materializeAgents])
+  }, [activeId, workspaces, materializeAgents, availability])
+
+  const openPicker = useCallback((anchorEl) => {
+    const rect = anchorEl?.getBoundingClientRect?.() ?? null
+    setPickerState({ anchorRect: rect })
+  }, [])
+  const closePicker = useCallback(() => setPickerState(null), [])
+  const handlePickAgent = useCallback((shell) => {
+    setPickerState(null)
+    addAgent(shell)
+  }, [addAgent])
 
   const finalizeTerminalRemoval = useCallback((w, target) => {
     if (target.ptyId) ptyPool.killPty(target.ptyId)
@@ -700,7 +751,7 @@ function AppInner() {
       if (activeWorkspace.unconfigured) return
       if (e.ctrlKey && e.key === 't') {
         e.preventDefault()
-        addAgent()
+        openPicker(null)
       }
       if (e.ctrlKey && e.key === 'w') {
         e.preventDefault()
@@ -716,7 +767,7 @@ function AppInner() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [addAgent, removeTerminal, activeWorkspace, closeEditor, setEditorPatch])
+  }, [openPicker, removeTerminal, activeWorkspace, closeEditor, setEditorPatch])
 
   // Block window-level file drops. Panes consume their own drops; anything
   // that misses (sidebar, gaps) would otherwise navigate the BrowserWindow
@@ -769,7 +820,7 @@ function AppInner() {
   return (
     <div className="app">
       <Toolbar
-        onAdd={addAgent}
+        onAdd={() => openPicker(null)}
         agentCount={terminals.length}
         editorOpen={!!activeWorkspace?.editor?.open}
         onToggleEditor={() => {
@@ -808,7 +859,7 @@ function AppInner() {
                 <div className="empty-workspace">
                   <span className="empty-mark">✦</span>
                   <p className="empty-title">No agents in this workspace</p>
-                  <button className="empty-btn" onClick={addAgent}>
+                  <button className="empty-btn" onClick={(e) => openPicker(e.currentTarget)}>
                     <svg className="empty-btn-plus" viewBox="0 0 12 12" aria-hidden="true">
                       <path d="M6 1.5v9M1.5 6h9" />
                     </svg>
@@ -833,7 +884,7 @@ function AppInner() {
                   onRename={renameTerminal}
                   onPtyReady={handlePtyReady}
                   onFontSizeChange={adjustFontSize}
-                  onAddAgent={addAgent}
+                  onAddAgent={(anchorEl) => openPicker(anchorEl)}
                   onSwap={swapTerminals}
                   onOpenFile={openFileInEditor}
                   isFocused={focusedId === t.id}
@@ -882,6 +933,15 @@ function AppInner() {
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      {pickerState && (
+        <AgentTypePicker
+          availability={availability}
+          anchorRect={pickerState.anchorRect}
+          onPick={handlePickAgent}
+          onClose={closePicker}
+        />
+      )}
 
       {pendingDeleteWorkspace && (
         <ConfirmDialog
