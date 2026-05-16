@@ -23,7 +23,7 @@ let codexAvailable = null
 function checkCodexAvailable() {
   if (codexAvailable !== null) return codexAvailable
   try {
-    execFileSync('where', ['codex.exe'], { stdio: 'ignore', windowsHide: true })
+    execFileSync('where', ['codex'], { stdio: 'ignore', windowsHide: true })
     codexAvailable = true
   } catch {
     codexAvailable = false
