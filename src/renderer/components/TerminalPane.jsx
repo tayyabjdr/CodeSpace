@@ -117,6 +117,8 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     const text = paths.map(p => /[\s"]/.test(p) ? `"${p.replace(/"/g, '\\"')}"` : p).join(' ')
     ptyPool.writePty(ptyId, text)
     onFocus?.(id)
+    doneTracker.noteFocus(id)
+    containerRef.current?.querySelector('.xterm-helper-textarea')?.focus()
   }
 
   return (
