@@ -509,15 +509,36 @@ function AppInner() {
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
 
+  const addAgents = useCallback(async (counts) => {
+    if (!activeId) return
+    const w = workspaces.find(x => x.id === activeId)
+    if (!w || w.unconfigured) return
+    const items = []
+    for (const shell of AGENT_TYPES) {
+      const n = Math.max(0, Number(counts?.[shell]) || 0)
+      if (availability[shell]) {
+        for (let i = 0; i < n; i++) items.push({ shell })
+      }
+    }
+    if (items.length === 0) return
+    const startNum = w.agentCounter + 1
+    const newAgents = await materializeAgents(w, items, startNum)
+    if (newAgents.length === 0) return
+    setWorkspaces(prev => prev.map(x => x.id === activeId ? {
+      ...x,
+      agentCounter: Math.max(x.agentCounter, startNum + newAgents.length - 1),
+      terminals: [...x.terminals, ...newAgents]
+    } : x))
+  }, [activeId, workspaces, materializeAgents, availability])
+
   const openPicker = useCallback((anchorEl) => {
     const rect = anchorEl?.getBoundingClientRect?.() ?? null
     setPickerState({ anchorRect: rect })
   }, [])
   const closePicker = useCallback(() => setPickerState(null), [])
-  const handlePickAgent = useCallback((shell) => {
-    setPickerState(null)
-    addAgent(shell)
-  }, [addAgent])
+  const handlePickAgent = useCallback((counts) => {
+    addAgents(counts)
+  }, [addAgents])
 
   const finalizeTerminalRemoval = useCallback((w, target) => {
     if (target.ptyId) ptyPool.killPty(target.ptyId)
