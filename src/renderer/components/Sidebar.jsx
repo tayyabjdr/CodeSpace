@@ -61,7 +61,9 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
           const isActive = ws.id === activeId
           const isNotifying = notifyingIds?.has(ws.id) ?? false
           const isDraft = !!ws.unconfigured
-          const count = ws.spawned ? (ws.terminals?.length ?? 0) : ws.agentCount
+          const count = ws.spawned
+            ? (ws.terminals?.length ?? 0)
+            : (ws.agentCounts?.claude ?? 0) + (ws.agentCounts?.codex ?? 0)
           return (
             <div
               key={ws.id}
