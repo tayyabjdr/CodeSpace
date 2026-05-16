@@ -176,6 +176,9 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
             {displayName}
           </span>
         )}
+        {!editing && shell && (
+          <span className={`tp-agent-badge tp-badge-${shell}`} title={shell}>{shell}</span>
+        )}
         {done && (
           <svg
             className="done-tick"
@@ -196,7 +199,7 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
           <button
             className="pane-add-btn"
             title="New agent"
-            onClick={e => { e.stopPropagation(); onAddAgent?.() }}
+            onClick={e => { e.stopPropagation(); onAddAgent?.(e.currentTarget) }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
               <line x1="12" y1="5" x2="12" y2="19" />

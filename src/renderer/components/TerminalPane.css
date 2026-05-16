@@ -372,3 +372,31 @@
   position: relative;
   z-index: 1;
 }
+
+/* Agent-type badge — small monospace pill rendered next to the agent name
+   in the pane header. Hidden while the pane is in rename mode. */
+.tp-agent-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-size: 9.5px;
+  text-transform: lowercase;
+  letter-spacing: 0.03em;
+  padding: 1px 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.4;
+  vertical-align: middle;
+  user-select: none;
+}
+.tp-badge-claude {
+  color: var(--cs-cyan, #67e8f9);
+  border-color: rgba(103, 232, 249, 0.35);
+  background: rgba(103, 232, 249, 0.06);
+}
+.tp-badge-codex {
+  color: var(--cs-violet, #c4b5fd);
+  border-color: rgba(196, 181, 253, 0.35);
+  background: rgba(196, 181, 253, 0.06);
+}
