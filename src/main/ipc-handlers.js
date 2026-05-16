@@ -1,7 +1,7 @@
 import { ipcMain, shell } from 'electron'
 import { statSync } from 'fs'
 import { isAbsolute } from 'path'
-import { createSession, writeSession, resizeSession, killSession, isClaudeAvailable } from './pty-manager.js'
+import { createSession, writeSession, resizeSession, killSession, isClaudeAvailable, isCodexAvailable } from './pty-manager.js'
 import * as editorFs from './editor-fs.js'
 import * as autoNamer from './auto-namer.js'
 import * as worktree from './worktree-manager.js'
@@ -39,6 +39,9 @@ export function registerHandlers(mainWindow) {
     if (shell === 'claude' && !isClaudeAvailable()) {
       return { error: 'claude-missing' }
     }
+    if (shell === 'codex' && !isCodexAvailable()) {
+      return { error: 'codex-missing' }
+    }
     const cwdValid = isValidCwd(cwd)
     if (cwd && !cwdValid) {
       return { error: 'cwd-missing', cwd }
@@ -73,6 +76,11 @@ export function registerHandlers(mainWindow) {
     disposeFor(ptyId)
     killSession(ptyId)
   })
+
+  ipcMain.handle('agents:availability', () => ({
+    claude: isClaudeAvailable(),
+    codex:  isCodexAvailable()
+  }))
 
   ipcMain.handle('editor:readFile',   async (_event, absPath) => { assertAbsPath(absPath); return editorFs.readFile(absPath) })
   ipcMain.handle('editor:writeFile',  async (_event, absPath, content) => { assertAbsPath(absPath); return editorFs.writeFile(absPath, content) })
