@@ -19,3 +19,15 @@ export const ONBOARDING_BOOT_DELAY_MS = 850
 // Cap on clipboard:writeText payloads — defends main process from a renderer
 // trying to push gigantic blobs into the OS clipboard.
 export const CLIPBOARD_WRITE_MAX_BYTES = 1024 * 1024
+
+// Agent CLI types CodeSpace can spawn. Single source of truth for picker,
+// badge, persistence, and settings.
+export const AGENT_TYPES = ['claude', 'codex']
+
+export const AGENT_LABELS = {
+  claude: 'Claude',
+  codex:  'Codex'
+}
+
+// Hard cap on agents per workspace (matches the 1–8 onboarding grid).
+export const AGENT_COUNT_MAX = 8

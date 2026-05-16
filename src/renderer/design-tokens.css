@@ -40,6 +40,7 @@
   --cs-red:          #ef4444;
   --cs-red-hover-bg: rgba(239, 68, 68, 0.14);
   --cs-red-hover-fg: rgba(248, 113, 113, 0.95);
+  --cs-violet:       #c4b5fd;
 
   /* Status dots */
   --cs-status-live:  #86efac;
