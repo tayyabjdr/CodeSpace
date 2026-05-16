@@ -98,6 +98,14 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     // Intercept clipboard shortcuts before xterm processes them.
     term.attachCustomKeyEventHandler((e) => {
       if (e.type !== 'keydown') return true
+
+      // Shift+Enter → literal newline inside the current input, not a submit.
+      if (e.key === 'Enter' && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        const id = ptyIdRef.current
+        if (id) ptyPool.writePty(id, '\n')
+        return false
+      }
+
       const ctrl = e.ctrlKey || e.metaKey
       if (!ctrl) return true
 
@@ -227,7 +235,18 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     // prose, not part of the URL. The regex captures aggressively, then we
     // peel these off the end. Closing brackets are paired — strip them only
     // when the URL has no matching opening bracket.
-    const URL_RE = /\bhttps?:\/\/[^\s<>"'`{}|\\^[\]]+/gi
+    //
+    // Two patterns are unioned:
+    //   1. Explicit-scheme URLs  (https?://)
+    //   2. Bare hostnames with a recognised TLD — e.g. status.claude.com
+    //      Must have at least one subdomain/label dot before a known TLD so
+    //      plain words like "example" or version strings like "1.2.3" don't
+    //      match. The TLD list covers the most common ones seen in agent output.
+    const KNOWN_TLDS = 'com|org|net|io|dev|ai|app|co|gov|edu|cloud|info|sh'
+    const URL_RE = new RegExp(
+      `(?:https?:\\/\\/[^\\s<>"'\`{}|\\\\^[\\]]+|\\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+(?:${KNOWN_TLDS})(?:\\/[^\\s<>"'\`{}|\\\\^[\\]]*)?)`,
+      'gi'
+    )
     const TRAIL_PUNCT = /[.,;:!?]+$/
     function trimUrl(raw) {
       let url = raw.replace(TRAIL_PUNCT, '')
@@ -237,6 +256,9 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
         }
       }
       return url
+    }
+    function toAbsoluteUrl(url) {
+      return /^https?:\/\//i.test(url) ? url : `https://${url}`
     }
 
     function getBufferLine(y) {
@@ -261,7 +283,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
             text: url,
             activate: (event) => {
               if (!(event.ctrlKey || event.metaKey)) return
-              window.electronAPI?.openExternal?.(url)
+              window.electronAPI?.openExternal?.(toAbsoluteUrl(url))
             },
             hover: () => {},
             leave: () => {},
