@@ -3,6 +3,8 @@ import { join } from 'path'
 import { promises as fs } from 'fs'
 
 const FILENAME = 'workspaces.json'
+const SCHEMA_VERSION = 2
+const AGENT_COUNT_MAX = 8
 
 function filePath() {
   return join(app.getPath('userData'), FILENAME)
@@ -27,6 +29,27 @@ async function quarantineCorrupt(path) {
   } catch {
     // best-effort — if rename fails, leave the file in place
   }
+}
+
+// Coerce any persisted shape (v1 `agentCount`, v2 `agentCounts`, garbage) into
+// a clamped {claude, codex} object. Total can't exceed AGENT_COUNT_MAX —
+// when truncation is required, Codex is dropped first so existing Claude
+// workspaces never lose panes during the v1→v2 migration.
+function sanitizeAgentCounts(w) {
+  let claude = 0
+  let codex  = 0
+  if (w && w.agentCounts && typeof w.agentCounts === 'object') {
+    if (Number.isFinite(w.agentCounts.claude)) claude = Math.max(0, Math.min(AGENT_COUNT_MAX, Math.floor(w.agentCounts.claude)))
+    if (Number.isFinite(w.agentCounts.codex))  codex  = Math.max(0, Math.min(AGENT_COUNT_MAX, Math.floor(w.agentCounts.codex)))
+  } else if (Number.isFinite(w?.agentCount)) {
+    claude = Math.max(0, Math.min(AGENT_COUNT_MAX, Math.floor(w.agentCount)))
+  } else {
+    claude = 2  // matches previous default
+  }
+  if (claude + codex > AGENT_COUNT_MAX) {
+    codex = Math.max(0, AGENT_COUNT_MAX - claude)
+  }
+  return { claude, codex }
 }
 
 export async function loadWorkspaces() {
@@ -57,7 +80,7 @@ export async function loadWorkspaces() {
       id: String(w.id),
       name: String(w.name ?? 'Workspace'),
       dir: String(w.dir ?? ''),
-      agentCount: Number.isFinite(w.agentCount) ? Math.max(1, Math.min(8, w.agentCount)) : 2,
+      agentCounts: sanitizeAgentCounts(w),
       isolated: !!w.isolated,
       editor: sanitizeEditor(w.editor)
     })),
@@ -77,11 +100,12 @@ function sanitizeEditor(e) {
 
 export async function saveWorkspaces(state) {
   const safe = {
+    version: SCHEMA_VERSION,
     workspaces: (state?.workspaces ?? []).map(w => ({
       id: w.id,
       name: w.name,
       dir: w.dir,
-      agentCount: w.agentCount,
+      agentCounts: sanitizeAgentCounts(w),
       isolated: !!w.isolated,
       editor: sanitizeEditor(w.editor)
     })),
