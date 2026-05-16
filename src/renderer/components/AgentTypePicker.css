@@ -2,7 +2,7 @@
   position: fixed;
   z-index: 1000;
   min-width: 200px;
-  background: var(--cs-bg-elevated, #11151b);
+  background: var(--cs-bg-surface, #0d0f12);
   border: 1px solid var(--cs-border-mid, #262a32);
   border-radius: 8px;
   padding: 6px;
