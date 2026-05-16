@@ -16,7 +16,7 @@ const MISSING_HINTS = {
 //   - anchorRect:   DOMRect or null (centers near top if null)
 //   - onPick:       ({ claude: number, codex: number }) => void
 //   - onClose:      () => void
-export default function AgentTypePicker({ availability, anchorRect, onPick, onClose }) {
+export default function AgentTypePicker({ availability, pos, onPick, onClose }) {
   const ref = useRef(null)
   const [counts, setCounts] = useState({ claude: 0, codex: 0 })
 
@@ -36,9 +36,8 @@ export default function AgentTypePicker({ availability, anchorRect, onPick, onCl
     }
   }, [onClose])
 
-  // Right-align to anchor so the picker opens leftward and stays within the pane.
-  const style = anchorRect
-    ? { right: window.innerWidth - anchorRect.right, top: anchorRect.bottom + 6 }
+  const style = pos
+    ? { top: pos.top, right: pos.right }
     : { left: '50%', top: 80, transform: 'translateX(-50%)' }
 
   const total = counts.claude + counts.codex
@@ -71,7 +70,7 @@ export default function AgentTypePicker({ availability, anchorRect, onPick, onCl
                 className={`agent-picker-row${available ? '' : ' is-disabled'}`}
                 title={available ? '' : MISSING_HINTS[shell]}
               >
-                <span className={`agent-picker-name ap-name-${shell}`}>{AGENT_LABELS[shell]}</span>
+                <span className="agent-picker-name">{AGENT_LABELS[shell]}</span>
                 <div className="agent-picker-stepper">
                   <button
                     type="button"

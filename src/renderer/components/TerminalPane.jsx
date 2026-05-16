@@ -199,7 +199,14 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
           <button
             className="pane-add-btn"
             title="New agent"
-            onClick={e => { e.stopPropagation(); onAddAgent?.(e.currentTarget) }}
+            onClick={e => {
+              e.stopPropagation()
+              const pane = e.currentTarget.closest('.pane')
+              onAddAgent?.({
+                btnRect:  e.currentTarget.getBoundingClientRect(),
+                paneRect: pane ? pane.getBoundingClientRect() : e.currentTarget.getBoundingClientRect()
+              })
+            }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
               <line x1="12" y1="5" x2="12" y2="19" />

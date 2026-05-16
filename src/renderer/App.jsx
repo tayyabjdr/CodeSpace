@@ -531,9 +531,18 @@ function AppInner() {
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
 
-  const openPicker = useCallback((anchorEl) => {
-    const rect = anchorEl?.getBoundingClientRect?.() ?? null
-    setPickerState({ anchorRect: rect })
+  const openPicker = useCallback((anchor) => {
+    if (!anchor) { setPickerState({ pos: null }); return }
+    // TerminalPane passes { btnRect, paneRect }; other callers pass a DOM element.
+    if (anchor.btnRect && anchor.paneRect) {
+      setPickerState({ pos: {
+        top:   anchor.btnRect.bottom + 6,
+        right: window.innerWidth - anchor.paneRect.right + 6
+      }})
+    } else {
+      const r = anchor.getBoundingClientRect?.()
+      setPickerState({ pos: r ? { top: r.bottom + 6, right: window.innerWidth - r.right } : null })
+    }
   }, [])
   const closePicker = useCallback(() => setPickerState(null), [])
   const handlePickAgent = useCallback((counts) => {
@@ -958,7 +967,7 @@ function AppInner() {
       {pickerState && (
         <AgentTypePicker
           availability={availability}
-          anchorRect={pickerState.anchorRect}
+          pos={pickerState.pos}
           onPick={handlePickAgent}
           onClose={closePicker}
         />
