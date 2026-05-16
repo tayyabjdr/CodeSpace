@@ -59,6 +59,10 @@ const api = {
     summarize: (tail) => ipcRenderer.invoke('agentName:summarize', tail),
   },
 
+  agents: {
+    getAvailability: () => ipcRenderer.invoke('agents:availability'),
+  },
+
   worktree: {
     isGitAvailable: () => ipcRenderer.invoke('worktree:isGitAvailable'),
     isGitRepo:      (dir) => ipcRenderer.invoke('worktree:isGitRepo', dir),
