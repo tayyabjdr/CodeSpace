@@ -118,7 +118,9 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     ptyPool.writePty(ptyId, text)
     onFocus?.(id)
     doneTracker.noteFocus(id)
-    containerRef.current?.querySelector('.xterm-helper-textarea')?.focus()
+    requestAnimationFrame(() => {
+      containerRef.current?.querySelector('.xterm-helper-textarea')?.focus()
+    })
   }
 
   return (
