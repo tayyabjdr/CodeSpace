@@ -90,6 +90,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
       fitAddon.fit()
       termRef.current = term
       fitRef.current = fitAddon
+
     } catch (err) {
       setError(err.message ?? 'Failed to initialise terminal')
       return
@@ -99,10 +100,16 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     term.attachCustomKeyEventHandler((e) => {
       if (e.type !== 'keydown') return true
 
-      // Shift+Enter → literal newline inside the current input, not a submit.
+      // Shift+Enter → newline inside the current input, not a submit.
+      // preventDefault() is required: returning false stops xterm's own
+      // key→data conversion, but without it the browser still delivers Enter
+      // to xterm's hidden textarea, which gets sent to the PTY as a submit.
+      // The bytes are backslash + CR — Claude CLI's terminal-agnostic
+      // line-continuation: a trailing "\" followed by Enter becomes a newline.
       if (e.key === 'Enter' && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
         const id = ptyIdRef.current
-        if (id) ptyPool.writePty(id, '\n')
+        if (id) ptyPool.writePty(id, '\\\r')
         return false
       }
 
