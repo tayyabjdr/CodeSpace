@@ -5,7 +5,7 @@ const DEFAULTS = {
   appearance: { defaultPaneFontSize: 13 },
   notifications: { doneSoundVolume: 50, taskbarFlashOnDone: true },
   updates: { autoUpdate: true },
-  agents: { dangerouslySkipPermissions: true }
+  agents: { dangerouslySkipPermissions: true, codexDangerouslyBypassApprovals: true }
 }
 
 let state = { ...DEFAULTS }

@@ -145,6 +145,16 @@ export default function SettingsModal({ open, onClose }) {
                 ariaLabel="Skip permission prompts"
               />
             </Row>
+            <Row
+              label="Codex — bypass approvals and sandbox"
+              caption={<>Runs <code>codex</code> with <code>--dangerously-bypass-approvals-and-sandbox</code></>}
+            >
+              <Toggle
+                checked={s.agents.codexDangerouslyBypassApprovals}
+                onChange={(v) => update({ agents: { codexDangerouslyBypassApprovals: v } })}
+                ariaLabel="Codex bypass approvals and sandbox"
+              />
+            </Row>
           </section>
         </div>
       </div>
