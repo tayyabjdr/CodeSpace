@@ -540,3 +540,56 @@
   font-family: 'Geist Mono Variable', ui-monospace, monospace;
   font-size: 11.5px; background: rgba(0,0,0,0.25); padding: 0 4px; border-radius: 3px;
 }
+
+/* Onboarding split control */
+.ob-split {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ob-split-title {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--cs-text-dim, rgba(255,255,255,0.6));
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+}
+.ob-split-dot { opacity: 0.5; }
+.ob-split-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ob-split-seg {
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  background: var(--cs-surface-1, #11151b);
+  color: var(--cs-text-primary, rgba(255,255,255,0.88));
+  border: 1px solid var(--cs-border-2, #2b3038);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.ob-split-seg:hover:not(:disabled) {
+  background: rgba(255,255,255,0.04);
+}
+.ob-split-seg:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ob-split-claude { color: var(--cs-cyan, #67e8f9); }
+.ob-split-codex  { color: var(--cs-violet, #c4b5fd); }
+
+.ob-split-hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--cs-text-dim, rgba(255,255,255,0.55));
+}
+.ob-split-hint code {
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+}

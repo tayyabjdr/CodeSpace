@@ -65,6 +65,26 @@ export default function Onboarding({
   const [launching, setLaunching] = useState(false)
   const [isolated, setIsolated] = useState(false)
   const [isRepo, setIsRepo] = useState(true)
+  const [availability, setAvailability] = useState({ claude: true, codex: true })
+  const [codexShare, setCodexShare] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    window.electronAPI?.agents?.getAvailability?.().then(av => {
+      if (cancelled || !av) return
+      setAvailability(av)
+      if (av.codex && !av.claude) setCodexShare(selectedCount)
+      else if (!av.codex && av.claude) setCodexShare(0)
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    setCodexShare(prev => Math.max(0, Math.min(selectedCount, prev)))
+  }, [selectedCount])
+
+  const claudeShare = selectedCount - codexShare
 
   useEffect(() => {
     if (!projectDir) { setIsRepo(true); return }
@@ -115,8 +135,8 @@ export default function Onboarding({
   const handleLaunch = () => {
     if (!canLaunch) return
     setLaunching(true)
-    // Allow the boot animation a beat before swapping to the workspace
-    setTimeout(() => onLaunch(selectedCount, projectDir, name.trim(), isolated), ONBOARDING_BOOT_DELAY_MS)
+    const counts = { claude: claudeShare, codex: codexShare }
+    setTimeout(() => onLaunch(counts, projectDir, name.trim(), isolated), ONBOARDING_BOOT_DELAY_MS)
   }
 
   const handleClose = () => {
@@ -208,6 +228,40 @@ export default function Onboarding({
                   </button>
                 ))}
               </div>
+              {availability.claude && availability.codex && (
+                <div className="ob-split">
+                  <div className="ob-split-title">
+                    <span>{claudeShare} Claude</span>
+                    <span className="ob-split-dot">·</span>
+                    <span>{codexShare} Codex</span>
+                  </div>
+                  <div className="ob-split-bar" role="group" aria-label="Split agents between Claude and Codex">
+                    <button
+                      type="button"
+                      className="ob-split-seg ob-split-claude"
+                      onClick={() => setCodexShare(s => Math.max(0, s - 1))}
+                      disabled={claudeShare <= 0}
+                      title="More Claude (fewer Codex)"
+                    >
+                      − Claude
+                    </button>
+                    <button
+                      type="button"
+                      className="ob-split-seg ob-split-codex"
+                      onClick={() => setCodexShare(s => Math.min(selectedCount, s + 1))}
+                      disabled={codexShare >= selectedCount}
+                      title="More Codex (fewer Claude)"
+                    >
+                      + Codex
+                    </button>
+                  </div>
+                </div>
+              )}
+              {(!availability.claude || !availability.codex) && (
+                <p className="ob-split-hint">
+                  Only <code>{availability.claude ? 'claude' : 'codex'}</code> detected on this machine. All agents will be {availability.claude ? 'Claude' : 'Codex'}.
+                </p>
+              )}
             </div>
 
             <div className="ob-field ob-isolation">
