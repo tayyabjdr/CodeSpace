@@ -537,7 +537,7 @@ function AppInner() {
     if (anchor.btnRect && anchor.paneRect) {
       setPickerState({ pos: {
         top:   anchor.btnRect.bottom + 6,
-        right: window.innerWidth - anchor.paneRect.right + 6
+        right: window.innerWidth - anchor.paneRect.right + 8
       }})
     } else {
       const r = anchor.getBoundingClientRect?.()
