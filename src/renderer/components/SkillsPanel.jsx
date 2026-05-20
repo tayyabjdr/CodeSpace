@@ -5,6 +5,7 @@ export default function SkillsPanel({
   width,
   loadState,  // 'loading' | 'content' | 'error' — 'error' currently renders nothing; UI deferred.
   skills,
+  pluginSkills = [],
   sourcePath,
   onClose,
   onCreate,
@@ -12,19 +13,22 @@ export default function SkillsPanel({
 }) {
   const [filter, setFilter] = useState('')
   const [mode, setMode] = useState('list')  // 'list' | 'create'
+  const [tab, setTab] = useState('user')    // 'user' | 'plugins'
   const [draftName, setDraftName] = useState('')
   const [draftBody, setDraftBody] = useState('')
   const [createError, setCreateError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const activeList = tab === 'plugins' ? pluginSkills : skills
+
   const visible = useMemo(() => {
     const q = filter.trim().toLowerCase()
-    if (!q) return skills
-    return skills.filter(s =>
+    if (!q) return activeList
+    return activeList.filter(s =>
       s.name.toLowerCase().includes(q) ||
       (s.description ?? '').toLowerCase().includes(q)
     )
-  }, [skills, filter])
+  }, [activeList, filter])
 
   const openCreate = () => {
     setDraftName('')
@@ -64,22 +68,43 @@ export default function SkillsPanel({
     >
       <header className="skills-panel-header">
         <div className="skills-panel-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cs-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 2l2.39 7.36H22l-6.19 4.49L18.2 21 12 16.51 5.8 21l2.39-7.15L2 9.36h7.61z"/>
-          </svg>
           <span>{mode === 'create' ? 'New skill' : 'Skills'}</span>
         </div>
         <div className="skills-panel-actions">
-          {mode === 'list' && (
-            <button type="button" className="skills-panel-newbtn" onClick={openCreate}>+ new</button>
-          )}
           <button type="button" className="skills-panel-closebtn" aria-label="Close Skills" onClick={onClose}>✕</button>
         </div>
       </header>
 
       {mode === 'list' && (
         <>
+          <nav className="skills-panel-tabs" role="tablist" aria-label="Skill source">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'user'}
+              className={`skills-panel-tab${tab === 'user' ? ' is-active' : ''}`}
+              onClick={() => setTab('user')}
+            >
+              <span className="skills-panel-tab-label">User</span>
+              <span className="skills-panel-tab-count">{skills.length}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'plugins'}
+              className={`skills-panel-tab${tab === 'plugins' ? ' is-active' : ''}`}
+              onClick={() => setTab('plugins')}
+            >
+              <span className="skills-panel-tab-label">Plugins</span>
+              <span className="skills-panel-tab-count">{pluginSkills.length}</span>
+            </button>
+          </nav>
+
           <div className="skills-panel-filter">
+            <svg className="skills-panel-filter-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
             <input
               type="text"
               placeholder="Filter skills…"
@@ -97,14 +122,21 @@ export default function SkillsPanel({
               </div>
             )}
 
-            {loadState === 'content' && visible.length === 0 && skills.length === 0 && (
+            {loadState === 'content' && visible.length === 0 && activeList.length === 0 && tab === 'user' && (
               <div className="skills-panel-empty">
                 <p className="skills-panel-empty-title">No skills yet</p>
-                <p className="skills-panel-empty-hint">Create one with <strong>+ new</strong>, or add a <code>&lt;name&gt;/SKILL.md</code> under <code>~/.claude/skills/</code></p>
+                <p className="skills-panel-empty-hint">Drop a <code>&lt;name&gt;/SKILL.md</code> under <code>~/.claude/skills/</code>, or use the button below.</p>
               </div>
             )}
 
-            {loadState === 'content' && visible.length === 0 && skills.length > 0 && (
+            {loadState === 'content' && visible.length === 0 && activeList.length === 0 && tab === 'plugins' && (
+              <div className="skills-panel-empty">
+                <p className="skills-panel-empty-title">No plugin skills installed</p>
+                <p className="skills-panel-empty-hint">Skills bundled with Claude Code plugins will appear here.</p>
+              </div>
+            )}
+
+            {loadState === 'content' && visible.length === 0 && activeList.length > 0 && (
               <div className="skills-panel-empty">
                 <p className="skills-panel-empty-title">No matches</p>
               </div>
@@ -124,10 +156,7 @@ export default function SkillsPanel({
                       e.dataTransfer.effectAllowed = 'copy'
                     }}
                   >
-                    <div className="skills-panel-card-row">
-                      <span className="skills-panel-card-name" data-testid="skill-name">{skill.name}</span>
-                      <span className="skills-panel-card-grip" aria-hidden>⠿</span>
-                    </div>
+                    <div className="skills-panel-card-name" data-testid="skill-name">{skill.name}</div>
                     {skill.description && (
                       <div className="skills-panel-card-desc">{skill.description}</div>
                     )}
@@ -135,6 +164,14 @@ export default function SkillsPanel({
                 ))}
               </ul>
             )}
+
+            {loadState === 'content' && tab === 'user' && filter.trim().length === 0 && (
+              <button type="button" className="skills-panel-create-row" onClick={openCreate}>
+                <span className="skills-panel-create-plus" aria-hidden>+</span>
+                <span className="skills-panel-create-label">Create skill</span>
+              </button>
+            )}
+
           </div>
         </>
       )}
@@ -189,7 +226,7 @@ export default function SkillsPanel({
           {sourcePath ?? '~/.claude/skills/'}
         </button>
         <span className="skills-panel-footer-count">
-          {skills.length} {skills.length === 1 ? 'skill' : 'skills'}
+          {activeList.length} {activeList.length === 1 ? 'skill' : 'skills'}
         </span>
       </footer>
     </aside>

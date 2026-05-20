@@ -85,7 +85,7 @@ describe('SkillsPanel', () => {
 
   it('switches to the create form when + new is clicked', async () => {
     render(<SkillsPanel {...baseProps} />)
-    await userEvent.click(screen.getByRole('button', { name: /\+ new/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create skill/i }))
     expect(screen.getByLabelText(/skill name/i)).toBeTruthy()
     expect(screen.getByLabelText(/prompt/i)).toBeTruthy()
   })
@@ -93,7 +93,7 @@ describe('SkillsPanel', () => {
   it('calls onCreate with {name, body} when the form is submitted', async () => {
     const onCreate = vi.fn().mockResolvedValue({ ok: true })
     render(<SkillsPanel {...baseProps} onCreate={onCreate} />)
-    await userEvent.click(screen.getByRole('button', { name: /\+ new/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create skill/i }))
     await userEvent.type(screen.getByLabelText(/skill name/i), 'audit')
     await userEvent.type(screen.getByLabelText(/prompt/i), 'Audit branch readiness')
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
@@ -102,7 +102,7 @@ describe('SkillsPanel', () => {
 
   it('returns to the list when Cancel is clicked', async () => {
     render(<SkillsPanel {...baseProps} />)
-    await userEvent.click(screen.getByRole('button', { name: /\+ new/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create skill/i }))
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(screen.queryByLabelText(/skill name/i)).toBeNull()
     expect(screen.getAllByTestId('skill-name').length).toBeGreaterThan(0)
@@ -111,7 +111,7 @@ describe('SkillsPanel', () => {
   it('shows an error message when onCreate resolves with { ok: false, reason: "exists" }', async () => {
     const onCreate = vi.fn().mockResolvedValue({ ok: false, reason: 'exists' })
     render(<SkillsPanel {...baseProps} onCreate={onCreate} />)
-    await userEvent.click(screen.getByRole('button', { name: /\+ new/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create skill/i }))
     await userEvent.type(screen.getByLabelText(/skill name/i), 'refactor')
     await userEvent.type(screen.getByLabelText(/prompt/i), 'x')
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }))

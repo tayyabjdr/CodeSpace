@@ -14,6 +14,13 @@ export function getSkillsDir() {
   return join(homedir(), '.claude', 'skills')
 }
 
+// Plugin-bundled skills installed by Claude Code's plugin system. Each plugin
+// version exposes a `skills/` directory under the cache root:
+//   ~/.claude/plugins/cache/<repo>/<plugin>/<version>/skills/<name>/SKILL.md
+export function getPluginsCacheDir() {
+  return join(homedir(), '.claude', 'plugins', 'cache')
+}
+
 export function parseFrontmatter(text) {
   const m = text.match(FRONTMATTER_RE)
   if (!m) {
@@ -53,6 +60,58 @@ export async function listSkills(dir = getSkillsDir()) {
       description,
       filePath
     })
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name))
+  return { ok: true, skills: out }
+}
+
+// Walk ~/.claude/plugins/cache/<repo>/<plugin>/<version>/skills/<name>/SKILL.md.
+// For each plugin we pick the latest version (alphabetical sort, last entry)
+// to avoid surfacing the same skill from multiple installed versions. The
+// returned `name` is `<plugin>:<skill>` to match how Claude Code addresses them.
+export async function listPluginSkills(rootDir = getPluginsCacheDir()) {
+  if (typeof rootDir !== 'string' || rootDir.length === 0) {
+    return { ok: false, reason: 'invalid-dir', skills: [] }
+  }
+  let repos
+  try { repos = await readdir(rootDir, { withFileTypes: true }) }
+  catch (err) {
+    if (err && err.code === 'ENOENT') return { ok: true, skills: [] }
+    return { ok: false, reason: 'denied', message: err?.message, skills: [] }
+  }
+  const out = []
+  for (const repo of repos) {
+    if (!repo.isDirectory()) continue
+    // Transient git-clone scratch dirs from the plugin installer.
+    if (repo.name.startsWith('temp_git_')) continue
+    const repoDir = join(rootDir, repo.name)
+    let plugins
+    try { plugins = await readdir(repoDir, { withFileTypes: true }) } catch { continue }
+    for (const plugin of plugins) {
+      if (!plugin.isDirectory()) continue
+      const pluginDir = join(repoDir, plugin.name)
+      let versionEntries
+      try { versionEntries = await readdir(pluginDir, { withFileTypes: true }) } catch { continue }
+      const versions = versionEntries.filter(d => d.isDirectory()).map(d => d.name).sort()
+      if (versions.length === 0) continue
+      const latest = versions[versions.length - 1]
+      const skillsDir = join(pluginDir, latest, 'skills')
+      let skills
+      try { skills = await readdir(skillsDir, { withFileTypes: true }) } catch { continue }
+      for (const skill of skills) {
+        if (!skill.isDirectory()) continue
+        const filePath = join(skillsDir, skill.name, SKILL_FILENAME)
+        let text
+        try { text = await readFile(filePath, 'utf8') } catch { continue }
+        const { description } = parseFrontmatter(text)
+        out.push({
+          name: `${plugin.name}:${skill.name}`,
+          description,
+          filePath,
+          plugin: plugin.name
+        })
+      }
+    }
   }
   out.sort((a, b) => a.name.localeCompare(b.name))
   return { ok: true, skills: out }

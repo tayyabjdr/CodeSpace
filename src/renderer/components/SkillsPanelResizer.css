@@ -1,7 +1,7 @@
 .skills-panel-resizer {
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: 0;
+  bottom: 0;
   width: 6px;
   cursor: col-resize;
   z-index: 26;

@@ -55,8 +55,9 @@ const api = {
   },
 
   skills: {
-    list:       () => ipcRenderer.invoke('skills:list'),
-    read:       (absPath) => ipcRenderer.invoke('skills:read', absPath),
+    list:        () => ipcRenderer.invoke('skills:list'),
+    listPlugins: () => ipcRenderer.invoke('skills:listPlugins'),
+    read:        (absPath) => ipcRenderer.invoke('skills:read', absPath),
     create:     (args) => ipcRenderer.invoke('skills:create', args),
     revealDir:  () => ipcRenderer.send('skills:revealDir'),
     startWatch: () => ipcRenderer.send('skills:startWatch'),

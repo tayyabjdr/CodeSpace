@@ -98,11 +98,15 @@ export function registerHandlers(mainWindow) {
   // ── Skills (~/.claude/skills/<name>/SKILL.md, one subdir per skill) ─────
   let skillsWatcherDispose = null
 
-  ipcMain.handle('skills:list',  async () => skillsFs.listSkills())
+  ipcMain.handle('skills:list',         async () => skillsFs.listSkills())
+  ipcMain.handle('skills:listPlugins',  async () => skillsFs.listPluginSkills())
   ipcMain.handle('skills:read',  async (_e, absPath) => {
     if (typeof absPath !== 'string' || !isAbsolute(absPath)) return { ok: false, reason: 'invalid-path' }
-    const dir = skillsFs.getSkillsDir()
-    if (!absPath.startsWith(dir + PATH_SEP)) return { ok: false, reason: 'invalid-path' }
+    const userDir = skillsFs.getSkillsDir()
+    const pluginDir = skillsFs.getPluginsCacheDir()
+    if (!absPath.startsWith(userDir + PATH_SEP) && !absPath.startsWith(pluginDir + PATH_SEP)) {
+      return { ok: false, reason: 'invalid-path' }
+    }
     return skillsFs.readSkillBody(absPath)
   })
   ipcMain.handle('skills:create', async (_e, args) => {

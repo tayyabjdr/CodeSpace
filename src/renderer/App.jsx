@@ -105,6 +105,7 @@ function AppInner() {
   const [activePanel, setActivePanel] = useState(null) // null | 'skills'
   const [skillsLoadState, setSkillsLoadState] = useState('loading') // 'loading' | 'content' | 'error'
   const [skills, setSkills] = useState([])
+  const [pluginSkills, setPluginSkills] = useState([])
   const [skillsPanelWidth, setSkillsPanelWidth] = useState(() => loadPanelWidth())
 
   const persistTimerRef = useRef(null)
@@ -573,24 +574,37 @@ function AppInner() {
     savePanelWidth(px)
   }, [])
 
-  // Load skills + subscribe to changes while the Skills panel is open.
+  // Load both user + plugin skills while the Skills panel is open. The user
+  // dir is watched for hot reload; plugin skills are re-read on the same tick
+  // because they change only when a plugin is installed/removed, which is rare
+  // and acceptable to refresh by closing + reopening the panel.
   useEffect(() => {
     if (activePanel !== 'skills') return
     let cancelled = false
+    const attachBodies = async (list) => Promise.all(list.map(async s => {
+      const b = await window.electronAPI.skills.read(s.filePath).catch(() => ({ ok: false }))
+      return { ...s, body: b?.ok ? b.body : '' }
+    }))
     const load = () => {
       setSkillsLoadState(prev => (prev === 'content' ? prev : 'loading'))
-      window.electronAPI.skills.list().then(async (r) => {
+      Promise.all([
+        window.electronAPI.skills.list(),
+        window.electronAPI.skills.listPlugins(),
+      ]).then(async ([userR, pluginR]) => {
         if (cancelled) return
-        if (!r?.ok) { setSkills([]); setSkillsLoadState('error'); return }
-        const withBodies = await Promise.all(r.skills.map(async s => {
-          const b = await window.electronAPI.skills.read(s.filePath).catch(() => ({ ok: false }))
-          return { ...s, body: b?.ok ? b.body : '' }
-        }))
+        if (!userR?.ok && !pluginR?.ok) {
+          setSkills([]); setPluginSkills([]); setSkillsLoadState('error'); return
+        }
+        const [userBodies, pluginBodies] = await Promise.all([
+          attachBodies(userR?.ok ? userR.skills : []),
+          attachBodies(pluginR?.ok ? pluginR.skills : []),
+        ])
         if (cancelled) return
-        setSkills(withBodies)
+        setSkills(userBodies)
+        setPluginSkills(pluginBodies)
         setSkillsLoadState('content')
       }).catch(() => {
-        if (!cancelled) { setSkills([]); setSkillsLoadState('error') }
+        if (!cancelled) { setSkills([]); setPluginSkills([]); setSkillsLoadState('error') }
       })
     }
     load()
@@ -922,7 +936,7 @@ function AppInner() {
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
         />
-        <div className={`body-main${fsTerminalId ? ' fs-terminal' : ''}${fsEditor ? ' fs-editor' : ''}${activePanel ? ' has-panel' : ''}`}>
+        <div className={`body-main${fsTerminalId ? ' fs-terminal' : ''}${fsEditor ? ' fs-editor' : ''}`}>
           <div className="grid-wrap">
             {activeWorkspace?.unconfigured ? (
               <Onboarding
@@ -1012,12 +1026,13 @@ function AppInner() {
                 onResize={handleSkillsResize}
                 onResizeEnd={handleSkillsResizeEnd}
                 onReset={handleSkillsResetWidth}
-                style={{ right: `${skillsPanelWidth + 6}px` }}
+                style={{ right: `${skillsPanelWidth}px` }}
               />
               <SkillsPanel
                 width={skillsPanelWidth}
                 loadState={skillsLoadState}
                 skills={skills}
+                pluginSkills={pluginSkills}
                 sourcePath="~/.claude/skills/"
                 onClose={() => setActivePanel(null)}
                 onCreate={async ({ name, body }) => {
@@ -1031,7 +1046,6 @@ function AppInner() {
         <RightToolbar
           activePanel={activePanel}
           onSelectPanel={handleSelectPanel}
-          onOpenSettings={() => setSettingsOpen(true)}
         />
       </div>
 

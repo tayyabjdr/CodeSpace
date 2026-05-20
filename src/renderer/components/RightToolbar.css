@@ -1,7 +1,7 @@
 .right-toolbar {
   width: 40px;
   flex-shrink: 0;
-  background: var(--cs-bg-elevated);
+  background: var(--cs-bg-sidebar);
   border-left: 1px solid var(--cs-border);
   display: flex;
   flex-direction: column;
@@ -33,8 +33,8 @@
 }
 
 .right-toolbar-btn.is-active {
-  background: var(--cs-cyan-bg);
-  border-color: var(--cs-cyan);
+  background: transparent;
+  border-color: transparent;
   color: var(--cs-cyan);
 }
 
@@ -50,7 +50,7 @@
 }
 
 .right-toolbar-btn.is-active:hover:not(:disabled) {
-  background: var(--cs-cyan-bg);
+  background: var(--cs-bg-hover);
   color: var(--cs-cyan);
 }
 
@@ -58,8 +58,4 @@
 .right-toolbar-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
-}
-
-.right-toolbar-spacer {
-  flex: 1;
 }

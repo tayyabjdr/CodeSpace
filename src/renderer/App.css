@@ -41,12 +41,6 @@
   border-left: 0;
 }
 
-.body-main.has-panel > .grid-wrap {
-  opacity: 0.55;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
 .grid-wrap {
   flex: 1;
   display: flex;
