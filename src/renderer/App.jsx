@@ -569,7 +569,7 @@ function AppInner() {
         if (r?.ok) { setSkills(r.skills); setSkillsLoadState('content') }
         else { setSkills([]); setSkillsLoadState('error') }
       }).catch(() => {
-        if (!cancelled) setSkillsLoadState('error')
+        if (!cancelled) { setSkills([]); setSkillsLoadState('error') }
       })
     }
     load()
