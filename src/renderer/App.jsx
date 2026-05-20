@@ -10,6 +10,7 @@ import SettingsModal from './components/SettingsModal.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
 import RightToolbar from './components/RightToolbar.jsx'
+import SkillsPanel from './components/SkillsPanel.jsx'
 import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
@@ -100,6 +101,8 @@ function AppInner() {
   const [availability, setAvailability] = useState({ claude: true, codex: true })
   const [pickerState, setPickerState] = useState(null) // null | { anchorRect: DOMRect|null }
   const [activePanel, setActivePanel] = useState(null) // null | 'skills'
+  const [skillsLoadState, setSkillsLoadState] = useState('loading') // 'loading' | 'content' | 'error'
+  const [skills, setSkills] = useState([])
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
@@ -555,6 +558,30 @@ function AppInner() {
     setActivePanel(prev => prev === panelId ? null : panelId)
   }, [])
 
+  // Load skills + subscribe to changes while the Skills panel is open.
+  useEffect(() => {
+    if (activePanel !== 'skills') return
+    let cancelled = false
+    const load = () => {
+      setSkillsLoadState(prev => (prev === 'content' ? prev : 'loading'))
+      window.electronAPI.skills.list().then(r => {
+        if (cancelled) return
+        if (r?.ok) { setSkills(r.skills); setSkillsLoadState('content') }
+        else { setSkills([]); setSkillsLoadState('error') }
+      }).catch(() => {
+        if (!cancelled) setSkillsLoadState('error')
+      })
+    }
+    load()
+    window.electronAPI.skills.startWatch()
+    const off = window.electronAPI.skills.onChanged(load)
+    return () => {
+      cancelled = true
+      off()
+      window.electronAPI.skills.stopWatch()
+    }
+  }, [activePanel])
+
   const finalizeTerminalRemoval = useCallback((w, target) => {
     if (target.ptyId) ptyPool.killPty(target.ptyId)
     else ptyPool.cancelCreate(target.id)
@@ -955,6 +982,17 @@ function AppInner() {
                 />
               </Suspense>
             </>
+          )}
+          {activePanel === 'skills' && (
+            <SkillsPanel
+              width={260}
+              loadState={skillsLoadState}
+              skills={skills}
+              sourcePath="~/.claude/commands/"
+              onClose={() => setActivePanel(null)}
+              onCreate={() => { /* wired in Task 11 */ }}
+              onRevealDir={() => window.electronAPI.skills.revealDir()}
+            />
           )}
         </div>
         <RightToolbar
