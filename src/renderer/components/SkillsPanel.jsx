@@ -100,7 +100,7 @@ export default function SkillsPanel({
             {loadState === 'content' && visible.length === 0 && skills.length === 0 && (
               <div className="skills-panel-empty">
                 <p className="skills-panel-empty-title">No skills yet</p>
-                <p className="skills-panel-empty-hint">Create one with <strong>+ new</strong>, or add an <code>.md</code> file to <code>~/.claude/commands/</code></p>
+                <p className="skills-panel-empty-hint">Create one with <strong>+ new</strong>, or add a <code>&lt;name&gt;/SKILL.md</code> under <code>~/.claude/skills/</code></p>
               </div>
             )}
 
@@ -186,7 +186,7 @@ export default function SkillsPanel({
           onClick={onRevealDir}
           title="Open in file explorer"
         >
-          {sourcePath ?? '~/.claude/commands/'}
+          {sourcePath ?? '~/.claude/skills/'}
         </button>
         <span className="skills-panel-footer-count">
           {skills.length} {skills.length === 1 ? 'skill' : 'skills'}

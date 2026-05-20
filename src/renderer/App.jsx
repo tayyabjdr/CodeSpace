@@ -1018,7 +1018,7 @@ function AppInner() {
                 width={skillsPanelWidth}
                 loadState={skillsLoadState}
                 skills={skills}
-                sourcePath="~/.claude/commands/"
+                sourcePath="~/.claude/skills/"
                 onClose={() => setActivePanel(null)}
                 onCreate={async ({ name, body }) => {
                   return window.electronAPI.skills.create({ name, body })

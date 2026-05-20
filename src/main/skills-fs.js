@@ -4,9 +4,14 @@ import { join, isAbsolute } from 'node:path'
 import { homedir } from 'node:os'
 
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/
+const SKILL_FILENAME = 'SKILL.md'
 
-export function getCommandsDir() {
-  return join(homedir(), '.claude', 'commands')
+// Skills live as subdirectories of ~/.claude/skills/, each containing a SKILL.md
+// file. The directory name is the skill's identity (e.g. `codespace-design`);
+// the SKILL.md may carry frontmatter (`name:` / `description:`) used for display
+// and the body below is the prompt injected on drag-drop.
+export function getSkillsDir() {
+  return join(homedir(), '.claude', 'skills')
 }
 
 export function parseFrontmatter(text) {
@@ -25,7 +30,7 @@ export function parseFrontmatter(text) {
   return { description, body }
 }
 
-export async function listSkills(dir = getCommandsDir()) {
+export async function listSkills(dir = getSkillsDir()) {
   if (typeof dir !== 'string' || dir.length === 0) {
     return { ok: false, reason: 'invalid-dir', skills: [] }
   }
@@ -38,14 +43,13 @@ export async function listSkills(dir = getCommandsDir()) {
   }
   const out = []
   for (const entry of entries) {
-    if (!entry.isFile()) continue
-    if (!entry.name.toLowerCase().endsWith('.md')) continue
-    const filePath = join(dir, entry.name)
-    let text = ''
+    if (!entry.isDirectory()) continue
+    const filePath = join(dir, entry.name, SKILL_FILENAME)
+    let text
     try { text = await readFile(filePath, 'utf8') } catch { continue }
     const { description } = parseFrontmatter(text)
     out.push({
-      name: entry.name.slice(0, -3),
+      name: entry.name,
       description,
       filePath
     })
@@ -75,18 +79,23 @@ export function sanitizeSkillName(raw) {
   return raw.trim().replace(/\s+/g, '-').replace(NAME_INVALID_RE, '').toLowerCase()
 }
 
-export async function createSkill(name, body, dir = getCommandsDir()) {
+export async function createSkill(name, body, dir = getSkillsDir()) {
   const safe = sanitizeSkillName(name)
   if (safe.length === 0) return { ok: false, reason: 'invalid-name' }
   if (typeof body !== 'string') return { ok: false, reason: 'invalid-body' }
+  const skillDir = join(dir, safe)
+  const filePath = join(skillDir, SKILL_FILENAME)
   try {
-    await mkdir(dir, { recursive: true })
+    await mkdir(skillDir, { recursive: true })
   } catch (err) {
     return { ok: false, reason: 'denied', message: err?.message }
   }
-  const filePath = join(dir, `${safe}.md`)
+  // Minimal frontmatter so subsequent listSkills() picks up the new entry with
+  // a usable identity (description falls back to the first body line via
+  // parseFrontmatter when no description is set).
+  const content = `---\nname: ${safe}\n---\n${body}`
   try {
-    await writeFile(filePath, body, { encoding: 'utf8', flag: 'wx' })
+    await writeFile(filePath, content, { encoding: 'utf8', flag: 'wx' })
     return { ok: true, filePath, name: safe }
   } catch (err) {
     if (err?.code === 'EEXIST') return { ok: false, reason: 'exists', filePath }
@@ -94,9 +103,13 @@ export async function createSkill(name, body, dir = getCommandsDir()) {
   }
 }
 
-export function watchSkills(callback, dir = getCommandsDir()) {
+export function watchSkills(callback, dir = getSkillsDir()) {
   // Returns a disposer. The watcher tolerates a missing directory by polling
   // for its creation; once it exists we attach a real fs.watch.
+  //
+  // We watch recursively so that edits inside any <skill>/SKILL.md also fire —
+  // not just adds/removes of the skill subdirectory itself. Windows + macOS
+  // support recursive fs.watch natively; Linux requires Node 20+.
   let watcher = null
   let pollTimer = null
   let debounceTimer = null
@@ -111,9 +124,7 @@ export function watchSkills(callback, dir = getCommandsDir()) {
   const attach = () => {
     if (disposed || watcher) return
     try {
-      watcher = nodeWatch(dir, { persistent: true, recursive: false }, (event, filename) => {
-        if (!filename || filename.toLowerCase().endsWith('.md')) fire()
-      })
+      watcher = nodeWatch(dir, { persistent: true, recursive: true }, () => fire())
       watcher.on('error', () => {
         try { watcher.close() } catch {}
         watcher = null

@@ -95,13 +95,13 @@ export function registerHandlers(mainWindow) {
     }
   })
 
-  // ── Skills (slash commands from ~/.claude/commands/*.md) ────────────────
+  // ── Skills (~/.claude/skills/<name>/SKILL.md, one subdir per skill) ─────
   let skillsWatcherDispose = null
 
   ipcMain.handle('skills:list',  async () => skillsFs.listSkills())
   ipcMain.handle('skills:read',  async (_e, absPath) => {
     if (typeof absPath !== 'string' || !isAbsolute(absPath)) return { ok: false, reason: 'invalid-path' }
-    const dir = skillsFs.getCommandsDir()
+    const dir = skillsFs.getSkillsDir()
     if (!absPath.startsWith(dir + PATH_SEP)) return { ok: false, reason: 'invalid-path' }
     return skillsFs.readSkillBody(absPath)
   })
@@ -112,7 +112,7 @@ export function registerHandlers(mainWindow) {
     return skillsFs.createSkill(args.name, args.body)
   })
   ipcMain.on('skills:revealDir', () => {
-    shell.openPath(skillsFs.getCommandsDir()).then(err => {
+    shell.openPath(skillsFs.getSkillsDir()).then(err => {
       if (err && process.env.NODE_ENV !== 'production') {
         console.warn('[ipc] revealDir failed:', err)
       }

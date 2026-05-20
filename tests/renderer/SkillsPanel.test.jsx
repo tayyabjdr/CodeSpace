@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event'
 import SkillsPanel from '../../src/renderer/components/SkillsPanel.jsx'
 
 const SKILLS = [
-  { name: 'refactor', description: 'Clean up code', filePath: '/u/.claude/commands/refactor.md' },
-  { name: 'review',   description: 'Find bugs',    filePath: '/u/.claude/commands/review.md' },
-  { name: 'tests',    description: null,           filePath: '/u/.claude/commands/tests.md' },
+  { name: 'refactor', description: 'Clean up code', filePath: '/u/.claude/skills/refactor.md' },
+  { name: 'review',   description: 'Find bugs',    filePath: '/u/.claude/skills/review.md' },
+  { name: 'tests',    description: null,           filePath: '/u/.claude/skills/tests.md' },
 ]
 
 const baseProps = {
@@ -64,8 +64,8 @@ describe('SkillsPanel', () => {
   })
 
   it('shows the source path and count in the footer', () => {
-    render(<SkillsPanel {...baseProps} sourcePath="~/.claude/commands/" />)
-    expect(screen.getByText(/~\/\.claude\/commands\//)).toBeTruthy()
+    render(<SkillsPanel {...baseProps} sourcePath="~/.claude/skills/" />)
+    expect(screen.getByText(/~\/\.claude\/skills\//)).toBeTruthy()
     expect(screen.getByText(/3 skills/i)).toBeTruthy()
   })
 

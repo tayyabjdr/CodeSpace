@@ -1,9 +1,15 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync as fsExistsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { listSkills, parseFrontmatter, readSkillBody } from '../../src/main/skills-fs.js'
+import {
+  listSkills,
+  parseFrontmatter,
+  readSkillBody,
+  createSkill,
+  sanitizeSkillName,
+} from '../../src/main/skills-fs.js'
 
 let TMP
 
@@ -14,6 +20,12 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(TMP, { recursive: true, force: true })
 })
+
+// Helper: create a skill subdir <TMP>/<name>/ containing SKILL.md with `content`.
+function writeSkill(name, content) {
+  mkdirSync(join(TMP, name), { recursive: true })
+  writeFileSync(join(TMP, name, 'SKILL.md'), content)
+}
 
 describe('parseFrontmatter', () => {
   it('returns the first line as description when there is no frontmatter', () => {
@@ -49,25 +61,29 @@ describe('listSkills', () => {
     expect(r.skills).toEqual([])
   })
 
-  it('lists .md files sorted by name', async () => {
-    writeFileSync(join(TMP, 'zebra.md'), 'Z body')
-    writeFileSync(join(TMP, 'alpha.md'), 'A body')
+  it('lists subdirectories containing SKILL.md, sorted by name', async () => {
+    writeSkill('zebra', 'Z body')
+    writeSkill('alpha', 'A body')
+    // Plain files at top level are not skills.
     writeFileSync(join(TMP, 'README.txt'), 'not a skill')
+    // Subdir without SKILL.md is skipped.
+    mkdirSync(join(TMP, 'empty-dir'))
     const r = await listSkills(TMP)
     expect(r.ok).toBe(true)
     expect(r.skills.map(s => s.name)).toEqual(['alpha', 'zebra'])
-    expect(r.skills[0].filePath).toBe(join(TMP, 'alpha.md'))
+    expect(r.skills[0].filePath).toBe(join(TMP, 'alpha', 'SKILL.md'))
   })
 
   it('reads description from frontmatter when present', async () => {
-    writeFileSync(join(TMP, 'review.md'), '---\ndescription: Find bugs\n---\nFull body here')
+    writeSkill('review', '---\ndescription: Find bugs\n---\nFull body here')
     const r = await listSkills(TMP)
     expect(r.skills[0].description).toBe('Find bugs')
   })
 
-  it('skips entries that are not regular files (subdirs etc.)', async () => {
-    mkdirSync(join(TMP, 'sub.md'))  // a directory named like a md file
-    writeFileSync(join(TMP, 'real.md'), 'body')
+  it('skips subdirectories that do not contain SKILL.md', async () => {
+    mkdirSync(join(TMP, 'no-skill-here'))
+    writeFileSync(join(TMP, 'no-skill-here', 'README.md'), 'not the SKILL file')
+    writeSkill('real', 'body')
     const r = await listSkills(TMP)
     expect(r.skills.map(s => s.name)).toEqual(['real'])
   })
@@ -82,15 +98,14 @@ describe('listSkills', () => {
 
 describe('readSkillBody', () => {
   it('returns the full file content stripped of frontmatter', async () => {
-    const p = join(TMP, 'x.md')
-    writeFileSync(p, '---\ndescription: x\n---\nThe full prompt body')
-    const r = await readSkillBody(p)
+    writeSkill('x', '---\ndescription: x\n---\nThe full prompt body')
+    const r = await readSkillBody(join(TMP, 'x', 'SKILL.md'))
     expect(r.ok).toBe(true)
     expect(r.body).toBe('The full prompt body')
   })
 
   it('returns error when file is missing', async () => {
-    const r = await readSkillBody(join(TMP, 'missing.md'))
+    const r = await readSkillBody(join(TMP, 'missing', 'SKILL.md'))
     expect(r.ok).toBe(false)
     expect(r.reason).toBe('not-found')
   })
@@ -101,9 +116,6 @@ describe('readSkillBody', () => {
     expect(r.reason).toBe('invalid-path')
   })
 })
-
-import { createSkill, sanitizeSkillName } from '../../src/main/skills-fs.js'
-import { readFileSync, existsSync as fsExistsSync } from 'node:fs'
 
 describe('sanitizeSkillName', () => {
   it('lowercases and replaces whitespace with hyphens', () => {
@@ -127,11 +139,11 @@ describe('sanitizeSkillName', () => {
 })
 
 describe('createSkill', () => {
-  it('writes a new .md file with the given body', async () => {
+  it('creates <name>/SKILL.md with frontmatter and the given body', async () => {
     const r = await createSkill('my-skill', 'do the thing', TMP)
     expect(r.ok).toBe(true)
-    expect(r.filePath).toBe(join(TMP, 'my-skill.md'))
-    expect(readFileSync(r.filePath, 'utf8')).toBe('do the thing')
+    expect(r.filePath).toBe(join(TMP, 'my-skill', 'SKILL.md'))
+    expect(readFileSync(r.filePath, 'utf8')).toBe('---\nname: my-skill\n---\ndo the thing')
   })
 
   it('refuses an empty sanitized name', async () => {
@@ -141,17 +153,28 @@ describe('createSkill', () => {
   })
 
   it('refuses to overwrite an existing skill', async () => {
-    writeFileSync(join(TMP, 'dup.md'), 'old')
+    mkdirSync(join(TMP, 'dup'))
+    writeFileSync(join(TMP, 'dup', 'SKILL.md'), 'old')
     const r = await createSkill('dup', 'new', TMP)
     expect(r.ok).toBe(false)
     expect(r.reason).toBe('exists')
-    expect(readFileSync(join(TMP, 'dup.md'), 'utf8')).toBe('old')
+    expect(readFileSync(join(TMP, 'dup', 'SKILL.md'), 'utf8')).toBe('old')
   })
 
-  it('creates the commands directory if it does not exist', async () => {
+  it('creates the skills directory if it does not exist', async () => {
     const sub = join(TMP, 'fresh')
     const r = await createSkill('first', 'body', sub)
     expect(r.ok).toBe(true)
-    expect(fsExistsSync(join(sub, 'first.md'))).toBe(true)
+    expect(fsExistsSync(join(sub, 'first', 'SKILL.md'))).toBe(true)
+  })
+
+  it('roundtrips: createSkill then listSkills sees the new entry', async () => {
+    await createSkill('aud-it', 'Audit branch readiness', TMP)
+    const r = await listSkills(TMP)
+    expect(r.ok).toBe(true)
+    expect(r.skills.map(s => s.name)).toEqual(['aud-it'])
+    const body = await readSkillBody(r.skills[0].filePath)
+    expect(body.ok).toBe(true)
+    expect(body.body).toBe('Audit branch readiness')
   })
 })
