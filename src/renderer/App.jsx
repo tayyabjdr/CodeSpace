@@ -9,6 +9,10 @@ import UpdateToast from './components/UpdateToast.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
+import RightToolbar from './components/RightToolbar.jsx'
+import SkillsPanel from './components/SkillsPanel.jsx'
+import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
+import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
 import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
@@ -98,6 +102,11 @@ function AppInner() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [availability, setAvailability] = useState({ claude: true, codex: true })
   const [pickerState, setPickerState] = useState(null) // null | { anchorRect: DOMRect|null }
+  const [activePanel, setActivePanel] = useState(null) // null | 'skills'
+  const [skillsLoadState, setSkillsLoadState] = useState('loading') // 'loading' | 'content' | 'error'
+  const [skills, setSkills] = useState([])
+  const [pluginSkills, setPluginSkills] = useState([])
+  const [skillsPanelWidth, setSkillsPanelWidth] = useState(() => loadPanelWidth())
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
@@ -549,6 +558,64 @@ function AppInner() {
   const handlePickAgent = useCallback((counts) => {
     addAgents(counts)
   }, [addAgents])
+  const handleSelectPanel = useCallback((panelId) => {
+    setActivePanel(prev => prev === panelId ? null : panelId)
+  }, [])
+
+  const handleSkillsResize = useCallback((px) => {
+    setSkillsPanelWidth(clampPanelWidth(px, bodyWidthRef.current || 1400))
+  }, [])
+  const handleSkillsResizeEnd = useCallback(() => {
+    savePanelWidth(skillsPanelWidth)
+  }, [skillsPanelWidth])
+  const handleSkillsResetWidth = useCallback(() => {
+    const px = clampPanelWidth(SKILLS_PANEL_DEFAULT_PX, bodyWidthRef.current || 1400)
+    setSkillsPanelWidth(px)
+    savePanelWidth(px)
+  }, [])
+
+  // Load both user + plugin skills while the Skills panel is open. The user
+  // dir is watched for hot reload; plugin skills are re-read on the same tick
+  // because they change only when a plugin is installed/removed, which is rare
+  // and acceptable to refresh by closing + reopening the panel.
+  useEffect(() => {
+    if (activePanel !== 'skills') return
+    let cancelled = false
+    const attachBodies = async (list) => Promise.all(list.map(async s => {
+      const b = await window.electronAPI.skills.read(s.filePath).catch(() => ({ ok: false }))
+      return { ...s, body: b?.ok ? b.body : '' }
+    }))
+    const load = () => {
+      setSkillsLoadState(prev => (prev === 'content' ? prev : 'loading'))
+      Promise.all([
+        window.electronAPI.skills.list(),
+        window.electronAPI.skills.listPlugins(),
+      ]).then(async ([userR, pluginR]) => {
+        if (cancelled) return
+        if (!userR?.ok && !pluginR?.ok) {
+          setSkills([]); setPluginSkills([]); setSkillsLoadState('error'); return
+        }
+        const [userBodies, pluginBodies] = await Promise.all([
+          attachBodies(userR?.ok ? userR.skills : []),
+          attachBodies(pluginR?.ok ? pluginR.skills : []),
+        ])
+        if (cancelled) return
+        setSkills(userBodies)
+        setPluginSkills(pluginBodies)
+        setSkillsLoadState('content')
+      }).catch(() => {
+        if (!cancelled) { setSkills([]); setPluginSkills([]); setSkillsLoadState('error') }
+      })
+    }
+    load()
+    window.electronAPI.skills.startWatch()
+    const off = window.electronAPI.skills.onChanged(load)
+    return () => {
+      cancelled = true
+      off()
+      window.electronAPI.skills.stopWatch()
+    }
+  }, [activePanel])
 
   const finalizeTerminalRemoval = useCallback((w, target) => {
     if (target.ptyId) ptyPool.killPty(target.ptyId)
@@ -951,7 +1018,35 @@ function AppInner() {
               </Suspense>
             </>
           )}
+          {activePanel === 'skills' && (
+            <>
+              <SkillsPanelResizer
+                width={skillsPanelWidth}
+                bodyWidth={bodyWidthRef.current || 1400}
+                onResize={handleSkillsResize}
+                onResizeEnd={handleSkillsResizeEnd}
+                onReset={handleSkillsResetWidth}
+                style={{ right: `${skillsPanelWidth}px` }}
+              />
+              <SkillsPanel
+                width={skillsPanelWidth}
+                loadState={skillsLoadState}
+                skills={skills}
+                pluginSkills={pluginSkills}
+                sourcePath="~/.claude/skills/"
+                onClose={() => setActivePanel(null)}
+                onCreate={async ({ name, body }) => {
+                  return window.electronAPI.skills.create({ name, body })
+                }}
+                onRevealDir={() => window.electronAPI.skills.revealDir()}
+              />
+            </>
+          )}
         </div>
+        <RightToolbar
+          activePanel={activePanel}
+          onSelectPanel={handleSelectPanel}
+        />
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />

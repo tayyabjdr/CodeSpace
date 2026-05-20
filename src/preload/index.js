@@ -54,6 +54,21 @@ const api = {
     revealInFolder: (absPath) => ipcRenderer.send('editor:revealInFolder', absPath),
   },
 
+  skills: {
+    list:        () => ipcRenderer.invoke('skills:list'),
+    listPlugins: () => ipcRenderer.invoke('skills:listPlugins'),
+    read:        (absPath) => ipcRenderer.invoke('skills:read', absPath),
+    create:     (args) => ipcRenderer.invoke('skills:create', args),
+    revealDir:  () => ipcRenderer.send('skills:revealDir'),
+    startWatch: () => ipcRenderer.send('skills:startWatch'),
+    stopWatch:  () => ipcRenderer.send('skills:stopWatch'),
+    onChanged:  (callback) => {
+      const handler = (_event) => callback()
+      ipcRenderer.on('skills:changed', handler)
+      return () => ipcRenderer.removeListener('skills:changed', handler)
+    }
+  },
+
   agentName: {
     hasKey:    () => ipcRenderer.invoke('agentName:hasKey'),
     summarize: (tail) => ipcRenderer.invoke('agentName:summarize', tail),

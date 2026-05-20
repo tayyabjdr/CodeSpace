@@ -1,10 +1,11 @@
 import { ipcMain, shell } from 'electron'
 import { statSync } from 'fs'
-import { isAbsolute } from 'path'
+import { isAbsolute, sep as PATH_SEP } from 'path'
 import { createSession, writeSession, resizeSession, killSession, isClaudeAvailable, isCodexAvailable } from './pty-manager.js'
 import * as editorFs from './editor-fs.js'
 import * as autoNamer from './auto-namer.js'
 import * as worktree from './worktree-manager.js'
+import * as skillsFs from './skills-fs.js'
 
 function isValidCwd(cwd) {
   if (typeof cwd !== 'string' || cwd.length === 0) return false
@@ -91,6 +92,48 @@ export function registerHandlers(mainWindow) {
       if (process.env.NODE_ENV !== 'production') {
         console.warn('[ipc] revealInFolder failed:', err)
       }
+    }
+  })
+
+  // ── Skills (~/.claude/skills/<name>/SKILL.md, one subdir per skill) ─────
+  let skillsWatcherDispose = null
+
+  ipcMain.handle('skills:list',         async () => skillsFs.listSkills())
+  ipcMain.handle('skills:listPlugins',  async () => skillsFs.listPluginSkills())
+  ipcMain.handle('skills:read',  async (_e, absPath) => {
+    if (typeof absPath !== 'string' || !isAbsolute(absPath)) return { ok: false, reason: 'invalid-path' }
+    const userDir = skillsFs.getSkillsDir()
+    const pluginDir = skillsFs.getPluginsCacheDir()
+    if (!absPath.startsWith(userDir + PATH_SEP) && !absPath.startsWith(pluginDir + PATH_SEP)) {
+      return { ok: false, reason: 'invalid-path' }
+    }
+    return skillsFs.readSkillBody(absPath)
+  })
+  ipcMain.handle('skills:create', async (_e, args) => {
+    if (!args || typeof args.name !== 'string' || typeof args.body !== 'string') {
+      return { ok: false, reason: 'invalid-args' }
+    }
+    return skillsFs.createSkill(args.name, args.body)
+  })
+  ipcMain.on('skills:revealDir', () => {
+    shell.openPath(skillsFs.getSkillsDir()).then(err => {
+      if (err && process.env.NODE_ENV !== 'production') {
+        console.warn('[ipc] revealDir failed:', err)
+      }
+    }).catch(() => {})
+  })
+
+  ipcMain.on('skills:startWatch', () => {
+    if (skillsWatcherDispose) return
+    skillsWatcherDispose = skillsFs.watchSkills(() => {
+      if (mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return
+      mainWindow.webContents.send('skills:changed')
+    })
+  })
+  ipcMain.on('skills:stopWatch', () => {
+    if (skillsWatcherDispose) {
+      try { skillsWatcherDispose() } catch {}
+      skillsWatcherDispose = null
     }
   })
 
@@ -185,6 +228,10 @@ export function registerHandlers(mainWindow) {
   // If the renderer goes away (window close, devtools reload, crash) drop
   // every subscription so we don't post events into a destroyed webContents.
   mainWindow.webContents.on('destroyed', () => {
+    if (skillsWatcherDispose) {
+      try { skillsWatcherDispose() } catch {}
+      skillsWatcherDispose = null
+    }
     for (const ptyId of Array.from(ptyDisposables.keys())) {
       disposeFor(ptyId)
     }

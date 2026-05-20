@@ -105,7 +105,7 @@
 }
 .editor-fs-btn.is-active:hover {
   color: var(--cs-cyan);
-  background: rgba(103, 232, 249, 0.08);
+  background: var(--cs-cyan-bg);
 }
 
 .editor-body {
@@ -172,8 +172,4 @@
   background-size: 200% 100%;
   animation: editor-shimmer 0.6s linear infinite;
   pointer-events: none;
-}
-@keyframes editor-shimmer {
-  from { background-position: 200% 50%; }
-  to   { background-position: -100% 50%; }
 }
