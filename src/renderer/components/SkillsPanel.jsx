@@ -81,7 +81,8 @@ export default function SkillsPanel({
                 data-testid="skill-card"
                 draggable={true}
                 onDragStart={e => {
-                  e.dataTransfer.setData('application/x-codespace-skill', skill.filePath)
+                  e.dataTransfer.setData('application/x-codespace-skill', skill.body ?? '')
+                  e.dataTransfer.setData('application/x-codespace-skill-name', skill.name)
                   e.dataTransfer.effectAllowed = 'copy'
                 }}
               >

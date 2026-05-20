@@ -68,4 +68,18 @@ describe('SkillsPanel', () => {
     expect(screen.getByText(/~\/\.claude\/commands\//)).toBeTruthy()
     expect(screen.getByText(/3 skills/i)).toBeTruthy()
   })
+
+  it('sets the skill body and name on the drag payload', () => {
+    const skill = { name: 'refactor', description: 'x', filePath: '/x/refactor.md', body: 'Clean up this code' }
+    render(<SkillsPanel {...baseProps} skills={[skill]} />)
+    const card = screen.getByTestId('skill-card')
+    const data = new Map()
+    const dataTransfer = {
+      setData: (type, val) => data.set(type, val),
+      effectAllowed: '',
+    }
+    fireEvent.dragStart(card, { dataTransfer })
+    expect(data.get('application/x-codespace-skill')).toBe('Clean up this code')
+    expect(data.get('application/x-codespace-skill-name')).toBe('refactor')
+  })
 })

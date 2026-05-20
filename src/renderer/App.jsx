@@ -564,10 +564,16 @@ function AppInner() {
     let cancelled = false
     const load = () => {
       setSkillsLoadState(prev => (prev === 'content' ? prev : 'loading'))
-      window.electronAPI.skills.list().then(r => {
+      window.electronAPI.skills.list().then(async (r) => {
         if (cancelled) return
-        if (r?.ok) { setSkills(r.skills); setSkillsLoadState('content') }
-        else { setSkills([]); setSkillsLoadState('error') }
+        if (!r?.ok) { setSkills([]); setSkillsLoadState('error'); return }
+        const withBodies = await Promise.all(r.skills.map(async s => {
+          const b = await window.electronAPI.skills.read(s.filePath).catch(() => ({ ok: false }))
+          return { ...s, body: b?.ok ? b.body : '' }
+        }))
+        if (cancelled) return
+        setSkills(withBodies)
+        setSkillsLoadState('content')
       }).catch(() => {
         if (!cancelled) { setSkills([]); setSkillsLoadState('error') }
       })
