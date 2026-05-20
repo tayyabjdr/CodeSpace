@@ -1020,7 +1020,9 @@ function AppInner() {
                 skills={skills}
                 sourcePath="~/.claude/commands/"
                 onClose={() => setActivePanel(null)}
-                onCreate={() => { /* wired in Task 11 */ }}
+                onCreate={async ({ name, body }) => {
+                  return window.electronAPI.skills.create({ name, body })
+                }}
                 onRevealDir={() => window.electronAPI.skills.revealDir()}
               />
             </>

@@ -206,3 +206,97 @@
   font-family: var(--cs-font-mono);
   font-size: 9.5px;
 }
+
+.skills-panel-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  min-height: 0;
+}
+.skills-panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.skills-panel-field > span {
+  font-family: var(--cs-font-ui);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cs-text-muted);
+}
+.skills-panel-field input,
+.skills-panel-field textarea {
+  background: var(--cs-bg-base);
+  border: 1px solid var(--cs-border);
+  border-radius: 5px;
+  padding: 6px 8px;
+  color: var(--cs-text-secondary);
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  outline: none;
+  resize: none;
+  transition: border-color var(--cs-transition);
+}
+.skills-panel-field textarea {
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.skills-panel-field input:focus,
+.skills-panel-field textarea:focus {
+  border-color: var(--cs-cyan);
+}
+.skills-panel-field-grow {
+  flex: 1;
+  min-height: 0;
+}
+.skills-panel-field-grow textarea {
+  flex: 1;
+  height: 100%;
+  min-height: 80px;
+}
+
+.skills-panel-form-error {
+  background: var(--cs-red-hover-bg);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 5px;
+  padding: 6px 8px;
+  color: var(--cs-red-hover-fg);
+  font-family: var(--cs-font-ui);
+  font-size: 11px;
+}
+
+.skills-panel-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.skills-panel-cancelbtn,
+.skills-panel-savebtn {
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border-hover);
+  border-radius: 5px;
+  padding: 5px 11px;
+  color: var(--cs-text-secondary);
+  font-family: var(--cs-font-ui);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+.skills-panel-cancelbtn:hover:not(:disabled) { background: var(--cs-bg-hover); }
+.skills-panel-savebtn {
+  color: var(--cs-cyan);
+  border-color: rgba(103, 232, 249, 0.4);
+}
+.skills-panel-savebtn:hover:not(:disabled) {
+  background: var(--cs-cyan-bg);
+  border-color: var(--cs-cyan);
+}
+.skills-panel-cancelbtn:disabled,
+.skills-panel-savebtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
