@@ -1,5 +1,4 @@
-import { readdir, readFile, writeFile, stat, mkdir } from 'node:fs/promises'
-import { existsSync, watch as nodeWatch } from 'node:fs'
+import { readdir, readFile } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
 import { homedir } from 'node:os'
 
@@ -31,23 +30,21 @@ export async function listSkills(dir = getCommandsDir()) {
   }
   let entries
   try {
-    entries = await readdir(dir)
+    entries = await readdir(dir, { withFileTypes: true })
   } catch (err) {
     if (err && err.code === 'ENOENT') return { ok: true, skills: [] }
     return { ok: false, reason: 'denied', message: err?.message, skills: [] }
   }
   const out = []
   for (const entry of entries) {
-    if (!entry.toLowerCase().endsWith('.md')) continue
-    const filePath = join(dir, entry)
-    let st
-    try { st = await stat(filePath) } catch { continue }
-    if (!st.isFile()) continue
+    if (!entry.isFile()) continue
+    if (!entry.name.toLowerCase().endsWith('.md')) continue
+    const filePath = join(dir, entry.name)
     let text = ''
     try { text = await readFile(filePath, 'utf8') } catch { continue }
     const { description } = parseFrontmatter(text)
     out.push({
-      name: entry.slice(0, -3),
+      name: entry.name.slice(0, -3),
       description,
       filePath
     })

@@ -16,7 +16,7 @@ afterEach(() => {
 })
 
 describe('parseFrontmatter', () => {
-  it('uses the first non-empty line as description when no frontmatter is present', () => {
+  it('returns the first line as description when there is no frontmatter', () => {
     const r = parseFrontmatter('Just a body\nsecond line')
     expect(r.description).toBe('Just a body')
     expect(r.body).toBe('Just a body\nsecond line')
@@ -71,6 +71,13 @@ describe('listSkills', () => {
     const r = await listSkills(TMP)
     expect(r.skills.map(s => s.name)).toEqual(['real'])
   })
+
+  it('returns invalid-dir when called with an empty string', async () => {
+    const r = await listSkills('')
+    expect(r.ok).toBe(false)
+    expect(r.reason).toBe('invalid-dir')
+    expect(r.skills).toEqual([])
+  })
 })
 
 describe('readSkillBody', () => {
@@ -86,5 +93,11 @@ describe('readSkillBody', () => {
     const r = await readSkillBody(join(TMP, 'missing.md'))
     expect(r.ok).toBe(false)
     expect(r.reason).toBe('not-found')
+  })
+
+  it('returns invalid-path when called with a relative path', async () => {
+    const r = await readSkillBody('relative/path.md')
+    expect(r.ok).toBe(false)
+    expect(r.reason).toBe('invalid-path')
   })
 })
