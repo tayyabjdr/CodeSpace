@@ -89,7 +89,8 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     const types = Array.from(e.dataTransfer.types)
     const isPaneSwap = types.includes('application/x-codespace-terminal')
     const isFileDrop = types.includes('Files')
-    if (!isPaneSwap && !isFileDrop) return
+    const isSkillDrop = types.includes('application/x-codespace-skill')
+    if (!isPaneSwap && !isFileDrop && !isSkillDrop) return
     e.preventDefault()
     e.dataTransfer.dropEffect = isPaneSwap ? 'move' : 'copy'
     setDragOver(true)
@@ -102,12 +103,24 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     const types = Array.from(e.dataTransfer.types)
     const isPaneSwap = types.includes('application/x-codespace-terminal')
     const isFileDrop = types.includes('Files')
-    if (!isPaneSwap && !isFileDrop) return
+    const isSkillDrop = types.includes('application/x-codespace-skill')
+    if (!isPaneSwap && !isFileDrop && !isSkillDrop) return
     e.preventDefault()
     setDragOver(false)
     if (isPaneSwap) {
       const srcId = e.dataTransfer.getData('application/x-codespace-terminal')
       if (srcId && srcId !== id) onSwap?.(srcId, id)
+      return
+    }
+    if (isSkillDrop) {
+      if (!ptyId) return
+      // Body is '' when Task 8's pre-fetch failed for this skill — skip silently
+      // so the user just sees nothing happen instead of an empty terminal write.
+      const body = e.dataTransfer.getData('application/x-codespace-skill')
+      if (!body) return
+      ptyPool.writePty(ptyId, body)
+      onFocus?.(id)
+      doneTracker.noteFocus(id)
       return
     }
     const paths = Array.from(e.dataTransfer.files)
