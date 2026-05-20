@@ -14,7 +14,6 @@
   overflow: hidden;
   z-index: 25;
   animation: scaleIn 0.2s ease both;
-  min-width: 220px;
 }
 
 .skills-panel-header {

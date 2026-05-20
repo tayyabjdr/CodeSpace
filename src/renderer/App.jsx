@@ -11,6 +11,8 @@ import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
 import RightToolbar from './components/RightToolbar.jsx'
 import SkillsPanel from './components/SkillsPanel.jsx'
+import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
+import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
 import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
@@ -103,6 +105,7 @@ function AppInner() {
   const [activePanel, setActivePanel] = useState(null) // null | 'skills'
   const [skillsLoadState, setSkillsLoadState] = useState('loading') // 'loading' | 'content' | 'error'
   const [skills, setSkills] = useState([])
+  const [skillsPanelWidth, setSkillsPanelWidth] = useState(() => loadPanelWidth())
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
@@ -558,6 +561,18 @@ function AppInner() {
     setActivePanel(prev => prev === panelId ? null : panelId)
   }, [])
 
+  const handleSkillsResize = useCallback((px) => {
+    setSkillsPanelWidth(clampPanelWidth(px, bodyWidthRef.current || 1400))
+  }, [])
+  const handleSkillsResizeEnd = useCallback(() => {
+    savePanelWidth(skillsPanelWidth)
+  }, [skillsPanelWidth])
+  const handleSkillsResetWidth = useCallback(() => {
+    const px = clampPanelWidth(SKILLS_PANEL_DEFAULT_PX, bodyWidthRef.current || 1400)
+    setSkillsPanelWidth(px)
+    savePanelWidth(px)
+  }, [])
+
   // Load skills + subscribe to changes while the Skills panel is open.
   useEffect(() => {
     if (activePanel !== 'skills') return
@@ -990,15 +1005,25 @@ function AppInner() {
             </>
           )}
           {activePanel === 'skills' && (
-            <SkillsPanel
-              width={260}
-              loadState={skillsLoadState}
-              skills={skills}
-              sourcePath="~/.claude/commands/"
-              onClose={() => setActivePanel(null)}
-              onCreate={() => { /* wired in Task 11 */ }}
-              onRevealDir={() => window.electronAPI.skills.revealDir()}
-            />
+            <>
+              <SkillsPanelResizer
+                width={skillsPanelWidth}
+                bodyWidth={bodyWidthRef.current || 1400}
+                onResize={handleSkillsResize}
+                onResizeEnd={handleSkillsResizeEnd}
+                onReset={handleSkillsResetWidth}
+                style={{ right: `${skillsPanelWidth + 6}px` }}
+              />
+              <SkillsPanel
+                width={skillsPanelWidth}
+                loadState={skillsLoadState}
+                skills={skills}
+                sourcePath="~/.claude/commands/"
+                onClose={() => setActivePanel(null)}
+                onCreate={() => { /* wired in Task 11 */ }}
+                onRevealDir={() => window.electronAPI.skills.revealDir()}
+              />
+            </>
           )}
         </div>
         <RightToolbar
