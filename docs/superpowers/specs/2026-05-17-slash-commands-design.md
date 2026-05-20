@@ -1,6 +1,6 @@
 # Slash Commands — Design Spec
 
-**Status:** In progress — design decisions captured, implementation not started yet.
+**Status:** Superseded on 2026-05-20 by the v2 design captured in `docs/superpowers/plans/2026-05-20-right-toolbar-skills.md`. The floating-pill design below was replaced by a flush full-height right toolbar with a resizable floating Skills panel.
 
 ## Overview
 
