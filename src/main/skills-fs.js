@@ -12,10 +12,8 @@ export function getCommandsDir() {
 export function parseFrontmatter(text) {
   const m = text.match(FRONTMATTER_RE)
   if (!m) {
-    const lines = text.split(/\r?\n/)
-    const firstLine = lines[0]
-    const description = firstLine.trim().length > 0 ? null : (lines.find(l => l.trim().length > 0) ?? null)
-    return { description, body: text }
+    const firstLine = text.split(/\r?\n/).find(l => l.trim().length > 0) ?? null
+    return { description: firstLine, body: text }
   }
   const block = m[1]
   let description = null

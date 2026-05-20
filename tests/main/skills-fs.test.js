@@ -16,9 +16,9 @@ afterEach(() => {
 })
 
 describe('parseFrontmatter', () => {
-  it('returns body when no frontmatter is present', () => {
+  it('uses the first non-empty line as description when no frontmatter is present', () => {
     const r = parseFrontmatter('Just a body\nsecond line')
-    expect(r.description).toBe(null)
+    expect(r.description).toBe('Just a body')
     expect(r.body).toBe('Just a body\nsecond line')
   })
 
@@ -33,6 +33,12 @@ describe('parseFrontmatter', () => {
     const r = parseFrontmatter('\n\nFirst real line\nsecond')
     expect(r.description).toBe('First real line')
     expect(r.body).toBe('\n\nFirst real line\nsecond')
+  })
+
+  it('returns null description when no non-empty line exists', () => {
+    const r = parseFrontmatter('\n\n   \n')
+    expect(r.description).toBe(null)
+    expect(r.body).toBe('\n\n   \n')
   })
 })
 
