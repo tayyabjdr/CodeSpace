@@ -33,7 +33,7 @@
 }
 
 .right-toolbar-btn.is-active {
-  background: rgba(103, 232, 249, 0.08);
+  background: var(--cs-cyan-bg);
   border-color: var(--cs-cyan);
   color: var(--cs-cyan);
 }
