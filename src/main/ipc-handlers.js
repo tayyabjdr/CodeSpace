@@ -5,6 +5,7 @@ import { createSession, writeSession, resizeSession, killSession, isClaudeAvaila
 import * as editorFs from './editor-fs.js'
 import * as autoNamer from './auto-namer.js'
 import * as worktree from './worktree-manager.js'
+import * as skillsFs from './skills-fs.js'
 
 function isValidCwd(cwd) {
   if (typeof cwd !== 'string' || cwd.length === 0) return false
@@ -92,6 +93,35 @@ export function registerHandlers(mainWindow) {
         console.warn('[ipc] revealInFolder failed:', err)
       }
     }
+  })
+
+  // ── Skills (slash commands from ~/.claude/commands/*.md) ────────────────
+  let skillsWatcherDispose = null
+
+  ipcMain.handle('skills:list',  async () => skillsFs.listSkills())
+  ipcMain.handle('skills:read',  async (_e, absPath) => {
+    if (typeof absPath !== 'string' || !isAbsolute(absPath)) return { ok: false, reason: 'invalid-path' }
+    return skillsFs.readSkillBody(absPath)
+  })
+  ipcMain.handle('skills:create', async (_e, args) => {
+    if (!args || typeof args.name !== 'string' || typeof args.body !== 'string') {
+      return { ok: false, reason: 'invalid-args' }
+    }
+    return skillsFs.createSkill(args.name, args.body)
+  })
+  ipcMain.on('skills:revealDir', () => {
+    try { shell.openPath(skillsFs.getCommandsDir()) } catch {}
+  })
+
+  ipcMain.on('skills:startWatch', () => {
+    if (skillsWatcherDispose) return
+    skillsWatcherDispose = skillsFs.watchSkills(() => {
+      if (mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return
+      mainWindow.webContents.send('skills:changed')
+    })
+  })
+  ipcMain.on('skills:stopWatch', () => {
+    if (skillsWatcherDispose) { try { skillsWatcherDispose() } catch {} ; skillsWatcherDispose = null }
   })
 
   // Hand off http(s) URLs to the OS's default browser. We refuse anything that
@@ -185,6 +215,7 @@ export function registerHandlers(mainWindow) {
   // If the renderer goes away (window close, devtools reload, crash) drop
   // every subscription so we don't post events into a destroyed webContents.
   mainWindow.webContents.on('destroyed', () => {
+    if (skillsWatcherDispose) { try { skillsWatcherDispose() } catch {} ; skillsWatcherDispose = null }
     for (const ptyId of Array.from(ptyDisposables.keys())) {
       disposeFor(ptyId)
     }
