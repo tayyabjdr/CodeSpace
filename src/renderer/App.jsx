@@ -9,6 +9,7 @@ import UpdateToast from './components/UpdateToast.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
+import RightToolbar from './components/RightToolbar.jsx'
 import { initSettings, getSettings } from './settings-store.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
@@ -98,6 +99,7 @@ function AppInner() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [availability, setAvailability] = useState({ claude: true, codex: true })
   const [pickerState, setPickerState] = useState(null) // null | { anchorRect: DOMRect|null }
+  const [activePanel, setActivePanel] = useState(null) // null | 'skills'
 
   const persistTimerRef = useRef(null)
   const desktopPathRef = useRef('')
@@ -549,6 +551,9 @@ function AppInner() {
   const handlePickAgent = useCallback((counts) => {
     addAgents(counts)
   }, [addAgents])
+  const handleSelectPanel = useCallback((panelId) => {
+    setActivePanel(prev => prev === panelId ? null : panelId)
+  }, [])
 
   const finalizeTerminalRemoval = useCallback((w, target) => {
     if (target.ptyId) ptyPool.killPty(target.ptyId)
@@ -952,6 +957,11 @@ function AppInner() {
             </>
           )}
         </div>
+        <RightToolbar
+          activePanel={activePanel}
+          onSelectPanel={handleSelectPanel}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
       </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
