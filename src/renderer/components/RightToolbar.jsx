@@ -41,6 +41,8 @@ const PANELS = [
 ]
 
 export default function RightToolbar({ activePanel, onSelectPanel, onOpenSettings }) {
+  // TODO(a11y): role="toolbar" should support ArrowUp/ArrowDown to move
+  // focus between buttons (roving tabindex). Tab-only nav works for now.
   return (
     <div className="right-toolbar" role="toolbar" aria-orientation="vertical" aria-label="Tools">
       {PANELS.map(p => {
@@ -53,7 +55,7 @@ export default function RightToolbar({ activePanel, onSelectPanel, onOpenSetting
             className={`right-toolbar-btn${isActive ? ' is-active' : ''}${p.enabled ? '' : ' is-stub'}`}
             title={p.enabled ? p.label : `${p.label} (coming soon)`}
             aria-label={p.label}
-            aria-pressed={isActive}
+            aria-pressed={p.enabled ? isActive : undefined}
             disabled={!p.enabled}
             onClick={() => p.enabled && onSelectPanel(p.id)}
           >

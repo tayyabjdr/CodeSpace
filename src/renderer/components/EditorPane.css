@@ -105,7 +105,7 @@
 }
 .editor-fs-btn.is-active:hover {
   color: var(--cs-cyan);
-  background: rgba(103, 232, 249, 0.08);
+  background: var(--cs-cyan-bg);
 }
 
 .editor-body {

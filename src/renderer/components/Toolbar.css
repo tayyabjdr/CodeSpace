@@ -132,7 +132,7 @@
 
 .titlebar-editor-toggle.is-open {
   color: var(--cs-cyan);
-  background: rgba(103, 232, 249, 0.08);
+  background: var(--cs-cyan-bg);
 }
 
 .titlebar-editor-toggle.is-open:hover {

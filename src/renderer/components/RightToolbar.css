@@ -49,6 +49,11 @@
   background: var(--cs-cyan);
 }
 
+.right-toolbar-btn.is-active:hover:not(:disabled) {
+  background: var(--cs-cyan-bg);
+  color: var(--cs-cyan);
+}
+
 .right-toolbar-btn.is-stub,
 .right-toolbar-btn:disabled {
   opacity: 0.35;

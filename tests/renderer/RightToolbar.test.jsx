@@ -37,4 +37,11 @@ describe('RightToolbar', () => {
     await userEvent.click(screen.getByRole('button', { name: /settings/i }))
     expect(onSettings).toHaveBeenCalledOnce()
   })
+
+  it('does not fire onSelectPanel when a disabled stub button is clicked', async () => {
+    const onSelect = vi.fn()
+    render(<RightToolbar activePanel={null} onSelectPanel={onSelect} onOpenSettings={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: /slash commands/i }))
+    expect(onSelect).not.toHaveBeenCalled()
+  })
 })
