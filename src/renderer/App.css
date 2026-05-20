@@ -19,7 +19,7 @@
   min-height: 0;
   min-width: 0;
   background: var(--cs-bg-base);
-  position: relative;  /* anchors the floating Skills panel (added in Task 7) */
+  position: relative;  /* containing block for the floating Skills panel */
 }
 
 /* Fullscreen modes — one pane covers the entire body-main area (sidebar stays).
