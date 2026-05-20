@@ -1,0 +1,60 @@
+.right-toolbar {
+  width: 40px;
+  flex-shrink: 0;
+  background: var(--cs-bg-elevated);
+  border-left: 1px solid var(--cs-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 2px;
+  z-index: 30;
+}
+
+.right-toolbar-btn {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cs-icon-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.right-toolbar-btn:hover:not(:disabled) {
+  background: var(--cs-bg-hover);
+  color: var(--cs-icon-secondary);
+}
+
+.right-toolbar-btn.is-active {
+  background: rgba(103, 232, 249, 0.08);
+  border-color: var(--cs-cyan);
+  color: var(--cs-cyan);
+}
+
+.right-toolbar-btn.is-active::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--cs-cyan);
+}
+
+.right-toolbar-btn.is-stub,
+.right-toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.right-toolbar-spacer {
+  flex: 1;
+}
