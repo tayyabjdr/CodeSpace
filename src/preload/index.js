@@ -62,7 +62,7 @@ const api = {
     startWatch: () => ipcRenderer.send('skills:startWatch'),
     stopWatch:  () => ipcRenderer.send('skills:stopWatch'),
     onChanged:  (callback) => {
-      const handler = () => callback()
+      const handler = (_event) => callback()
       ipcRenderer.on('skills:changed', handler)
       return () => ipcRenderer.removeListener('skills:changed', handler)
     }
