@@ -1,0 +1,116 @@
+import { useMemo, useState } from 'react'
+import './SkillsPanel.css'
+
+export default function SkillsPanel({
+  width,
+  loadState,         // 'loading' | 'content' | 'error'
+  skills,
+  sourcePath,
+  onClose,
+  onCreate,
+  onRevealDir,
+}) {
+  const [filter, setFilter] = useState('')
+
+  const visible = useMemo(() => {
+    const q = filter.trim().toLowerCase()
+    if (!q) return skills
+    return skills.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      (s.description ?? '').toLowerCase().includes(q)
+    )
+  }, [skills, filter])
+
+  return (
+    <aside
+      className="skills-panel"
+      style={{ width: `${width}px` }}
+      role="complementary"
+      aria-label="Skills"
+    >
+      <header className="skills-panel-header">
+        <div className="skills-panel-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cs-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 2l2.39 7.36H22l-6.19 4.49L18.2 21 12 16.51 5.8 21l2.39-7.15L2 9.36h7.61z"/>
+          </svg>
+          <span>Skills</span>
+        </div>
+        <div className="skills-panel-actions">
+          <button type="button" className="skills-panel-newbtn" onClick={onCreate}>+ new</button>
+          <button type="button" className="skills-panel-closebtn" aria-label="Close Skills" onClick={onClose}>✕</button>
+        </div>
+      </header>
+
+      <div className="skills-panel-filter">
+        <input
+          type="text"
+          placeholder="Filter skills…"
+          value={filter}
+          onChange={e => setFilter(e.target.value)}
+          spellCheck={false}
+          autoComplete="off"
+        />
+      </div>
+
+      <div className="skills-panel-body">
+        {loadState === 'loading' && (
+          <div className="skills-panel-loading" data-testid="skills-loading">
+            <div className="skills-panel-loading-bar" />
+          </div>
+        )}
+
+        {loadState === 'content' && visible.length === 0 && skills.length === 0 && (
+          <div className="skills-panel-empty">
+            <p className="skills-panel-empty-title">No skills yet</p>
+            <p className="skills-panel-empty-hint">Create one with <strong>+ new</strong>, or add an <code>.md</code> file to <code>~/.claude/commands/</code></p>
+          </div>
+        )}
+
+        {loadState === 'content' && visible.length === 0 && skills.length > 0 && (
+          <div className="skills-panel-empty">
+            <p className="skills-panel-empty-title">No matches</p>
+          </div>
+        )}
+
+        {loadState === 'content' && visible.length > 0 && (
+          <ul className="skills-panel-list">
+            {visible.map(skill => (
+              <li
+                key={skill.filePath}
+                className="skills-panel-card"
+                data-testid="skill-card"
+                draggable={true}
+                onDragStart={e => {
+                  e.dataTransfer.setData('application/x-codespace-skill', skill.filePath)
+                  e.dataTransfer.effectAllowed = 'copy'
+                }}
+              >
+                <div className="skills-panel-card-row">
+                  <span className="skills-panel-card-name" data-testid="skill-name">{skill.name}</span>
+                  <span className="skills-panel-card-grip" aria-hidden>⠿</span>
+                </div>
+                {skill.description && (
+                  <div className="skills-panel-card-desc">{skill.description}</div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <footer className="skills-panel-footer">
+        <button
+          type="button"
+          className="skills-panel-footer-path"
+          onClick={onRevealDir}
+          title="Open in file explorer"
+        >
+          {sourcePath ?? '~/.claude/commands/'}
+        </button>
+        <span className="skills-panel-footer-count">
+          {skills.length} {skills.length === 1 ? 'skill' : 'skills'}
+        </span>
+      </footer>
+    </aside>
+  )
+}
