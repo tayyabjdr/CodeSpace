@@ -110,13 +110,19 @@ describe('sanitizeSkillName', () => {
     expect(sanitizeSkillName(' Hello World ')).toBe('hello-world')
   })
   it('strips disallowed characters', () => {
-    expect(sanitizeSkillName('foo/bar:baz*')).toBe('foobarbaz')
+    expect(sanitizeSkillName('foo/bar:baz*.md')).toBe('foobarbazmd')
   })
   it('returns empty string when no valid characters remain', () => {
     expect(sanitizeSkillName('/// ')).toBe('')
   })
   it('passes through valid kebab-case names', () => {
     expect(sanitizeSkillName('refactor-code_v2')).toBe('refactor-code_v2')
+  })
+  it('returns empty string for null', () => {
+    expect(sanitizeSkillName(null)).toBe('')
+  })
+  it('returns empty string for undefined', () => {
+    expect(sanitizeSkillName(undefined)).toBe('')
   })
 })
 

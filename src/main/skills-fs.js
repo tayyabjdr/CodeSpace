@@ -79,16 +79,17 @@ export async function createSkill(name, body, dir = getCommandsDir()) {
   const safe = sanitizeSkillName(name)
   if (safe.length === 0) return { ok: false, reason: 'invalid-name' }
   if (typeof body !== 'string') return { ok: false, reason: 'invalid-body' }
-  if (!existsSync(dir)) {
-    try { await mkdir(dir, { recursive: true }) }
-    catch (err) { return { ok: false, reason: 'denied', message: err?.message } }
+  try {
+    await mkdir(dir, { recursive: true })
+  } catch (err) {
+    return { ok: false, reason: 'denied', message: err?.message }
   }
   const filePath = join(dir, `${safe}.md`)
-  if (existsSync(filePath)) return { ok: false, reason: 'exists', filePath }
   try {
-    await writeFile(filePath, body, 'utf8')
+    await writeFile(filePath, body, { encoding: 'utf8', flag: 'wx' })
     return { ok: true, filePath, name: safe }
   } catch (err) {
+    if (err?.code === 'EEXIST') return { ok: false, reason: 'exists', filePath }
     return { ok: false, reason: 'denied', message: err?.message }
   }
 }
@@ -116,11 +117,11 @@ export function watchSkills(callback, dir = getCommandsDir()) {
       watcher.on('error', () => {
         try { watcher.close() } catch {}
         watcher = null
-        if (!disposed) pollTimer = setTimeout(attach, 1000)
+        if (!disposed) { clearTimeout(pollTimer); pollTimer = setTimeout(attach, 1000) }
       })
     } catch {
       watcher = null
-      if (!disposed) pollTimer = setTimeout(attach, 1000)
+      if (!disposed) { clearTimeout(pollTimer); pollTimer = setTimeout(attach, 1000) }
     }
   }
 
