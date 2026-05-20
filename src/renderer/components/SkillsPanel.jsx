@@ -43,6 +43,8 @@ export default function SkillsPanel({
     const r = await onCreate({ name: draftName, body: draftBody })
     setSubmitting(false)
     if (r?.ok) {
+      setDraftName('')
+      setDraftBody('')
       setMode('list')
     } else if (r?.reason === 'exists') {
       setCreateError(`A skill named "${draftName}" already exists`)

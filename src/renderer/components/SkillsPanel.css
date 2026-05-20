@@ -289,7 +289,7 @@
 .skills-panel-cancelbtn:hover:not(:disabled) { background: var(--cs-bg-hover); }
 .skills-panel-savebtn {
   color: var(--cs-cyan);
-  border-color: rgba(103, 232, 249, 0.4);
+  border-color: var(--cs-cyan-glow);
 }
 .skills-panel-savebtn:hover:not(:disabled) {
   background: var(--cs-cyan-bg);
