@@ -922,7 +922,7 @@ function AppInner() {
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
         />
-        <div className={`body-main${fsTerminalId ? ' fs-terminal' : ''}${fsEditor ? ' fs-editor' : ''}`}>
+        <div className={`body-main${fsTerminalId ? ' fs-terminal' : ''}${fsEditor ? ' fs-editor' : ''}${activePanel ? ' has-panel' : ''}`}>
           <div className="grid-wrap">
             {activeWorkspace?.unconfigured ? (
               <Onboarding
