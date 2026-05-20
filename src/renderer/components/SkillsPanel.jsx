@@ -3,7 +3,7 @@ import './SkillsPanel.css'
 
 export default function SkillsPanel({
   width,
-  loadState,         // 'loading' | 'content' | 'error'
+  loadState,         // 'loading' | 'content' | 'error' — 'error' currently renders nothing; UI deferred.
   skills,
   sourcePath,
   onClose,
