@@ -1,4 +1,5 @@
-import { readdir, readFile } from 'node:fs/promises'
+import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises'
+import { existsSync, watch as nodeWatch } from 'node:fs'
 import { join, isAbsolute } from 'node:path'
 import { homedir } from 'node:os'
 
@@ -65,4 +66,72 @@ export async function readSkillBody(absPath) {
   }
   const { body } = parseFrontmatter(text)
   return { ok: true, body }
+}
+
+const NAME_INVALID_RE = /[^a-zA-Z0-9_-]/g
+
+export function sanitizeSkillName(raw) {
+  if (typeof raw !== 'string') return ''
+  return raw.trim().replace(/\s+/g, '-').replace(NAME_INVALID_RE, '').toLowerCase()
+}
+
+export async function createSkill(name, body, dir = getCommandsDir()) {
+  const safe = sanitizeSkillName(name)
+  if (safe.length === 0) return { ok: false, reason: 'invalid-name' }
+  if (typeof body !== 'string') return { ok: false, reason: 'invalid-body' }
+  if (!existsSync(dir)) {
+    try { await mkdir(dir, { recursive: true }) }
+    catch (err) { return { ok: false, reason: 'denied', message: err?.message } }
+  }
+  const filePath = join(dir, `${safe}.md`)
+  if (existsSync(filePath)) return { ok: false, reason: 'exists', filePath }
+  try {
+    await writeFile(filePath, body, 'utf8')
+    return { ok: true, filePath, name: safe }
+  } catch (err) {
+    return { ok: false, reason: 'denied', message: err?.message }
+  }
+}
+
+export function watchSkills(callback, dir = getCommandsDir()) {
+  // Returns a disposer. The watcher tolerates a missing directory by polling
+  // for its creation; once it exists we attach a real fs.watch.
+  let watcher = null
+  let pollTimer = null
+  let debounceTimer = null
+  let disposed = false
+
+  const fire = () => {
+    if (disposed) return
+    clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => { if (!disposed) callback() }, 200)
+  }
+
+  const attach = () => {
+    if (disposed || watcher) return
+    try {
+      watcher = nodeWatch(dir, { persistent: true, recursive: false }, (event, filename) => {
+        if (!filename || filename.toLowerCase().endsWith('.md')) fire()
+      })
+      watcher.on('error', () => {
+        try { watcher.close() } catch {}
+        watcher = null
+        if (!disposed) pollTimer = setTimeout(attach, 1000)
+      })
+    } catch {
+      watcher = null
+      if (!disposed) pollTimer = setTimeout(attach, 1000)
+    }
+  }
+
+  if (existsSync(dir)) attach()
+  else pollTimer = setInterval(() => { if (existsSync(dir)) { clearInterval(pollTimer); pollTimer = null; attach() } }, 1000)
+
+  return () => {
+    disposed = true
+    clearTimeout(debounceTimer)
+    clearInterval(pollTimer)
+    clearTimeout(pollTimer)
+    if (watcher) { try { watcher.close() } catch {} }
+  }
 }

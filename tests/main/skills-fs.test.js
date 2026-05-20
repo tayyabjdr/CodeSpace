@@ -101,3 +101,51 @@ describe('readSkillBody', () => {
     expect(r.reason).toBe('invalid-path')
   })
 })
+
+import { createSkill, sanitizeSkillName } from '../../src/main/skills-fs.js'
+import { readFileSync, existsSync as fsExistsSync } from 'node:fs'
+
+describe('sanitizeSkillName', () => {
+  it('lowercases and replaces whitespace with hyphens', () => {
+    expect(sanitizeSkillName(' Hello World ')).toBe('hello-world')
+  })
+  it('strips disallowed characters', () => {
+    expect(sanitizeSkillName('foo/bar:baz*')).toBe('foobarbaz')
+  })
+  it('returns empty string when no valid characters remain', () => {
+    expect(sanitizeSkillName('/// ')).toBe('')
+  })
+  it('passes through valid kebab-case names', () => {
+    expect(sanitizeSkillName('refactor-code_v2')).toBe('refactor-code_v2')
+  })
+})
+
+describe('createSkill', () => {
+  it('writes a new .md file with the given body', async () => {
+    const r = await createSkill('my-skill', 'do the thing', TMP)
+    expect(r.ok).toBe(true)
+    expect(r.filePath).toBe(join(TMP, 'my-skill.md'))
+    expect(readFileSync(r.filePath, 'utf8')).toBe('do the thing')
+  })
+
+  it('refuses an empty sanitized name', async () => {
+    const r = await createSkill('///', 'body', TMP)
+    expect(r.ok).toBe(false)
+    expect(r.reason).toBe('invalid-name')
+  })
+
+  it('refuses to overwrite an existing skill', async () => {
+    writeFileSync(join(TMP, 'dup.md'), 'old')
+    const r = await createSkill('dup', 'new', TMP)
+    expect(r.ok).toBe(false)
+    expect(r.reason).toBe('exists')
+    expect(readFileSync(join(TMP, 'dup.md'), 'utf8')).toBe('old')
+  })
+
+  it('creates the commands directory if it does not exist', async () => {
+    const sub = join(TMP, 'fresh')
+    const r = await createSkill('first', 'body', sub)
+    expect(r.ok).toBe(true)
+    expect(fsExistsSync(join(sub, 'first.md'))).toBe(true)
+  })
+})
