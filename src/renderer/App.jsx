@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
-import SettingsModal from './components/SettingsModal.jsx'
+import SettingsPage from './components/SettingsPage.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
 import RightToolbar from './components/RightToolbar.jsx'
@@ -1049,7 +1049,7 @@ function AppInner() {
         />
       </div>
 
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
 
       {pickerState && (
         <AgentTypePicker
