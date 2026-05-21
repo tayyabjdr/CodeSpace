@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
 import { loadWorkspaces, saveWorkspaces, consumeCorruptBackupNotice } from './workspaces-store.js'
+import { loadRecents, addRecent, removeRecent } from './recent-dirs-store.js'
 import { setupAutoUpdater, reapplyAutoUpdaterSettings } from './auto-updater.js'
 import { loadSettings } from './settings-store.js'
 import { registerSettingsHandlers } from './settings-handlers.js'
@@ -131,6 +132,10 @@ function createWindow() {
     return { ...state, corruptBackupPath }
   })
   ipcMain.handle('workspaces:save', (_event, state) => saveWorkspaces(state))
+
+  ipcMain.handle('recents:get',    () => loadRecents())
+  ipcMain.handle('recents:add',    (_event, dir) => addRecent(dir))
+  ipcMain.handle('recents:remove', (_event, dir) => removeRecent(dir))
 
   ipcMain.handle('clipboard:readText', () => clipboard.readText())
   // Cap at 1 MB so a misbehaving renderer can't push huge blobs into the OS

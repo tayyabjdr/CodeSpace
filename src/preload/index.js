@@ -78,6 +78,12 @@ const api = {
     getAvailability: () => ipcRenderer.invoke('agents:availability'),
   },
 
+  recents: {
+    get:    ()    => ipcRenderer.invoke('recents:get'),
+    add:    (dir) => ipcRenderer.invoke('recents:add', dir),
+    remove: (dir) => ipcRenderer.invoke('recents:remove', dir),
+  },
+
   worktree: {
     isGitAvailable: () => ipcRenderer.invoke('worktree:isGitAvailable'),
     isGitRepo:      (dir) => ipcRenderer.invoke('worktree:isGitRepo', dir),
