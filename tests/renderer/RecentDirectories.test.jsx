@@ -45,7 +45,7 @@ describe('RecentDirectories', () => {
     render(
       <RecentDirectories
         recents={RECENTS}
-        currentDir="d:\\projects\\codespace\\"
+        currentDir={'d:\\projects\\codespace\\'}
         onPick={() => {}}
         onRemove={() => {}}
       />

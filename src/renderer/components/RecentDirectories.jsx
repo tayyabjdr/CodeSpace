@@ -16,9 +16,9 @@ function basename(p) {
 }
 
 // Case-insensitive, trailing-separator-tolerant path equality (Windows).
-// Also collapses repeated separators so JSX-attr double-backslash paths match.
+// Matches the normalizePath semantics in src/main/recent-dirs-store.js.
 function samePath(a, b) {
-  const norm = s => String(s ?? '').replace(/[\\/]+/g, '/').replace(/\/+$/, '').toLowerCase()
+  const norm = s => String(s ?? '').replace(/[\\/]+$/, '').toLowerCase()
   return norm(a) === norm(b)
 }
 
