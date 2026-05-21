@@ -19,7 +19,7 @@ beforeEach(() => {
 
 // Creates a real sub-directory under the temp dir and returns its absolute path.
 // loadRecents() prunes paths that don't exist, so fs-backed tests need real dirs.
-function realDir(name) {
+function makeDir(name) {
   const p = join(dir, name)
   mkdirSync(p)
   return p
@@ -61,14 +61,14 @@ describe('recent-dirs-store (fs)', () => {
   })
 
   it('addRecent persists and round-trips', async () => {
-    const a = realDir('a')
+    const a = makeDir('a')
     await addRecent(a)
     expect(await loadRecents()).toEqual([a])
   })
 
   it('addRecent moves a repeated directory to the front', async () => {
-    const a = realDir('a')
-    const b = realDir('b')
+    const a = makeDir('a')
+    const b = makeDir('b')
     await addRecent(a)
     await addRecent(b)
     await addRecent(a)
@@ -76,7 +76,7 @@ describe('recent-dirs-store (fs)', () => {
   })
 
   it('loadRecents prunes directories that no longer exist', async () => {
-    const a = realDir('a')
+    const a = makeDir('a')
     const gone = join(dir, 'gone')   // never created
     await fs.writeFile(
       join(dir, 'recents.json'),
@@ -87,8 +87,8 @@ describe('recent-dirs-store (fs)', () => {
   })
 
   it('removeRecent drops the matching entry', async () => {
-    const a = realDir('a')
-    const b = realDir('b')
+    const a = makeDir('a')
+    const b = makeDir('b')
     await addRecent(a)
     await addRecent(b)
     const next = await removeRecent(a)
@@ -105,10 +105,26 @@ describe('recent-dirs-store (fs)', () => {
 
   it('caps persisted history at MAX_RECENTS', async () => {
     const dirs = []
-    for (let i = 0; i < MAX_RECENTS + 2; i++) dirs.push(realDir('d' + i))
+    for (let i = 0; i < MAX_RECENTS + 2; i++) dirs.push(makeDir('d' + i))
     for (const d of dirs) await addRecent(d)
     const list = await loadRecents()
     expect(list.length).toBe(MAX_RECENTS)
     expect(list[0]).toBe(dirs[dirs.length - 1])
+  })
+
+  it('addRecent ignores empty / non-string input and leaves the list unchanged', async () => {
+    const a = makeDir('a')
+    await addRecent(a)
+    await addRecent('')
+    await addRecent(null)
+    expect(await loadRecents()).toEqual([a])
+  })
+
+  it('removeRecent is a no-op for a directory not in the list', async () => {
+    const a = makeDir('a')
+    await addRecent(a)
+    const next = await removeRecent(join(dir, 'not-there'))
+    expect(next).toEqual([a])
+    expect(await loadRecents()).toEqual([a])
   })
 })

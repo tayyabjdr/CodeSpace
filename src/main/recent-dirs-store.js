@@ -3,7 +3,7 @@ import { join } from 'path'
 import { promises as fs } from 'fs'
 
 const FILENAME = 'recents.json'
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 1   // reserved for future migration; not inspected on load at v1
 export const MAX_RECENTS = 6
 
 function filePath() {
@@ -27,7 +27,9 @@ export function mergeRecent(list, dir, max) {
 
 async function quarantineCorrupt(path) {
   const ts = new Date().toISOString().replace(/[:.]/g, '-')
-  try { await fs.rename(path, `${path}.corrupt-${ts}`) } catch {}
+  try { await fs.rename(path, `${path}.corrupt-${ts}`) } catch {
+    // best-effort — if rename fails, leave the file in place
+  }
 }
 
 async function saveRecents(dirs) {
@@ -80,6 +82,10 @@ export async function loadRecents() {
 }
 
 export async function addRecent(dir) {
+  // Defensive guard. Callers never pass an empty/non-string dir in practice, but
+  // if one slips through, return the true current list (via loadRecents) rather
+  // than [] — so a consumer using the return value is never wrongly told the
+  // recents list is empty.
   if (typeof dir !== 'string' || dir.length === 0) return loadRecents()
   const current = await loadRecents()
   const next = mergeRecent(current, dir, MAX_RECENTS)
