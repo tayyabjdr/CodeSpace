@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ONBOARDING_BOOT_DELAY_MS } from '../constants.js'
 import AppIcon from './AppIcon.jsx'
+import RecentDirectories from './RecentDirectories.jsx'
 import './Onboarding.css'
 
 const FolderIcon = () => (
@@ -67,6 +68,7 @@ export default function Onboarding({
   const [isRepo, setIsRepo] = useState(true)
   const [availability, setAvailability] = useState({ claude: true, codex: true })
   const [codexShare, setCodexShare] = useState(0)
+  const [recents, setRecents] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -78,6 +80,15 @@ export default function Onboarding({
     })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Load the recent-directories list once when the onboarding form mounts.
+  useEffect(() => {
+    let cancelled = false
+    window.electronAPI?.recents?.get?.().then(list => {
+      if (!cancelled) setRecents(Array.isArray(list) ? list : [])
+    })
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
@@ -123,7 +134,19 @@ export default function Onboarding({
 
   const handleBrowse = async () => {
     const dir = await window.electronAPI.selectDirectory()
-    if (dir) setProjectDir(dir)
+    if (!dir) return
+    setProjectDir(dir)
+    const list = await window.electronAPI.recents.add(dir)
+    setRecents(Array.isArray(list) ? list : [])
+  }
+
+  const handlePickRecent = (dir) => {
+    setProjectDir(dir)
+  }
+
+  const handleRemoveRecent = async (dir) => {
+    const list = await window.electronAPI.recents.remove(dir)
+    setRecents(Array.isArray(list) ? list : [])
   }
 
   const canLaunch =
@@ -135,6 +158,7 @@ export default function Onboarding({
   const handleLaunch = () => {
     if (!canLaunch) return
     setLaunching(true)
+    window.electronAPI?.recents?.add?.(projectDir)
     const counts = { claude: claudeShare, codex: codexShare }
     setTimeout(() => onLaunch(counts, projectDir, name.trim(), isolated), ONBOARDING_BOOT_DELAY_MS)
   }
@@ -204,6 +228,13 @@ export default function Onboarding({
                 </button>
               </div>
             </div>
+
+            <RecentDirectories
+              recents={recents}
+              currentDir={projectDir}
+              onPick={handlePickRecent}
+              onRemove={handleRemoveRecent}
+            />
           </section>
 
           {/* RIGHT — agent grid selector */}
