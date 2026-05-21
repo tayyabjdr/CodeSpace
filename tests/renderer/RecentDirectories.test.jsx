@@ -13,6 +13,13 @@ describe('RecentDirectories', () => {
     expect(container.firstChild).toBeNull()
   })
 
+  it('renders nothing when recents is undefined', () => {
+    const { container } = render(
+      <RecentDirectories recents={undefined} currentDir="" onPick={() => {}} onRemove={() => {}} />
+    )
+    expect(container.firstChild).toBeNull()
+  })
+
   it('renders a card per recent directory showing its basename', () => {
     render(
       <RecentDirectories recents={RECENTS} currentDir="" onPick={() => {}} onRemove={() => {}} />
