@@ -77,7 +77,7 @@ export default function SettingsPage({ onClose }) {
   const activeCategory = CATEGORIES.find((c) => c.id === active) ?? CATEGORIES[0]
 
   return (
-    <div className="cs-settings-page">
+    <div className="cs-settings-page" role="dialog" aria-modal="true" aria-label="Settings">
       <nav className="cs-settings-nav">
         <div className="cs-settings-nav-head">Settings</div>
         {CATEGORIES.map((cat) => {

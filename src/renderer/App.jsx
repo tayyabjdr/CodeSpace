@@ -562,6 +562,8 @@ function AppInner() {
     setActivePanel(prev => prev === panelId ? null : panelId)
   }, [])
 
+  const handleCloseSettings = useCallback(() => setSettingsOpen(false), [])
+
   const handleSkillsResize = useCallback((px) => {
     setSkillsPanelWidth(clampPanelWidth(px, bodyWidthRef.current || 1400))
   }, [])
@@ -1049,7 +1051,7 @@ function AppInner() {
         />
       </div>
 
-      {settingsOpen && <SettingsPage onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsPage onClose={handleCloseSettings} />}
 
       {pickerState && (
         <AgentTypePicker
