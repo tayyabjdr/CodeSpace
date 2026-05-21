@@ -60,6 +60,10 @@ export default function SettingsPage({ onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Clear any stale update-check result when switching categories, so arriving
+  // at the Updates page always starts fresh.
+  useEffect(() => { setUpdateStatus(null) }, [active])
+
   const update = (patch) => {
     setSettings(patch).catch((err) => console.warn('[settings] save failed:', err))
   }
@@ -104,6 +108,7 @@ export default function SettingsPage({ onClose }) {
         </button>
 
         <div className="cs-settings-col">
+          {/* key={active} remounts the panel so the slide-in animation replays on each category switch */}
           <div className="cs-settings-panel" key={active}>
             <h1 className="cs-settings-title">{activeCategory.label}</h1>
             <p className="cs-settings-desc">{activeCategory.description}</p>

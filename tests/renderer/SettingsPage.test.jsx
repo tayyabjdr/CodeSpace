@@ -29,9 +29,9 @@ beforeEach(() => {
 })
 
 describe('SettingsPage', () => {
-  it('renders the Appearance category by default', () => {
+  it('renders the Appearance category by default', async () => {
     render(<SettingsPage onClose={() => {}} />)
-    expect(screen.getByRole('heading', { name: 'Appearance' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Appearance' })).toBeTruthy()
     expect(screen.getByLabelText('Default pane font size')).toBeTruthy()
   })
 
@@ -40,6 +40,13 @@ describe('SettingsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /agents/i }))
     expect(screen.getByRole('heading', { name: 'Agents' })).toBeTruthy()
     expect(screen.getByLabelText('Skip permission prompts')).toBeTruthy()
+  })
+
+  it('shows a status line after checking for updates', async () => {
+    render(<SettingsPage onClose={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: /updates/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }))
+    expect(await screen.findByText('Up to date')).toBeTruthy()
   })
 
   it('calls setSettings when a toggle is changed', async () => {
