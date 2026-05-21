@@ -59,6 +59,11 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
         fontSize: 13,
         fontFamily: '"Geist Mono Variable", "Geist Mono", "Cascadia Code", monospace',
         lineHeight: 1.5,
+        // Don't yank the viewport to the bottom on every keypress. While the
+        // user is scrolled up — e.g. navigating a TUI multi-select with the
+        // arrow keys — input still reaches the PTY, but the scroll position is
+        // left alone. Ctrl+Down (below) is the explicit "jump to bottom".
+        scrollOnUserInput: false,
         theme: {
           background: '#0d0f12',
           foreground: 'rgba(255,255,255,0.85)',
@@ -115,6 +120,16 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
 
       const ctrl = e.ctrlKey || e.metaKey
       if (!ctrl) return true
+
+      // Ctrl+Down → jump the viewport to the bottom. With scrollOnUserInput
+      // off, plain keys no longer snap down, so this is the explicit gesture
+      // to catch up to the latest output. Consumed as a pure scroll — not
+      // forwarded to the PTY — so it never disturbs a TUI's own navigation.
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        term.scrollToBottom()
+        return false
+      }
 
       // Paste: Ctrl+V or Ctrl+Shift+V
       if (e.key === 'v' || e.key === 'V') {
