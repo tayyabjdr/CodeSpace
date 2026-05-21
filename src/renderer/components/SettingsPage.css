@@ -1,57 +1,101 @@
-.cs-settings-backdrop {
+/* Full-page settings — a fixed overlay covering the app body below the
+   42px title bar. The workspace grid stays mounted underneath. */
+.cs-settings-page {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  top: var(--cs-toolbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 220ms ease;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-}
-
-.cs-settings-modal {
-  width: 540px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 80px);
-  overflow-y: auto;
   background: var(--cs-bg-base);
-  border: 1px solid var(--cs-border-mid);
-  border-radius: 14px;
   color: var(--cs-text-primary);
   font-family: var(--cs-font-ui);
-  box-shadow:
-    0 28px 64px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(255, 255, 255, 0.02),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  animation: scaleIn 240ms cubic-bezier(0.2, 0, 0, 1);
+  animation: fadeIn 200ms ease;
   color-scheme: dark;
 }
 
-.cs-settings-header {
+/* Nav rail */
+.cs-settings-nav {
+  width: 188px;
+  flex-shrink: 0;
+  background: var(--cs-bg-sidebar);
+  border-right: 1px solid var(--cs-border);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 22px 16px;
-  border-bottom: 1px solid var(--cs-border);
+  flex-direction: column;
+  padding: 16px 10px 12px;
 }
-.cs-settings-header h2 {
-  margin: 0;
+.cs-settings-nav-head {
+  margin: 0 6px 14px;
   font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--cs-text-primary);
 }
+.cs-settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  margin-bottom: 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  color: var(--cs-text-tertiary);
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+.cs-settings-nav-item svg {
+  flex-shrink: 0;
+  color: var(--cs-icon-tertiary);
+  transition: color var(--cs-transition);
+}
+.cs-settings-nav-item:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-secondary);
+}
+.cs-settings-nav-item:hover svg { color: var(--cs-icon-secondary); }
+.cs-settings-nav-item.active {
+  background: var(--cs-bg-active);
+  color: var(--cs-text-primary);
+}
+.cs-settings-nav-item.active svg { color: var(--cs-icon-primary); }
+.cs-settings-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: #fff;
+}
+.cs-settings-nav-item:focus-visible {
+  outline: 1px solid var(--cs-border-focus);
+  outline-offset: -1px;
+}
+
+/* Content region */
+.cs-settings-content {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  background: var(--cs-bg-base);
+}
 .cs-settings-close {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  width: 28px;
+  height: 28px;
+  display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--cs-icon-tertiary);
   cursor: pointer;
   transition: background var(--cs-transition), color var(--cs-transition);
@@ -65,45 +109,47 @@
   outline-offset: 1px;
 }
 
-.cs-settings-body {
-  padding: 18px 22px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* Centered column */
+.cs-settings-col {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 32px 48px;
 }
-
-/* Each section is a bordered card matching onboarding's .ob-col aesthetic */
-.cs-settings-card {
-  background: var(--cs-bg-surface);
-  border: 1px solid var(--cs-border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: slideUp 0.45s ease both;
+.cs-settings-panel {
+  animation: slideUp 0.22s ease both;
 }
-.cs-settings-card:nth-child(1) { animation-delay: 60ms; }
-.cs-settings-card:nth-child(2) { animation-delay: 100ms; }
-.cs-settings-card:nth-child(3) { animation-delay: 140ms; }
-.cs-settings-card:nth-child(4) { animation-delay: 180ms; }
-
-.cs-settings-card h3 {
-  margin: 0 0 -2px 0;
-  font-family: var(--cs-font-ui);
-  font-size: 10.5px;
+.cs-settings-title {
+  margin: 0;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: -0.015em;
+  color: var(--cs-text-primary);
+}
+.cs-settings-desc {
+  margin: 4px 0 18px;
+  font-size: 12px;
   color: var(--cs-text-tertiary);
 }
 
+/* Card holding the rows */
+.cs-settings-card {
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+/* Row */
 .cs-settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
+  padding: 15px 17px;
   min-height: 32px;
+}
+.cs-settings-row + .cs-settings-row {
+  border-top: 1px solid var(--cs-border);
 }
 .cs-settings-label {
   display: flex;
@@ -115,7 +161,7 @@
 }
 .cs-settings-caption {
   font-size: 11.5px;
-  color: var(--cs-text-dim);
+  color: var(--cs-text-muted);
   line-height: 1.5;
 }
 .cs-settings-caption code {
@@ -124,10 +170,8 @@
   background: var(--cs-bg-elevated);
   color: var(--cs-text-primary);
   padding: 1px 5px;
-  border-radius: 3px;
   white-space: nowrap;
 }
-
 .cs-settings-control {
   display: flex;
   align-items: center;
@@ -145,23 +189,20 @@
 }
 .cs-settings-value.error { color: var(--cs-red); }
 
-/* Status row sits below the toggles with its own muted treatment */
+/* Update status line — sits below the rows inside the card */
 .cs-settings-status {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+  padding: 12px 17px;
+  border-top: 1px solid var(--cs-border);
   font-size: 11.5px;
   color: var(--cs-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
-.cs-settings-status .cs-settings-value {
-  min-width: 0;
-  text-align: left;
-}
 
-/* Version pill — cyan glowing meta with a leading dot, like onboarding's
-   .ob-label-meta. Active "live" feel without being noisy. */
+/* Version pill — cyan glowing meta with a leading dot */
 .cs-settings-version-link {
   display: inline-flex;
   align-items: center;
@@ -180,13 +221,12 @@
   content: '';
   width: 5px;
   height: 5px;
-  border-radius: 50%;
   background: var(--cs-cyan);
   box-shadow: 0 0 8px var(--cs-cyan-glow);
 }
 .cs-settings-version-link:hover { color: #a5f3fc; }
 
-/* Buttons — match .ob-browse-btn from onboarding */
+/* Button — matches .ob-browse-btn from onboarding */
 .cs-settings-btn {
   font-family: var(--cs-font-ui);
   font-size: 11.5px;
@@ -195,7 +235,7 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--cs-text-secondary);
-  border-radius: 6px;
+  border-radius: 0;
   cursor: pointer;
   white-space: nowrap;
   letter-spacing: 0.01em;
@@ -211,37 +251,7 @@
   outline-offset: 2px;
 }
 
-/* Custom select — themed to match .ob-input geometry */
-.cs-settings-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: hsl(0 0% 6%);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.55' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 10px;
-  border: 1px solid var(--cs-border-mid);
-  color: var(--cs-text-primary);
-  font-family: var(--cs-font-mono);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  padding: 7px 30px 7px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  min-width: 72px;
-  transition: border-color var(--cs-transition), background-color var(--cs-transition);
-}
-.cs-settings-select:hover {
-  border-color: var(--cs-border-hover);
-  background-color: hsl(0 0% 7%);
-}
-.cs-settings-select:focus-visible {
-  outline: none;
-  border-color: var(--cs-border-focus);
-  background-color: hsl(0 0% 7%);
-}
-
-/* Custom range slider (Chromium / Electron) — cyan track fill, glowing thumb */
+/* Custom range slider — cyan track fill, glowing thumb */
 .cs-settings-range {
   appearance: none;
   -webkit-appearance: none;
@@ -256,22 +266,19 @@
 }
 .cs-settings-range::-webkit-slider-runnable-track {
   height: var(--track-h);
-  border-radius: 999px;
-  background:
-    linear-gradient(
-      to right,
-      var(--cs-cyan) 0%,
-      var(--cs-cyan) var(--fill, 50%),
-      var(--cs-border-mid) var(--fill, 50%),
-      var(--cs-border-mid) 100%
-    );
+  background: linear-gradient(
+    to right,
+    var(--cs-cyan) 0%,
+    var(--cs-cyan) var(--fill, 50%),
+    var(--cs-border-mid) var(--fill, 50%),
+    var(--cs-border-mid) 100%
+  );
 }
 .cs-settings-range::-webkit-slider-thumb {
   appearance: none;
   -webkit-appearance: none;
   width: var(--thumb-size);
   height: var(--thumb-size);
-  border-radius: 999px;
   background: var(--cs-bg-base);
   border: 2px solid var(--cs-cyan);
   margin-top: calc((var(--track-h) - var(--thumb-size)) / 2);
@@ -280,10 +287,7 @@
   transition: transform 120ms ease, box-shadow var(--cs-transition);
 }
 .cs-settings-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
-.cs-settings-range:active::-webkit-slider-thumb {
-  cursor: grabbing;
-  transform: scale(1.2);
-}
+.cs-settings-range:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.2); }
 .cs-settings-range:focus-visible { outline: none; }
 .cs-settings-range:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 2px var(--cs-cyan-glow), 0 0 12px var(--cs-cyan-glow);
