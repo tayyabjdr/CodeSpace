@@ -1,0 +1,299 @@
+/* Full-page settings — a fixed overlay covering the app body below the
+   42px title bar. The workspace grid stays mounted underneath. */
+.cs-settings-page {
+  position: fixed;
+  top: var(--cs-toolbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  background: var(--cs-bg-base);
+  color: var(--cs-text-primary);
+  font-family: var(--cs-font-ui);
+  animation: fadeIn 200ms ease;
+  color-scheme: dark;
+}
+
+/* Nav rail */
+.cs-settings-nav {
+  width: 188px;
+  flex-shrink: 0;
+  background: var(--cs-bg-sidebar);
+  border-right: 1px solid var(--cs-border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 10px 12px;
+}
+.cs-settings-nav-head {
+  margin: 0 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--cs-text-primary);
+}
+.cs-settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  margin-bottom: 2px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  color: var(--cs-text-tertiary);
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+.cs-settings-nav-item svg {
+  flex-shrink: 0;
+  color: var(--cs-icon-tertiary);
+  transition: color var(--cs-transition);
+}
+.cs-settings-nav-item:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-secondary);
+}
+.cs-settings-nav-item:hover svg { color: var(--cs-icon-secondary); }
+.cs-settings-nav-item.active {
+  background: var(--cs-bg-active);
+  color: var(--cs-text-primary);
+}
+.cs-settings-nav-item.active svg { color: var(--cs-icon-primary); }
+.cs-settings-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 1px;
+  background: #fff;
+}
+.cs-settings-nav-item:focus-visible {
+  outline: 1px solid var(--cs-border-focus);
+  outline-offset: -1px;
+}
+
+/* Content region */
+.cs-settings-content {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  background: var(--cs-bg-base);
+}
+.cs-settings-close {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--cs-icon-tertiary);
+  cursor: pointer;
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+.cs-settings-close:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
+}
+.cs-settings-close:focus-visible {
+  outline: 1px solid var(--cs-border-focus);
+  outline-offset: 1px;
+}
+
+/* Centered column */
+.cs-settings-col {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 32px 48px;
+}
+.cs-settings-panel {
+  animation: slideUp 0.22s ease both;
+}
+.cs-settings-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--cs-text-primary);
+}
+.cs-settings-desc {
+  margin: 4px 0 18px;
+  font-size: 12px;
+  color: var(--cs-text-tertiary);
+}
+
+/* Card holding the rows */
+.cs-settings-card {
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Row */
+.cs-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 17px;
+  min-height: 32px;
+}
+.cs-settings-row + .cs-settings-row {
+  border-top: 1px solid var(--cs-border);
+}
+.cs-settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--cs-text-primary);
+  font-size: 13px;
+  min-width: 0;
+}
+.cs-settings-caption {
+  font-size: 11.5px;
+  color: var(--cs-text-muted);
+  line-height: 1.5;
+}
+.cs-settings-caption code {
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  background: var(--cs-bg-elevated);
+  color: var(--cs-text-primary);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.cs-settings-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.cs-settings-value {
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  color: var(--cs-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  min-width: 42px;
+  text-align: right;
+}
+.cs-settings-value.error { color: var(--cs-red); }
+
+/* Update status line — sits below the rows inside the card */
+.cs-settings-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 17px;
+  border-top: 1px solid var(--cs-border);
+  font-size: 11.5px;
+  color: var(--cs-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Version pill — cyan glowing meta with a leading dot */
+.cs-settings-version-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--cs-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cs-cyan);
+  text-decoration: none;
+  text-shadow: 0 0 12px var(--cs-cyan-glow);
+  transition: color var(--cs-transition);
+}
+.cs-settings-version-link::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cs-cyan);
+  box-shadow: 0 0 8px var(--cs-cyan-glow);
+}
+.cs-settings-version-link:hover { color: #a5f3fc; }
+
+/* Button — matches .ob-browse-btn from onboarding */
+.cs-settings-btn {
+  font-family: var(--cs-font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--cs-text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+.cs-settings-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--cs-text-primary);
+}
+.cs-settings-btn:focus-visible {
+  outline: 1px solid var(--cs-cyan);
+  outline-offset: 2px;
+}
+
+/* Custom range slider — cyan track fill, glowing thumb */
+.cs-settings-range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 160px;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  --thumb-size: 12px;
+  --track-h: 3px;
+}
+.cs-settings-range::-webkit-slider-runnable-track {
+  height: var(--track-h);
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--cs-cyan) 0%,
+    var(--cs-cyan) var(--fill, 50%),
+    var(--cs-border-mid) var(--fill, 50%),
+    var(--cs-border-mid) 100%
+  );
+}
+.cs-settings-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 999px;
+  background: var(--cs-bg-base);
+  border: 2px solid var(--cs-cyan);
+  margin-top: calc((var(--track-h) - var(--thumb-size)) / 2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 8px var(--cs-cyan-glow);
+  cursor: grab;
+  transition: transform 120ms ease, box-shadow var(--cs-transition);
+}
+.cs-settings-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.cs-settings-range:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.2); }
+.cs-settings-range:focus-visible { outline: none; }
+.cs-settings-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--cs-cyan-glow), 0 0 12px var(--cs-cyan-glow);
+}
