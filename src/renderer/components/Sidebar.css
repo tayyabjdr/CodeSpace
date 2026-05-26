@@ -158,11 +158,11 @@
 @keyframes sbItemDotPulse {
   0%, 100% {
     transform: scale(0.92);
-    box-shadow: 0 0 4px var(--cs-green-border);
+    box-shadow: 0 0 4px var(--cs-cyan-glow);
   }
   50% {
     transform: scale(1.10);
-    box-shadow: 0 0 11px var(--cs-green-strong);
+    box-shadow: 0 0 11px var(--cs-cyan-glow);
   }
 }
 
