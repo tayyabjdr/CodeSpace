@@ -64,4 +64,27 @@ describe('settings-store', () => {
     const s = await loadSettings()
     expect(s.notifications.doneSoundVolume).toBe(100)
   })
+
+  it('defaults appearance.theme to sarvis-dark when missing', async () => {
+    const s = await loadSettings()
+    expect(s.appearance.theme).toBe('sarvis-dark')
+  })
+
+  it('round-trips a valid bridge theme', async () => {
+    await saveSettings({ ...DEFAULTS, appearance: { ...DEFAULTS.appearance, theme: 'bridge' } })
+    const s = await loadSettings()
+    expect(s.appearance.theme).toBe('bridge')
+  })
+
+  it('falls back to sarvis-dark for an invalid theme value', async () => {
+    await saveSettings({ ...DEFAULTS, appearance: { ...DEFAULTS.appearance, theme: 'nope' } })
+    const s = await loadSettings()
+    expect(s.appearance.theme).toBe('sarvis-dark')
+  })
+
+  it('mergeAndSave preserves theme when patching unrelated keys', async () => {
+    await saveSettings({ ...DEFAULTS, appearance: { ...DEFAULTS.appearance, theme: 'bridge' } })
+    const next = await mergeAndSave({ notifications: { doneSoundVolume: 20 } })
+    expect(next.appearance.theme).toBe('bridge')
+  })
 })

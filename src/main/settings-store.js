@@ -4,9 +4,12 @@ import { promises as fs } from 'fs'
 
 const FILENAME = 'settings.json'
 
+export const THEME_IDS = ['sarvis-dark', 'bridge']
+
 export const DEFAULTS = {
   version: 1,
   appearance: {
+    theme: 'sarvis-dark',
     defaultPaneFontSize: 13
   },
   notifications: {
@@ -43,6 +46,7 @@ function validate(raw) {
   return {
     version: 1,
     appearance: {
+      theme: THEME_IDS.includes(a.theme) ? a.theme : DEFAULTS.appearance.theme,
       defaultPaneFontSize: clamp(a.defaultPaneFontSize, 10, 22, DEFAULTS.appearance.defaultPaneFontSize)
     },
     notifications: {
