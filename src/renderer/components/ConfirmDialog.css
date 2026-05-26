@@ -99,19 +99,19 @@
 }
 
 .cd-confirm.destructive {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.28);
+  background: var(--cs-red-hover-bg);
+  border-color: var(--cs-red-border);
   color: rgba(252, 165, 165, 0.95);
 }
 
 .cd-confirm.destructive:hover {
-  background: rgba(239, 68, 68, 0.18);
-  border-color: rgba(239, 68, 68, 0.45);
+  background: var(--cs-red-hover-bg);
+  border-color: var(--cs-red);
   color: rgba(252, 165, 165, 1);
 }
 
 .cd-confirm.destructive:focus-visible {
-  border-color: rgba(239, 68, 68, 0.6);
+  border-color: var(--cs-red);
 }
 
 .cd-extra {

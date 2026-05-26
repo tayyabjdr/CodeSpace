@@ -146,7 +146,7 @@
   height: 5px;
   border-radius: 50%;
   background: var(--cs-status-live);
-  box-shadow: 0 0 6px rgba(134, 239, 172, 0.45);
+  box-shadow: 0 0 6px var(--cs-cyan-glow);
   transition: opacity var(--cs-transition);
   animation: sbItemDotPulse 1.8s ease-in-out infinite;
   margin-right: 2px;
@@ -158,11 +158,11 @@
 @keyframes sbItemDotPulse {
   0%, 100% {
     transform: scale(0.92);
-    box-shadow: 0 0 4px rgba(134, 239, 172, 0.30);
+    box-shadow: 0 0 4px var(--cs-green-border);
   }
   50% {
     transform: scale(1.10);
-    box-shadow: 0 0 11px rgba(134, 239, 172, 0.65);
+    box-shadow: 0 0 11px var(--cs-green-strong);
   }
 }
 
@@ -240,18 +240,18 @@
 }
 
 .sb-item-delete:hover {
-  color: #ef4444;
+  color: var(--cs-red);
 }
 
 .sb-iso {
   display: inline-flex; align-items: center;
   opacity: 0.9;
-  filter: drop-shadow(0 0 3px rgba(103, 232, 249, 0.25));
+  filter: drop-shadow(0 0 3px var(--cs-cyan-glow));
   transition: opacity var(--cs-transition), filter var(--cs-transition);
 }
 .sb-iso:hover {
   opacity: 1;
-  filter: drop-shadow(0 0 5px rgba(134, 239, 172, 0.4));
+  filter: drop-shadow(0 0 5px var(--cs-green-border));
 }
 
 .sb-footer {

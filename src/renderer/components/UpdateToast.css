@@ -52,12 +52,12 @@
 }
 
 .update-toast-btn-primary {
-  background: rgba(103, 232, 249, 0.10);
+  background: var(--cs-cyan-bg);
   border-color: var(--cs-cyan-glow);
   color: var(--cs-cyan);
 }
 
 .update-toast-btn-primary:hover {
-  background: rgba(103, 232, 249, 0.18);
+  background: var(--cs-cyan-glow);
   border-color: var(--cs-cyan);
 }

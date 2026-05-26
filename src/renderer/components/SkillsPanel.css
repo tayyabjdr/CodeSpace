@@ -8,7 +8,7 @@
   border-radius: 0;
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(103, 232, 249, 0.04);
+    0 0 0 1px var(--cs-cyan-fill-weak);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -342,7 +342,7 @@
 
 .skills-panel-form-error {
   background: var(--cs-red-hover-bg);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid var(--cs-red-border);
   border-radius: 5px;
   padding: 6px 8px;
   color: var(--cs-red-hover-fg);

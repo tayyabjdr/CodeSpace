@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
-  filter: drop-shadow(0 6px 18px rgba(103, 232, 249, 0.18));
+  filter: drop-shadow(0 6px 18px var(--cs-cyan-glow));
 }
 
 .ob-wordmark {
@@ -405,8 +405,8 @@
 
 @keyframes bootCell {
   0%   { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.3); box-shadow: none; }
-  35%  { background: rgba(103, 232, 249, 0.55); border-color: rgba(103, 232, 249, 0.85); box-shadow: 0 0 14px rgba(103, 232, 249, 0.45); }
-  100% { background: rgba(134, 239, 172, 0.4); border-color: rgba(134, 239, 172, 0.7); box-shadow: 0 0 10px rgba(134, 239, 172, 0.25); }
+  35%  { background: var(--cs-cyan-border-strong); border-color: var(--cs-cyan); box-shadow: 0 0 14px var(--cs-cyan-glow); }
+  100% { background: var(--cs-green-border); border-color: var(--cs-green-border-strong); box-shadow: 0 0 10px var(--cs-green-bg); }
 }
 
 /* Cell stagger — first cell lights at 0ms, last cell ~400ms in */
@@ -424,12 +424,12 @@
   background: linear-gradient(
     100deg,
     rgba(255,255,255,0.06) 0%,
-    rgba(103, 232, 249, 0.12) 50%,
+    var(--cs-cyan-bg) 50%,
     rgba(255,255,255,0.06) 100%
   );
   background-size: 200% 100%;
   animation: launchSheen 1.4s ease-in-out infinite;
-  border-color: rgba(103, 232, 249, 0.4);
+  border-color: var(--cs-cyan-border);
   color: var(--cs-text-primary);
   cursor: progress;
   transform: none !important;

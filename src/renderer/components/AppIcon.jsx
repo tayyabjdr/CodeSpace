@@ -7,6 +7,7 @@ export default function AppIcon({ size = 18, className }) {
       viewBox="0 0 512 512"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      style={{ color: 'var(--cs-cyan)' }}
       aria-hidden
     >
       <defs>
@@ -16,9 +17,9 @@ export default function AppIcon({ size = 18, className }) {
           <stop offset="100%" stopColor="#1d4f78" />
         </linearGradient>
         <radialGradient id={`${id}-glow`} cx="78%" cy="82%" r="60%">
-          <stop offset="0%" stopColor="#67e8f9" stopOpacity="0.22" />
-          <stop offset="60%" stopColor="#67e8f9" stopOpacity="0.06" />
-          <stop offset="100%" stopColor="#67e8f9" stopOpacity="0" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+          <stop offset="60%" stopColor="currentColor" stopOpacity="0.06" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </radialGradient>
         <linearGradient id={`${id}-rim`} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.10" />
@@ -43,7 +44,7 @@ export default function AppIcon({ size = 18, className }) {
 
       <g
         fill="none"
-        stroke="#67e8f9"
+        stroke="currentColor"
         strokeWidth="26"
         strokeLinecap="round"
         strokeLinejoin="round"

@@ -26,10 +26,10 @@
 .pane.done .pane-header {
   background: linear-gradient(
     90deg,
-    rgba(103, 232, 249, 0.62) 0%,
-    rgba(134, 239, 172, 0.62) 100%
+    var(--cs-done-grad-start) 0%,
+    var(--cs-done-grad-end) 100%
   );
-  border-bottom-color: rgba(134, 239, 172, 0.55);
+  border-bottom-color: var(--cs-green-border-strong);
 }
 
 /* Body pulse — a 4×2 grid of invisible cells overlays the pane body and
@@ -107,8 +107,8 @@
 
 /* Drag target — single thin cyan border + soft outer glow */
 .pane.drag-over {
-  border-color: rgba(103, 232, 249, 0.7);
-  box-shadow: 0 0 18px rgba(103, 232, 249, 0.14);
+  border-color: var(--cs-cyan-border-strong);
+  box-shadow: 0 0 18px var(--cs-cyan-glow-soft);
 }
 
 .pane-header {
@@ -293,7 +293,7 @@
   background-clip: padding-box;
 }
 .xterm-viewport::-webkit-scrollbar-thumb:active {
-  background: rgba(103, 232, 249, 0.55);
+  background: var(--cs-cyan-glow);
   background-clip: padding-box;
 }
 
@@ -392,11 +392,11 @@
 }
 .tp-badge-claude {
   color: var(--cs-cyan, #67e8f9);
-  border-color: rgba(103, 232, 249, 0.35);
-  background: rgba(103, 232, 249, 0.06);
+  border-color: var(--cs-cyan-border);
+  background: var(--cs-cyan-fill-weak);
 }
 .tp-badge-codex {
   color: var(--cs-violet, #c4b5fd);
-  border-color: rgba(196, 181, 253, 0.35);
-  background: rgba(196, 181, 253, 0.06);
+  border-color: var(--cs-violet-border);
+  background: var(--cs-violet-fill-weak);
 }
