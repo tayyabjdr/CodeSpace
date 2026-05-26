@@ -15,7 +15,7 @@ import SettingsPage from '../../src/renderer/components/SettingsPage.jsx'
 
 beforeEach(() => {
   mockState = {
-    appearance: { defaultPaneFontSize: 13 },
+    appearance: { theme: 'sarvis-dark', defaultPaneFontSize: 13 },
     notifications: { doneSoundVolume: 50, taskbarFlashOnDone: true },
     updates: { autoUpdate: true },
     agents: { dangerouslySkipPermissions: true, codexDangerouslyBypassApprovals: true },
@@ -68,5 +68,26 @@ describe('SettingsPage', () => {
     render(<SettingsPage onClose={onClose} />)
     await userEvent.click(screen.getByRole('button', { name: /close settings/i }))
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('renders a theme control with both options in the Appearance category', async () => {
+    mockState.appearance.theme = 'sarvis-dark'
+    render(<SettingsPage onClose={() => {}} />)
+    expect(screen.getByRole('radio', { name: /sarvis dark/i })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: /bridge/i })).toBeTruthy()
+  })
+
+  it('marks the currently selected theme as checked', async () => {
+    mockState.appearance.theme = 'bridge'
+    render(<SettingsPage onClose={() => {}} />)
+    const bridge = screen.getByRole('radio', { name: /bridge/i })
+    expect(bridge.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('calls setSettings when a different theme is selected', async () => {
+    mockState.appearance.theme = 'sarvis-dark'
+    render(<SettingsPage onClose={() => {}} />)
+    await userEvent.click(screen.getByRole('radio', { name: /bridge/i }))
+    expect(mockSetSettings).toHaveBeenCalledWith({ appearance: { theme: 'bridge' } })
   })
 })

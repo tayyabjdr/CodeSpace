@@ -292,3 +292,52 @@
 .cs-settings-range:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 2px var(--cs-cyan-glow), 0 0 12px var(--cs-cyan-glow);
 }
+
+.cs-settings-theme-group {
+  display: flex;
+  gap: 8px;
+}
+
+.cs-settings-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 8px;
+  background: transparent;
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 8px;
+  color: var(--cs-text-secondary);
+  font: 500 12.5px var(--cs-font-ui);
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.cs-settings-theme-option:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-primary);
+}
+
+.cs-settings-theme-option.selected {
+  border-color: var(--cs-border-focus);
+  background: var(--cs-cyan-bg);
+  color: var(--cs-text-primary);
+}
+
+.cs-settings-theme-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--cs-border);
+  background: linear-gradient(135deg, var(--swatch-from) 0%, var(--swatch-from) 50%, var(--swatch-accent) 50%, var(--swatch-accent) 100%);
+}
+
+.cs-settings-theme-swatch.swatch-sarvis-dark {
+  --swatch-from: #0d0f12;
+  --swatch-accent: #67e8f9;
+}
+
+.cs-settings-theme-swatch.swatch-bridge {
+  --swatch-from: #302e39;
+  --swatch-accent: #e15a9e;
+}

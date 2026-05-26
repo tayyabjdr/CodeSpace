@@ -114,20 +114,45 @@ export default function SettingsPage({ onClose }) {
             <p className="cs-settings-desc">{activeCategory.description}</p>
             <div className="cs-settings-card">
               {active === 'appearance' && (
-                <Row label="Default pane font size" caption="Applied to new terminal panes">
-                  <input
-                    type="range"
-                    className="cs-settings-range"
-                    style={{ '--fill': `${((s.appearance.defaultPaneFontSize - FONT_MIN) / (FONT_MAX - FONT_MIN)) * 100}%` }}
-                    min={FONT_MIN}
-                    max={FONT_MAX}
-                    step={1}
-                    value={s.appearance.defaultPaneFontSize}
-                    onChange={(e) => update({ appearance: { defaultPaneFontSize: Number(e.target.value) } })}
-                    aria-label="Default pane font size"
-                  />
-                  <span className="cs-settings-value">{s.appearance.defaultPaneFontSize}px</span>
-                </Row>
+                <>
+                  <Row label="Theme" caption="Switches the whole app palette.">
+                    <div className="cs-settings-theme-group" role="radiogroup" aria-label="Theme">
+                      {[
+                        { id: 'sarvis-dark', label: 'Sarvis Dark' },
+                        { id: 'bridge',      label: 'Bridge'      },
+                      ].map(t => {
+                        const selected = s.appearance.theme === t.id
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            className={`cs-settings-theme-option${selected ? ' selected' : ''}`}
+                            onClick={() => update({ appearance: { theme: t.id } })}
+                          >
+                            <span className={`cs-settings-theme-swatch swatch-${t.id}`} aria-hidden />
+                            <span>{t.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </Row>
+                  <Row label="Default pane font size" caption="Applied to new terminal panes">
+                    <input
+                      type="range"
+                      className="cs-settings-range"
+                      style={{ '--fill': `${((s.appearance.defaultPaneFontSize - FONT_MIN) / (FONT_MAX - FONT_MIN)) * 100}%` }}
+                      min={FONT_MIN}
+                      max={FONT_MAX}
+                      step={1}
+                      value={s.appearance.defaultPaneFontSize}
+                      onChange={(e) => update({ appearance: { defaultPaneFontSize: Number(e.target.value) } })}
+                      aria-label="Default pane font size"
+                    />
+                    <span className="cs-settings-value">{s.appearance.defaultPaneFontSize}px</span>
+                  </Row>
+                </>
               )}
 
               {active === 'notifications' && (
