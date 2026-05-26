@@ -25,9 +25,10 @@ function langFor(file) {
   }
 }
 
-export default function useEditor({ hostRef, file, content, isPlain, fontSize, onSave, onDirtyChange, onChange, onScroll }) {
+export default function useEditor({ hostRef, file, content, isPlain, fontSize, themeId, onSave, onDirtyChange, onChange, onScroll }) {
   const viewRef = useRef(null)
   const fontCompartmentRef = useRef(new Compartment())
+  const themeCompartmentRef = useRef(new Compartment())
   const lastSavedRef = useRef(content ?? '')
 
   const [scrolledToLine, setScrolledToLine] = useState(null)
@@ -45,8 +46,7 @@ export default function useEditor({ hostRef, file, content, isPlain, fontSize, o
           drawSelection(),
           isPlain ? [] : highlightActiveLine(),
           isPlain ? [] : lineNumbers(),
-          buildTheme(),
-          buildHighlightStyle(),
+          themeCompartmentRef.current.of([buildTheme(), buildHighlightStyle()]),
           ...(lang ? [lang] : []),
           fontCompartmentRef.current.of(EditorView.theme({
             '&': { fontSize: `${fontSize}px` }
@@ -87,6 +87,16 @@ export default function useEditor({ hostRef, file, content, isPlain, fontSize, o
       }))
     })
   }, [fontSize])
+
+  // Reconfigure the editor theme + highlight style when the app theme changes,
+  // without rebuilding the view (preserves doc, selection, scroll position).
+  useEffect(() => {
+    const v = viewRef.current
+    if (!v) return
+    v.dispatch({
+      effects: themeCompartmentRef.current.reconfigure([buildTheme(), buildHighlightStyle()])
+    })
+  }, [themeId])
 
   // Mark not-dirty when content prop changes (file swap → caller passes new doc).
   useEffect(() => { lastSavedRef.current = content ?? '' }, [content])

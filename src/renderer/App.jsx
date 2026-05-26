@@ -1021,6 +1021,7 @@ function AppInner() {
                   errorReason={editorErrorReason}
                   width={activeWorkspace.editor.width || Math.round((bodyWidthRef.current || 1400) * EDITOR_DEFAULT_FRAC)}
                   fontSize={activeWorkspace?.fontSize ?? 13}
+                  themeId={themeId}
                   isFullscreen={fsEditor}
                   onToggleFullscreen={() => toggleFullscreen('editor')}
                   onSave={handleEditorSave}

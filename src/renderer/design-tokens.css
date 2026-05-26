@@ -97,6 +97,16 @@
   --cs-term-bright-cyan: #a5f3fc;
   --cs-term-white:     #c6c7c8;
   --cs-term-bright-white: #ebebec;
+
+  /* CodeMirror syntax */
+  --cs-cm-keyword:    #67e8f9;
+  --cs-cm-string:     #86efac;
+  --cs-cm-number:     #f59e0b;
+  --cs-cm-type:       #67e8f9;
+  --cs-cm-tag:        #67e8f9;
+  --cs-cm-attribute:  #86efac;
+  --cs-cm-comment:    rgba(255,255,255,0.28);
+  --cs-cm-selection:  rgba(103, 232, 249, 0.18);
 }
 
 *, *::before, *::after {
@@ -233,4 +243,14 @@ body {
   --cs-term-bright-cyan: #b1e2d6;
   --cs-term-white:     #b6b1bc;
   --cs-term-bright-white: #ebe7ed;
+
+  /* CodeMirror syntax */
+  --cs-cm-keyword:    #da86b9;
+  --cs-cm-string:     #7acb85;
+  --cs-cm-number:     #dda04c;
+  --cs-cm-type:       #da86b9;
+  --cs-cm-tag:        #e15a9e;
+  --cs-cm-attribute:  #7acb85;
+  --cs-cm-comment:    rgba(206, 195, 214, 0.35);
+  --cs-cm-selection:  rgba(225, 90, 158, 0.20);
 }
