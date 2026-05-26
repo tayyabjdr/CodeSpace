@@ -281,6 +281,11 @@ function AppInner() {
   // Workspaces that have at least one done terminal AND aren't the active one
   // → sidebar shows the notify dot beside their name until you switch in.
   const doneTermIds = useSyncExternalStore(doneTracker.subscribe, doneTracker.getDoneTermIds)
+
+  const themeId = useSyncExternalStore(
+    subscribeSettings,
+    () => getSettings().appearance?.theme || DEFAULT_THEME
+  )
   const notifyingWorkspaceIds = useMemo(() => {
     const set = new Set()
     for (const w of workspaces) {
@@ -990,6 +995,7 @@ function AppInner() {
                   isFullscreen={fsTerminalId === t.id}
                   isHiddenForFullscreen={anyFullscreen && fsTerminalId !== t.id}
                   onToggleFullscreen={() => toggleFullscreen(t.id)}
+                  themeId={themeId}
                 />
               ))}
             </div>

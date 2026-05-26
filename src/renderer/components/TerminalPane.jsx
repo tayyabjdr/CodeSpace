@@ -4,7 +4,7 @@ import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
 import './TerminalPane.css'
 
-export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, branch, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused, isFullscreen, isHiddenForFullscreen, onToggleFullscreen }) {
+export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, branch, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused, isFullscreen, isHiddenForFullscreen, onToggleFullscreen, themeId }) {
   const containerRef = useRef(null)
   const done = useSyncExternalStore(
     doneTracker.subscribe,
@@ -68,7 +68,8 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     id, ptyId, shell, cwd, containerRef,
     undefined, handleUserInput, handlePtyReady,
     fontSize, onFontSizeChange,
-    { cwdRef, workspaceDirRef, onOpenFile }
+    { cwdRef, workspaceDirRef, onOpenFile },
+    themeId
   )
 
   const handleFocus = () => {

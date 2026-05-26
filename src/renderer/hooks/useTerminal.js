@@ -5,8 +5,9 @@ import * as ptyPool from '../pty-pool.js'
 import { parsePathsInLine } from '../path-parser.js'
 import { resolvePath } from '../path-resolver.js'
 import { FONT_RESIZE_DEBOUNCE_MS } from '../constants.js'
+import { buildTerminalTheme } from '../terminal-theme.js'
 
-export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange, linkOpts) {
+export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange, linkOpts, themeId) {
   const [error, setError] = useState(null)
   const [exitCode, setExitCode] = useState(null)
   const ptyIdRef = useRef(ptyId)
@@ -42,6 +43,13 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     return () => clearTimeout(fontResizeTimerRef.current)
   }, [fontSize])
 
+  // When the app theme changes, repaint the xterm palette in-place — no PTY
+  // restart, no buffer loss. Tokens are read fresh from CSS.
+  useEffect(() => {
+    if (!themeId || !termRef.current) return
+    termRef.current.options.theme = buildTerminalTheme()
+  }, [themeId])
+
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -64,29 +72,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
         // arrow keys — input still reaches the PTY, but the scroll position is
         // left alone. Ctrl+Down (below) is the explicit "jump to bottom".
         scrollOnUserInput: false,
-        theme: {
-          background: '#0d0f12',
-          foreground: 'rgba(255,255,255,0.85)',
-          cursor: 'rgba(255,255,255,0.8)',
-          cursorAccent: '#0d0f12',
-          selectionBackground: 'rgba(255,255,255,0.12)',
-          black: '#0a0a0a',
-          brightBlack: '#3f3f3f',
-          red: '#f87171',
-          brightRed: '#fca5a5',
-          green: '#86efac',
-          brightGreen: '#bbf7d0',
-          yellow: '#fcd34d',
-          brightYellow: '#fde68a',
-          blue: '#93c5fd',
-          brightBlue: '#bfdbfe',
-          magenta: '#c4b5fd',
-          brightMagenta: '#ddd6fe',
-          cyan: '#67e8f9',
-          brightCyan: '#a5f3fc',
-          white: 'rgba(255,255,255,0.78)',
-          brightWhite: 'rgba(255,255,255,0.92)'
-        }
+        theme: buildTerminalTheme(),
       })
 
       fitAddon = new FitAddon()
