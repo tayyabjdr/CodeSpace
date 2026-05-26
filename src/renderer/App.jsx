@@ -13,7 +13,8 @@ import RightToolbar from './components/RightToolbar.jsx'
 import SkillsPanel from './components/SkillsPanel.jsx'
 import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
 import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
-import { initSettings, getSettings } from './settings-store.js'
+import { initSettings, getSettings, subscribe as subscribeSettings } from './settings-store.js'
+import { applyTheme, DEFAULT_THEME } from './theme.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
@@ -144,12 +145,14 @@ function AppInner() {
   // Load persisted workspaces + defaults on first mount.
   useEffect(() => {
     let cancelled = false
+    applyTheme(DEFAULT_THEME)
     Promise.all([
       window.electronAPI.loadWorkspaces(),
       window.electronAPI.getDesktopPath(),
       initSettings()
     ]).then(([state, desktop]) => {
       if (cancelled) return
+      applyTheme(getSettings().appearance?.theme)
       desktopPathRef.current = desktop || ''
       const restored = (state?.workspaces ?? []).map(w => ({
         ...w,
@@ -245,6 +248,11 @@ function AppInner() {
         return { ...w, terminals: next }
       }))
     })
+  }, [])
+
+  // Live-repaint when the user switches themes in Settings.
+  useEffect(() => {
+    return subscribeSettings((s) => applyTheme(s.appearance?.theme))
   }, [])
 
   // A terminal counts as "attended" only if it's the focused pane in the
