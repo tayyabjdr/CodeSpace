@@ -114,3 +114,52 @@ body {
   from { background-position: 200% 50%; }
   to   { background-position: -100% 50%; }
 }
+
+:root[data-theme='bridge'] {
+  /* Surfaces — warm plum/charcoal */
+  --cs-bg-base:      #282630;
+  --cs-bg-surface:   #302e39;
+  --cs-bg-elevated:  #393643;
+  --cs-bg-sidebar:   #2c2a35;
+  --cs-bg-hover:     rgba(255, 255, 255, 0.05);
+  --cs-bg-active:    rgba(255, 255, 255, 0.08);
+
+  /* Borders */
+  --cs-border:       #403d4a;
+  --cs-border-mid:   #514c5d;
+  --cs-border-hover: #5f5a6d;
+  --cs-border-focus: rgba(227, 91, 166, 0.62);
+
+  /* Text — warm whites */
+  --cs-text-primary:   rgba(248, 244, 250, 0.94);
+  --cs-text-secondary: rgba(238, 232, 242, 0.76);
+  --cs-text-tertiary:  rgba(218, 208, 224, 0.52);
+  --cs-text-muted:     rgba(206, 195, 214, 0.35);
+  --cs-text-dim:       rgba(206, 195, 214, 0.22);
+
+  /* Icon tones — solid greys composited from text alpha over #2c2a35 */
+  --cs-icon-muted:     #4b4751;
+  --cs-icon-tertiary:  #6f6a76;
+  --cs-icon-secondary: #b6b1bc;
+  --cs-icon-primary:   #ebe7ed;
+
+  /* Accents — note: --cs-cyan is the legacy variable name; under Bridge it is the rose/magenta primary */
+  --cs-cyan:         #e15a9e;
+  --cs-cyan-bg:      rgba(225, 90, 158, 0.14);
+  --cs-cyan-glow:    rgba(225, 90, 158, 0.32);
+
+  --cs-green:        #7acb85;
+  --cs-green-bg:     rgba(122, 203, 133, 0.10);
+  --cs-green-border: rgba(122, 203, 133, 0.24);
+
+  --cs-amber:        #dda04c;
+  --cs-violet:       #da86b9;
+  --cs-red:          #e06a72;
+  --cs-red-hover-bg: rgba(224, 106, 114, 0.16);
+  --cs-red-hover-fg: rgba(238, 152, 158, 0.95);
+
+  /* Status dots */
+  --cs-status-live:  #7acb85;
+  --cs-status-idle:  #6b6577;
+  --cs-status-amber: #dda04c;
+}
