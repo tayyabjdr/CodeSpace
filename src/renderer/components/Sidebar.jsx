@@ -15,16 +15,52 @@ const GearGlyph = () => (
   </svg>
 )
 
-export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, onCreate, onDelete, onOpenSettings }) {
+export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, onCreate, onDelete, onOpenSettings, onRenameNickname }) {
   const listRef = useRef(null)
   const [version, setVersion] = useState('')
   useEffect(() => {
     window.electronAPI?.getAppVersion?.().then(setVersion).catch(() => setVersion(''))
   }, [])
 
+  const [editingId, setEditingId] = useState(null)   // ws.id of the row currently editing, or null
+  const [draft, setDraft] = useState('')             // local typed value while editing
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [editingId])
+
+  const startEditNickname = (ws, e) => {
+    e.stopPropagation()
+    setDraft(ws.nickname ?? '')
+    setEditingId(ws.id)
+  }
+
+  const commitNickname = () => {
+    if (!editingId) return
+    const id = editingId
+    setEditingId(null)
+    onRenameNickname?.(id, draft)
+  }
+
+  const cancelNickname = () => {
+    setEditingId(null)
+    setDraft('')
+  }
+
+  const handleNicknameKeyDown = (e) => {
+    if (e.key === 'Enter')      { e.preventDefault(); commitNickname() }
+    else if (e.key === 'Escape') { e.preventDefault(); cancelNickname() }
+    e.stopPropagation()   // never let nickname input chars bubble to row roving-nav
+  }
+
   // Roving keyboard nav across workspace items: Up/Down to move focus,
   // Enter/Space to activate, Home/End to jump to extremes.
   const handleKeyDown = (e, index) => {
+    if (editingId) return   // input owns keys; row nav must not steal them
     const items = listRef.current?.querySelectorAll('[data-sb-item]')
     if (!items || items.length === 0) return
     const focus = (i) => items[Math.max(0, Math.min(items.length - 1, i))]?.focus()
@@ -76,7 +112,39 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
               onKeyDown={(e) => handleKeyDown(e, i)}
             >
               <span className="sb-item-bar" />
-              <span className="sb-item-name" title={ws.name}>{ws.name}</span>
+              <div className="sb-item-text">
+                <span className="sb-item-name" title={ws.name}>{ws.name}</span>
+                {editingId === ws.id ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className="sb-item-nickname-input"
+                    value={draft}
+                    maxLength={40}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={handleNicknameKeyDown}
+                    onBlur={commitNickname}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                    aria-label="Edit nickname"
+                  />
+                ) : ws.nickname ? (
+                  <span
+                    className="sb-item-nickname"
+                    title={ws.nickname}
+                    onDoubleClick={(e) => startEditNickname(ws, e)}
+                  >
+                    {ws.nickname}
+                  </span>
+                ) : (
+                  <span
+                    className="sb-item-nickname-hint"
+                    onDoubleClick={(e) => startEditNickname(ws, e)}
+                  >
+                    add nickname
+                  </span>
+                )}
+              </div>
               <span className="sb-item-status" aria-hidden>
                 {isNotifying && <span className="sb-item-dot" title="An agent finished" />}
                 {ws.isolated && (
