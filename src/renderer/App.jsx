@@ -157,6 +157,7 @@ function AppInner() {
       const restored = (state?.workspaces ?? []).map(w => ({
         ...w,
         agentCounts: w.agentCounts ?? { claude: w.agentCount ?? 0, codex: 0 },
+        nickname: w.nickname ?? null,
         terminals: [],          // session-only — lazy spawn
         agentCounter: 0,
         focusedTerminalId: null,
@@ -209,6 +210,7 @@ function AppInner() {
             id: w.id, name: w.name, dir: w.dir,
             agentCounts: live,
             isolated: !!w.isolated,
+            nickname: w.nickname ?? null,
             editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
           }
         }),
@@ -351,6 +353,7 @@ function AppInner() {
       dir,
       agentCounts: counts,
       isolated: !!isolated,
+      nickname: null,
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,
@@ -372,6 +375,7 @@ function AppInner() {
       name: 'New Workspace',
       dir: '',
       agentCounts: { claude: 0, codex: 0 },
+      nickname: null,
       terminals: [],
       agentCounter: 0,
       focusedTerminalId: null,
@@ -459,6 +463,7 @@ function AppInner() {
           id: w.id, name: w.name, dir: w.dir,
           agentCounts: live,
           isolated: !!w.isolated,
+          nickname: w.nickname ?? null,
           editor: w.editor ? { open: w.editor.open, file: w.editor.file, line: w.editor.line, width: w.editor.width } : undefined
         }
       }),
@@ -511,6 +516,14 @@ function AppInner() {
     }
     setActiveId(wsId)
   }, [activeWorkspace])
+
+  const handleRenameNickname = useCallback((wsId, value) => {
+    // Trim → empty becomes null (clears the nickname); clamp at 40 chars on save.
+    // Sanitization in workspaces-store is the source of truth; this is a defensive trim.
+    const trimmed = typeof value === 'string' ? value.trim() : ''
+    const next = trimmed.length === 0 ? null : trimmed.slice(0, 40)
+    setWorkspaces(prev => prev.map(w => w.id === wsId ? { ...w, nickname: next } : w))
+  }, [])
 
   const updateActive = useCallback((updater) => {
     setWorkspaces(prev => prev.map(w => w.id === activeId ? updater(w) : w))
@@ -950,6 +963,7 @@ function AppInner() {
           onCreate={handleStartDraft}
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
+          onRenameNickname={handleRenameNickname}
         />
         <div className={`body-main${fsTerminalId ? ' fs-terminal' : ''}${fsEditor ? ' fs-editor' : ''}`}>
           <div className="grid-wrap">
