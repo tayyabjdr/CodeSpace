@@ -65,7 +65,7 @@
   position: relative;
   display: grid;
   grid-template-columns: 1fr auto;
-  align-items: center;
+  align-items: start;
   gap: 10px;
   padding: 10px 14px 10px 16px;
   border-radius: 7px;
@@ -133,12 +133,72 @@
   color: var(--cs-text-primary);
 }
 
+.sb-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sb-item-nickname,
+.sb-item-nickname-hint {
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  transition: color var(--cs-transition), opacity var(--cs-transition);
+}
+
+.sb-item-nickname {
+  color: var(--cs-text-muted);
+}
+
+.sb-item:hover .sb-item-nickname,
+.sb-item.active .sb-item-nickname {
+  color: var(--cs-text-tertiary);
+}
+
+/* Empty-state hint — not rendered (display: none) at rest so the row stays
+   compact; revealed only while the row is hovered. The layout shift on hover
+   is intentional per the spec. */
+.sb-item-nickname-hint {
+  color: var(--cs-text-dim);
+  font-style: italic;
+  display: none;
+}
+
+.sb-item:hover .sb-item-nickname-hint {
+  display: block;
+}
+
+.sb-item-nickname-input {
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--cs-text-secondary);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  /* Match the row height of the nickname so the layout doesn't jump on enter/exit. */
+  line-height: 1.35;
+}
+
 /* Live status — small dot + tabular count */
 
 .sb-item-status {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding-top: 1px;
 }
 
 .sb-item-dot {
