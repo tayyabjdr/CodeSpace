@@ -132,6 +132,7 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
                   <span
                     className="sb-item-nickname"
                     title={ws.nickname}
+                    onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => startEditNickname(ws, e)}
                   >
                     {ws.nickname}
@@ -139,6 +140,7 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
                 ) : (
                   <span
                     className="sb-item-nickname-hint"
+                    onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => startEditNickname(ws, e)}
                   >
                     add nickname
