@@ -278,8 +278,8 @@
 .sb-item-delete {
   position: absolute;
   right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 8px;
+  transform: none;
   width: 20px;
   height: 20px;
   display: flex;
