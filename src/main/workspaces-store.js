@@ -82,7 +82,8 @@ export async function loadWorkspaces() {
       dir: String(w.dir ?? ''),
       agentCounts: sanitizeAgentCounts(w),
       isolated: !!w.isolated,
-      editor: sanitizeEditor(w.editor)
+      editor: sanitizeEditor(w.editor),
+      nickname: sanitizeNickname(w.nickname)
     })),
     activeWorkspaceId: parsed.activeWorkspaceId ?? null
   }
@@ -98,6 +99,13 @@ function sanitizeEditor(e) {
   }
 }
 
+function sanitizeNickname(v) {
+  if (typeof v !== 'string') return null
+  const trimmed = v.trim()
+  if (trimmed.length === 0) return null
+  return trimmed.slice(0, 40)
+}
+
 export async function saveWorkspaces(state) {
   const safe = {
     version: SCHEMA_VERSION,
@@ -107,7 +115,8 @@ export async function saveWorkspaces(state) {
       dir: w.dir,
       agentCounts: sanitizeAgentCounts(w),
       isolated: !!w.isolated,
-      editor: sanitizeEditor(w.editor)
+      editor: sanitizeEditor(w.editor),
+      nickname: sanitizeNickname(w.nickname)
     })),
     activeWorkspaceId: state?.activeWorkspaceId ?? null
   }
