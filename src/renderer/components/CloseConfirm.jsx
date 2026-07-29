@@ -56,7 +56,7 @@ export default function CloseConfirm({ workspaces, onCancel, onConfirm }) {
       confirmLabel="Close CodeSpace"
       cancelLabel="Stay"
       initialFocus="cancel"
-      destructive={running}
+      destructive={running || dirty.length > 0}
       onConfirm={onConfirm}
       onCancel={onCancel}
     />

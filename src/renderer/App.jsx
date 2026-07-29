@@ -172,6 +172,15 @@ function AppInner() {
       setWorkspaces(restored)
       setActiveId(state?.activeWorkspaceId ?? restored[0]?.id ?? null)
       setLoaded(true)
+    }).catch((err) => {
+      // A rejection here (loadWorkspaces/getDesktopPath/initSettings) must
+      // still flip loaded, or the app is stuck on the `!loaded` null render
+      // forever — and useCloseGuard ignores close requests until then, so
+      // main's failsafe would be the only way out. Degrade to the empty
+      // workspaces state instead of trapping the window.
+      if (cancelled) return
+      console.error('Failed to load persisted state', err)
+      setLoaded(true)
     })
     return () => { cancelled = true }
   }, [])
@@ -916,7 +925,7 @@ function AppInner() {
     }
   }, [])
 
-  const { closeRequested, cancelClose, confirmClose } = useCloseGuard()
+  const { closeRequested, cancelClose, confirmClose } = useCloseGuard(loaded)
 
   // Hold render until persisted state is loaded — main keeps the window
   // hidden until ready-to-show, so this brief null render doesn't flash
