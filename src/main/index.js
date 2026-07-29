@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
 import { loadWorkspaces, saveWorkspaces, consumeCorruptBackupNotice } from './workspaces-store.js'
+import { installCloseGuard } from './close-guard.js'
 import { loadRecents, addRecent, removeRecent } from './recent-dirs-store.js'
 import { setupAutoUpdater, reapplyAutoUpdaterSettings } from './auto-updater.js'
 import { loadSettings } from './settings-store.js'
@@ -99,6 +100,7 @@ function createWindow() {
   }
 
   registerHandlers(win)
+  installCloseGuard(win)
 
   ipcMain.on('win:minimize', () => win.minimize())
   ipcMain.on('win:maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize())
