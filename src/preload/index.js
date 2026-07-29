@@ -35,6 +35,13 @@ const api = {
     ipcRenderer.on('win:maximize-changed', handler)
     return () => ipcRenderer.removeListener('win:maximize-changed', handler)
   },
+  onCloseRequested: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('win:close-requested', handler)
+    return () => ipcRenderer.removeListener('win:close-requested', handler)
+  },
+  closePrompted:    () => ipcRenderer.send('win:closePrompted'),
+  confirmClose:     () => ipcRenderer.send('win:confirmClose'),
   selectDirectory:   () => ipcRenderer.invoke('dialog:selectDirectory'),
   getDesktopPath:    () => ipcRenderer.invoke('app:getDesktopPath'),
   loadWorkspaces:    () => ipcRenderer.invoke('workspaces:load'),

@@ -23,7 +23,7 @@ Main process intercepts `win.on('close')` and asks the renderer to prompt. The r
 | Dialog | Existing `ConfirmDialog`, not a native `dialog.showMessageBox`. |
 | Default focus | Cancel, not confirm. A stray Enter must not close the app. |
 | Message | Adapts to what is actually at stake (agent count, dirty file). |
-| Destructive styling | Only when agents are running. |
+| Destructive styling | When agents are running, or when there are unsaved editor changes. |
 
 ## Architecture
 
@@ -108,7 +108,7 @@ Title: **Close CodeSpace?**
 
 Singular and plural forms are both handled ("1 agent is running in 1 workspace").
 
-Confirm label: **Close CodeSpace**. Cancel label: **Stay**. `destructive` only when the running-agent count is above zero, so the common case stays quiet and the red carries meaning when it appears.
+Confirm label: **Close CodeSpace**. Cancel label: **Stay**. `destructive` when agents are running or there are unsaved editor changes, so the truly quiet case (nothing running, nothing unsaved) stays plain.
 
 Counting: an agent is any terminal in `workspace.terminals`. Terminals spawn lazily on first workspace activation, so a persisted-but-never-opened workspace contributes zero. Dirty files come from `workspace.editor.dirty && workspace.editor.file`, checked across all workspaces rather than just the active one.
 
@@ -122,7 +122,7 @@ Counting: an agent is any terminal in `workspace.terminals`. Terminals spawn laz
 
 ## Accepted gaps
 
-- **Close during the `!loaded` null render** (roughly the first 100ms of launch) skips the prompt. There is no tree to draw into, so main's ack timeout takes over. Nothing is running that early, so nothing is lost.
+- **Close during the `!loaded` null render** (roughly the first 100ms of launch) skips the prompt. There is no tree to draw into, so `useCloseGuard` is gated on `loaded` and deliberately ignores the request: it does not ack and does not set `closeRequested`. That leaves main's 1500ms failsafe timer as the only thing watching, and it fires and closes the window unprompted. Nothing is running that early, so nothing is lost. The load effect's `Promise.all` also carries a `.catch()` now, so a rejected load still flips `loaded` to true instead of leaving the window stuck in this state, and therefore reliant on the failsafe, indefinitely.
 - **OS shutdown and restart.** Windows can force-close an app that blocks shutdown. Not worth special handling, since the OS is closing everything anyway.
 
 ## Testing

@@ -294,7 +294,7 @@ useEffect(() => {
 - [ ] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run tests/renderer/ConfirmDialog.test.jsx`
-Expected: PASS, 8 tests.
+Expected: PASS, 7 tests.
 
 - [ ] **Step 6: Run the full suite**
 

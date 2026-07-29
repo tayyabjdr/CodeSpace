@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { resolvePath, isAbsolutePath } from '../src/renderer/path-resolver.js'
+import { resolvePath, isAbsolutePath, basename } from '../src/renderer/path-resolver.js'
 
 function makeApi(existing) {
   return {
@@ -52,5 +52,25 @@ describe('resolvePath', () => {
     const api = makeApi(new Set(['C:\\cwd\\foo.ts']))
     const r = await resolvePath('foo.ts:42:7', 'C:\\cwd', 'C:\\ws', api)
     expect(r).toEqual({ path: 'C:\\cwd\\foo.ts', line: 42, col: 7 })
+  })
+})
+
+describe('basename', () => {
+  it('returns the last segment of a Windows path', () => {
+    expect(basename('C:\\Users\\TJ\\project\\notes.md')).toBe('notes.md')
+  })
+
+  it('returns the last segment of a POSIX path', () => {
+    expect(basename('/home/tj/project/notes.md')).toBe('notes.md')
+  })
+
+  it('returns the input unchanged when there is no separator', () => {
+    expect(basename('notes.md')).toBe('notes.md')
+  })
+
+  it('returns an empty string for null, undefined, or empty input', () => {
+    expect(basename(null)).toBe('')
+    expect(basename(undefined)).toBe('')
+    expect(basename('')).toBe('')
   })
 })
