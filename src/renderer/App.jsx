@@ -4,6 +4,7 @@ import Toolbar from './components/Toolbar.jsx'
 import TerminalPane from './components/TerminalPane.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
+import CloseConfirm from './components/CloseConfirm.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
@@ -21,6 +22,7 @@ import * as autoNamer from './auto-namer.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
 import { basename } from './path-resolver.js'
 import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
+import useCloseGuard from './hooks/useCloseGuard.js'
 import './design-tokens.css'
 import './App.css'
 
@@ -914,6 +916,8 @@ function AppInner() {
     }
   }, [])
 
+  const { closeRequested, cancelClose, confirmClose } = useCloseGuard()
+
   // Hold render until persisted state is loaded — main keeps the window
   // hidden until ready-to-show, so this brief null render doesn't flash
   // an empty placeholder before Onboarding/main mount.
@@ -922,7 +926,18 @@ function AppInner() {
   }
 
   if (workspaces.length === 0) {
-    return <Onboarding onLaunch={handleOnboardingLaunch} />
+    return (
+      <>
+        <Onboarding onLaunch={handleOnboardingLaunch} />
+        {closeRequested && (
+          <CloseConfirm
+            workspaces={workspaces}
+            onCancel={cancelClose}
+            onConfirm={confirmClose}
+          />
+        )}
+      </>
+    )
   }
 
   const terminals = activeWorkspace?.terminals ?? []
@@ -1159,6 +1174,14 @@ function AppInner() {
             proceedDirtyAction(action)
           }}
           onCancel={() => setPendingDirtyAction(null)}
+        />
+      )}
+
+      {closeRequested && (
+        <CloseConfirm
+          workspaces={workspaces}
+          onCancel={cancelClose}
+          onConfirm={confirmClose}
         />
       )}
     </div>
