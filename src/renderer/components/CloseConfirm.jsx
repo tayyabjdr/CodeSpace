@@ -41,8 +41,9 @@ export default function CloseConfirm({ workspaces, onCancel, onConfirm }) {
       </>
     )
   } else if (dirty.length > 0) {
-    // Barely reachable, since the editor lives inside an activated workspace,
-    // but cheap to get right rather than claim nothing is at stake.
+    // Reachable in ordinary use: a user can close every terminal pane in a
+    // workspace one by one, leaving terminals empty while editor.dirty stays
+    // true, since the dirty flag doesn't depend on any pane being open.
     message = <>Closing now means {unsaved}.</>
   } else {
     message = <>Nothing is running right now.</>

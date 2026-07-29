@@ -73,6 +73,13 @@ describe('CloseConfirm', () => {
     expect(screen.getByText(/Nothing is running right now/)).toBeInTheDocument()
   })
 
+  it('names the dirty file and stays non-destructive when every pane is closed but an edit is unsaved', () => {
+    setup([ws({ terminals: [], editor: { file: 'C:\\repo\\App.jsx', dirty: true } })])
+    expect(screen.getByText(/Closing now means your unsaved edits to/)).toBeInTheDocument()
+    expect(screen.getByText('App.jsx')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Close CodeSpace' })).not.toHaveClass('destructive')
+  })
+
   it('marks the confirm destructive only when agents are running', () => {
     const { unmount } = render(
       <CloseConfirm workspaces={[ws({ terminals: term(1) })]} onConfirm={vi.fn()} onCancel={vi.fn()} />
