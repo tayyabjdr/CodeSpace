@@ -29,15 +29,15 @@ export function installCloseGuard(win, { timeoutMs = CLOSE_PROMPT_TIMEOUT_MS } =
     if (!wc || wc.isDestroyed() || wc.isCrashed()) return
 
     e.preventDefault()
-    if (win.isMinimized()) win.restore()
-    win.focus()
+    if (!win.isDestroyed() && win.isMinimized()) win.restore()
+    if (!win.isDestroyed()) win.focus()
     wc.send('win:close-requested')
 
     clearTimer()
     promptTimer = setTimeout(() => {
       promptTimer = null
       allowClose = true
-      win.close()
+      if (!win.isDestroyed()) win.close()
     }, timeoutMs)
   })
 
@@ -47,7 +47,7 @@ export function installCloseGuard(win, { timeoutMs = CLOSE_PROMPT_TIMEOUT_MS } =
   ipcMain.on('win:confirmClose', () => {
     clearTimer()
     allowClose = true
-    win.close()
+    if (!win.isDestroyed()) win.close()
   })
 
   // Programmatic quits must not hit the dialog. Without this,

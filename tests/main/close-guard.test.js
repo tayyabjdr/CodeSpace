@@ -18,6 +18,7 @@ function makeWin() {
     focus: vi.fn(),
     restore: vi.fn(),
     isMinimized: vi.fn(() => false),
+    isDestroyed: vi.fn(() => false),
     webContents: {
       send: vi.fn(),
       isDestroyed: vi.fn(() => false),
@@ -140,5 +141,29 @@ describe('installCloseGuard', () => {
     fireClose(win)
     vi.advanceTimersByTime(50)
     expect(win.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not throw when win:confirmClose arrives after window is destroyed', () => {
+    const win = makeWin()
+    installCloseGuard(win)
+    fireClose(win)
+    win.isDestroyed.mockReturnValue(true)
+    // Should not throw when calling the handler on a destroyed window
+    expect(() => {
+      ipcHandler('win:confirmClose')()
+    }).not.toThrow()
+    expect(win.close).not.toHaveBeenCalled()
+  })
+
+  it('does not throw when timeout fires after window is destroyed', () => {
+    const win = makeWin()
+    installCloseGuard(win)
+    fireClose(win)
+    win.isDestroyed.mockReturnValue(true)
+    // Should not throw when timeout fires on a destroyed window
+    expect(() => {
+      vi.advanceTimersByTime(1500)
+    }).not.toThrow()
+    expect(win.close).not.toHaveBeenCalled()
   })
 })
