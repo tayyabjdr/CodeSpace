@@ -9,18 +9,22 @@ export default function ConfirmDialog({
   cancelLabel = 'Cancel',
   extraLabel,
   destructive = false,
+  initialFocus = 'confirm',
   onConfirm,
   onCancel,
   onExtra
 }) {
   const confirmRef = useRef(null)
+  const cancelRef = useRef(null)
+  const extraRef = useRef(null)
   const cardRef = useRef(null)
 
   useFocusTrap(cardRef, true)
 
   useEffect(() => {
-    confirmRef.current?.focus()
-  }, [])
+    const target = initialFocus === 'cancel' ? cancelRef.current : confirmRef.current
+    target?.focus()
+  }, [initialFocus])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -30,17 +34,21 @@ export default function ConfirmDialog({
         return
       }
       if (e.key !== 'Enter') return
-      // Only fire confirm when focus is actually inside the dialog. Otherwise
-      // an Enter typed elsewhere (e.g. into a terminal) would dismiss it.
+      // Only act when focus is actually inside the dialog. Otherwise an Enter
+      // typed elsewhere (e.g. into a terminal) would dismiss it.
       const card = cardRef.current
-      if (card && (card === document.activeElement || card.contains(document.activeElement))) {
-        e.preventDefault()
-        onConfirm?.()
-      }
+      const active = document.activeElement
+      if (!card || (card !== active && !card.contains(active))) return
+      e.preventDefault()
+      // Route to whichever button holds focus. Enter must never confirm just
+      // because the dialog is open; the close guard focuses cancel on purpose.
+      if (active === cancelRef.current) onCancel?.()
+      else if (active === extraRef.current) onExtra?.()
+      else onConfirm?.()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onCancel, onConfirm])
+  }, [onCancel, onConfirm, onExtra])
 
   return (
     <div className="cd-backdrop" onClick={onCancel}>
@@ -52,11 +60,11 @@ export default function ConfirmDialog({
         <p className="cd-message">{message}</p>
 
         <div className="cd-actions">
-          <button type="button" className="cd-cancel" onClick={onCancel}>
+          <button type="button" ref={cancelRef} className="cd-cancel" onClick={onCancel}>
             {cancelLabel}
           </button>
           {extraLabel && (
-            <button type="button" className="cd-extra" onClick={onExtra}>
+            <button type="button" ref={extraRef} className="cd-extra" onClick={onExtra}>
               {extraLabel}
             </button>
           )}
