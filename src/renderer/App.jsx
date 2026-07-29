@@ -19,6 +19,7 @@ import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
+import { basename } from './path-resolver.js'
 import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
 import './design-tokens.css'
 import './App.css'
@@ -1162,10 +1163,4 @@ function AppInner() {
       )}
     </div>
   )
-}
-
-function basename(p) {
-  if (!p) return ''
-  const m = p.match(/[^\\/]+$/)
-  return m ? m[0] : p
 }

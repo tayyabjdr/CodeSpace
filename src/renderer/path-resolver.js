@@ -49,3 +49,9 @@ export async function resolvePath(raw, focusedCwd, workspaceDir, electronApi) {
   }
   return null
 }
+
+export function basename(p) {
+  if (!p) return ''
+  const m = p.match(/[^\\/]+$/)
+  return m ? m[0] : p
+}
