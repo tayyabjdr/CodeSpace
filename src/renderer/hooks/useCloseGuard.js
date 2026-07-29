@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 /**
  * Renderer half of the close handshake. Main blocks the close and asks us to
@@ -19,7 +19,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export default function useCloseGuard(ready) {
   const [closeRequested, setCloseRequested] = useState(false)
   const readyRef = useRef(ready)
-  useEffect(() => { readyRef.current = ready }, [ready])
+  useLayoutEffect(() => { readyRef.current = ready }, [ready])
 
   useEffect(() => {
     const api = window.electronAPI

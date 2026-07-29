@@ -108,7 +108,7 @@ Title: **Close CodeSpace?**
 
 Singular and plural forms are both handled ("1 agent is running in 1 workspace").
 
-Confirm label: **Close CodeSpace**. Cancel label: **Stay**. `destructive` only when the running-agent count is above zero, so the common case stays quiet and the red carries meaning when it appears.
+Confirm label: **Close CodeSpace**. Cancel label: **Stay**. `destructive` when agents are running or there are unsaved editor changes, so the truly quiet case (nothing running, nothing unsaved) stays plain.
 
 Counting: an agent is any terminal in `workspace.terminals`. Terminals spawn lazily on first workspace activation, so a persisted-but-never-opened workspace contributes zero. Dirty files come from `workspace.editor.dirty && workspace.editor.file`, checked across all workspaces rather than just the active one.
 
