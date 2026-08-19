@@ -38,7 +38,6 @@
     var(--cs-done-grad-start) 0%,
     var(--cs-done-grad-end) 100%
   );
-  border-bottom-color: var(--cs-green-border-strong);
 }
 
 /* Body pulse — a 4×2 grid of invisible cells overlays the pane body and
@@ -135,7 +134,7 @@
   background: var(--cs-bg-elevated);
   flex-shrink: 0;
   cursor: grab;
-  transition: background var(--cs-transition), border-bottom-color var(--cs-transition);
+  transition: background var(--cs-transition);
 }
 
 .pane-header:active {
