@@ -420,28 +420,3 @@
   background: var(--cs-violet-fill-weak);
 }
 
-.tp-crumb-icon {
-  display: flex;
-  color: var(--cs-icon-muted);
-  flex: 0 0 auto;
-}
-
-.tp-crumb-shell,
-.tp-crumb-cwd {
-  font-family: var(--cs-font-mono);
-  font-size: 10px;
-  color: var(--cs-text-muted);
-  white-space: nowrap;
-}
-
-.tp-crumb-cwd {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-.tp-crumb-sep {
-  color: var(--cs-text-dim);
-  font-size: 10px;
-  flex: 0 0 auto;
-}

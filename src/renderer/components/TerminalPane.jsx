@@ -2,7 +2,6 @@ import { useRef, useState, useEffect, useCallback, useSyncExternalStore } from '
 import useTerminal from '../hooks/useTerminal.js'
 import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
-import { shortenPath } from '../path-resolver.js'
 import './TerminalPane.css'
 
 export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, branch, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused, isFullscreen, isHiddenForFullscreen, onToggleFullscreen, themeId }) {
@@ -265,40 +264,35 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
           </button>
         </div>
       </div>
-      <div className="pane-subheader">
-        <span className="tp-crumb-icon" aria-hidden>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-          </svg>
-        </span>
-        <span className="tp-crumb-shell">{shell}</span>
-        <span className="tp-crumb-sep" aria-hidden>·</span>
-        <span className="tp-crumb-cwd" title={cwd}>{shortenPath(cwd)}</span>
-        {branch && (
-          <>
-            <span className="tp-crumb-sep" aria-hidden>·</span>
-            <button
-              type="button"
-              className="tp-branch"
-              title={`${branch} — click to copy`}
-              onClick={(e) => {
-                e.stopPropagation()
-                window.electronAPI.writeClipboardText(branch)
-              }}
-            >
-              <span className="tp-branch-icon" aria-hidden>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="6" y1="3" x2="6" y2="15" />
-                  <circle cx="18" cy="6" r="3" />
-                  <circle cx="6" cy="18" r="3" />
-                  <path d="M18 9a9 9 0 0 1-9 9" />
-                </svg>
-              </span>
-              <span className="tp-branch-text">{branch}</span>
-            </button>
-          </>
-        )}
-      </div>
+      {/* The band exists only to carry the branch. Agent type is already the
+          pane's own name and the sidebar's glyph, and the cwd is the workspace
+          you picked — both were repeating what the user already knew. A
+          worktree branch is the one thing here you cannot read anywhere else,
+          so an isolated pane keeps the row and every other pane goes straight
+          from header to terminal. */}
+      {branch && (
+        <div className="pane-subheader">
+          <button
+            type="button"
+            className="tp-branch"
+            title={`${branch} — click to copy`}
+            onClick={(e) => {
+              e.stopPropagation()
+              window.electronAPI.writeClipboardText(branch)
+            }}
+          >
+            <span className="tp-branch-icon" aria-hidden>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="6" y1="3" x2="6" y2="15" />
+                <circle cx="18" cy="6" r="3" />
+                <circle cx="6" cy="18" r="3" />
+                <path d="M18 9a9 9 0 0 1-9 9" />
+              </svg>
+            </span>
+            <span className="tp-branch-text">{branch}</span>
+          </button>
+        </div>
+      )}
       {error ? (
         <div className="pane-error">
           <div className="pane-error-title">{error.title ?? error}</div>
