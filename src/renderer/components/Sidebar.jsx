@@ -63,10 +63,12 @@ export default function Sidebar({
     else if (e.key === 'End') { e.preventDefault(); focus(nodes.length - 1) }
     else if (e.key === 'ArrowRight') {
       e.preventDefault()
-      if (node.kind === 'workspace' && sessionsOf(node.ws).length > 0 && !expandedIds?.has(node.ws.id)) {
-        onToggleExpand(node.ws.id)
-      } else if (node.kind === 'workspace') {
-        focus(index + 1)
+      // A childless workspace (or a session leaf) has nothing to expand
+      // into — ARIA APG says Right should absorb the keypress there, not
+      // behave like ArrowDown.
+      if (node.kind === 'workspace' && sessionsOf(node.ws).length > 0) {
+        if (!expandedIds?.has(node.ws.id)) onToggleExpand(node.ws.id)
+        else focus(index + 1)
       }
     }
     else if (e.key === 'ArrowLeft') {

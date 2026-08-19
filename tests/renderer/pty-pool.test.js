@@ -49,6 +49,20 @@ describe('pty-pool exit store', () => {
     expect(ptyPool.getExitedPtyIds()).not.toBe(before)
   })
 
+  it('keeps returning the same snapshot reference across repeated calls after an exit', () => {
+    // This is the state React actually lives in most of the time (post-exit,
+    // no further mutation) — an accidental `new Set(...)` per call here
+    // would loop useSyncExternalStore forever, and the pristine-state test
+    // above can't catch that because it never triggers an exit.
+    ptyPool.attach('pty-1', { onData: () => {} })
+    exitHandlers.get('pty-1')(0)
+
+    const first = ptyPool.getExitedPtyIds()
+    const second = ptyPool.getExitedPtyIds()
+
+    expect(first).toBe(second)
+  })
+
   it('stops notifying after unsubscribe', () => {
     ptyPool.attach('pty-1', { onData: () => {} })
     const cb = vi.fn()

@@ -120,6 +120,27 @@ describe('Sidebar tree', () => {
     expect(document.activeElement.getAttribute('data-sb-id')).toBe('t1')
   })
 
+  it('absorbs ArrowRight on a workspace with no sessions instead of moving focus', async () => {
+    // Regression: a childless workspace fell into the same branch as a
+    // collapsed-with-children workspace and moved focus to the next node,
+    // behaving like ArrowDown. ARIA APG says Right on a node with no
+    // children should do nothing. Use a non-last childless workspace so a
+    // focus-index clamp at the end of the list can't mask the bug.
+    const onToggleExpand = vi.fn()
+    const workspaces = [
+      { id: 'a', name: 'alpha', nickname: null, spawned: false, agentCounts: { claude: 0, codex: 0 }, terminals: [] },
+      {
+        id: 'b', name: 'beta', nickname: null, spawned: true, agentCounts: { claude: 1, codex: 0 },
+        terminals: [{ id: 't1', ptyId: 'p1', shell: 'claude', name: '', autoName: 'one', agentNum: 1 }]
+      }
+    ]
+    const { container } = render(<Sidebar {...base} workspaces={workspaces} onToggleExpand={onToggleExpand} />)
+    container.querySelectorAll('[data-sb-node]')[0].focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(onToggleExpand).not.toHaveBeenCalled()
+    expect(document.activeElement.getAttribute('data-sb-id')).toBe('a')
+  })
+
   it('moves focus to the parent workspace when ArrowLeft is pressed on a session', async () => {
     const { container } = render(<Sidebar {...base} expandedIds={new Set(['w1'])} />)
     container.querySelectorAll('[data-sb-node]')[1].focus()

@@ -87,6 +87,17 @@ describe('WorkspaceRow', () => {
     expect(onRenameNickname).toHaveBeenCalledWith('w1', 'new nick')
   })
 
+  it('commits a nickname edit on blur', async () => {
+    const onRenameNickname = vi.fn()
+    render(<WorkspaceRow ws={WS} {...base} onRenameNickname={onRenameNickname} />)
+    await userEvent.dblClick(screen.getByText('shell redesign'))
+    const input = screen.getByLabelText('Edit nickname')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'new nick')
+    await userEvent.tab()
+    expect(onRenameNickname).toHaveBeenCalledWith('w1', 'new nick')
+  })
+
   it('cancels a nickname edit on Escape without calling the handler', async () => {
     const onRenameNickname = vi.fn()
     render(<WorkspaceRow ws={WS} {...base} onRenameNickname={onRenameNickname} />)
