@@ -64,7 +64,7 @@
   border-radius: 1px;
   background: linear-gradient(
     to right,
-    var(--cs-cyan) 0 var(--vol-fill, 50%),
+    var(--cs-text-secondary) 0 var(--vol-fill, 50%),
     var(--cs-border-mid) var(--vol-fill, 50%) 100%
   );
 }

@@ -13,5 +13,5 @@
 }
 .editor-resizer:hover::after,
 .editor-resizer.dragging::after {
-  background: var(--cs-cyan-glow);
+  background: rgba(255, 255, 255, 0.14);
 }

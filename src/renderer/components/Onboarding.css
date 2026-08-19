@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
-  filter: drop-shadow(0 6px 18px var(--cs-cyan-glow));
+  filter: drop-shadow(0 6px 18px rgba(255, 255, 255, 0.14));
 }
 
 .ob-wordmark {
@@ -159,8 +159,8 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--cs-cyan);
-  text-shadow: 0 0 12px var(--cs-cyan-glow);
+  color: var(--cs-text-secondary);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.14);
   font-variant-numeric: tabular-nums;
 }
 
@@ -396,7 +396,7 @@
   transition: filter 0.4s ease;
 }
 
-/* Active agent card: cells boot in sequence with cyan flashes */
+/* Active agent card: cells boot in sequence with white flashes */
 .ob-shell.ob-launching .ob-card.active .ob-preview-cell {
   animation: bootCell 0.85s ease forwards !important;
   background: rgba(255, 255, 255, 0.18);
@@ -405,8 +405,8 @@
 
 @keyframes bootCell {
   0%   { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.3); box-shadow: none; }
-  35%  { background: var(--cs-cyan-border-strong); border-color: var(--cs-cyan); box-shadow: 0 0 14px var(--cs-cyan-glow); }
-  100% { background: var(--cs-green-border); border-color: var(--cs-green-border-strong); box-shadow: 0 0 10px var(--cs-green-bg); }
+  35%  { background: rgba(255, 255, 255, 0.22); border-color: var(--cs-text-secondary); box-shadow: 0 0 14px rgba(255, 255, 255, 0.14); }
+  100% { background: rgba(255, 255, 255, 0.22); border-color: rgba(255, 255, 255, 0.22); box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); }
 }
 
 /* Cell stagger — first cell lights at 0ms, last cell ~400ms in */
@@ -419,17 +419,17 @@
 .ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(7) { animation-delay: 360ms !important; }
 .ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(8) { animation-delay: 420ms !important; }
 
-/* Button takes on a moving sheen + cyan accent during launch */
+/* Button takes on a moving sheen during launch */
 .ob-shell.ob-launching .ob-launch {
   background: linear-gradient(
     100deg,
     rgba(255,255,255,0.06) 0%,
-    var(--cs-cyan-bg) 50%,
+    rgba(255, 255, 255, 0.14) 50%,
     rgba(255,255,255,0.06) 100%
   );
   background-size: 200% 100%;
   animation: launchSheen 1.4s ease-in-out infinite;
-  border-color: var(--cs-cyan-border);
+  border-color: rgba(255, 255, 255, 0.22);
   color: var(--cs-text-primary);
   cursor: progress;
   transform: none !important;
@@ -460,8 +460,8 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--cs-cyan, #67e8f9);
-  box-shadow: 0 0 6px var(--cs-cyan-glow, rgba(103, 232, 249, 0.45));
+  background: var(--cs-text-secondary);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.14);
   opacity: 0.35;
   animation: launchDot 0.95s ease-in-out infinite;
 }
@@ -477,9 +477,9 @@
 
 /* Hint subtly shifts to "spawning agents…" feel */
 .ob-shell.ob-launching .ob-hint {
-  color: var(--cs-cyan, #67e8f9);
+  color: var(--cs-text-secondary);
   opacity: 0.7;
-  text-shadow: 0 0 12px var(--cs-cyan-glow, rgba(103, 232, 249, 0.4));
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.14);
   transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
@@ -520,8 +520,8 @@
   background: var(--cs-text-dim, #b0b6bf);
   transition: transform 180ms ease, background 180ms ease;
 }
-.ob-toggle input:checked + .ob-toggle-track { background: var(--cs-cyan-dim, #1e3a44); }
-.ob-toggle input:checked + .ob-toggle-track::after { transform: translateX(14px); background: var(--cs-cyan, #67e8f9); }
+.ob-toggle input:checked + .ob-toggle-track { background: rgba(255, 255, 255, 0.22); }
+.ob-toggle input:checked + .ob-toggle-track::after { transform: translateX(14px); background: var(--cs-text-secondary); }
 .ob-toggle-text { display: flex; flex-direction: column; gap: 2px; }
 .ob-toggle-title { font-size: 13px; color: var(--cs-text-primary, #e6e9ef); }
 .ob-toggle-help { font-size: 11.5px; color: var(--cs-text-dim, #8c93a0); line-height: 1.45; }
@@ -580,7 +580,7 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-.ob-split-claude { color: var(--cs-cyan, #67e8f9); }
+.ob-split-claude { color: var(--cs-text-secondary); }
 .ob-split-codex  { color: var(--cs-violet, #c4b5fd); }
 
 .ob-split-hint {
@@ -631,11 +631,10 @@
   border-color: var(--cs-border-focus);
 }
 
-/* Active = the card whose path matches the selected project directory.
-   The single accent-color use in this section. */
+/* Active = the card whose path matches the selected project directory. */
 .ob-recent-card.active {
   background: hsl(0 0% 8%);
-  border-color: var(--cs-cyan);
+  border-color: var(--cs-text-secondary);
 }
 
 .ob-recent-folder {

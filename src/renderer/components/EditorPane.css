@@ -22,8 +22,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--cs-cyan);
-  box-shadow: 0 0 6px var(--cs-cyan-glow);
+  background: var(--cs-text-secondary);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.14);
   visibility: hidden;
   flex-shrink: 0;
 }
@@ -32,9 +32,9 @@
   animation: flash-saved 0.2s ease forwards;
 }
 @keyframes flash-saved {
-  0%   { background: var(--cs-cyan);  visibility: visible; opacity: 1; }
-  60%  { background: var(--cs-green); visibility: visible; opacity: 1; }
-  100% { background: var(--cs-green); visibility: visible; opacity: 0; }
+  0%   { background: var(--cs-text-secondary); visibility: visible; opacity: 1; }
+  60%  { background: var(--cs-text-secondary); visibility: visible; opacity: 1; }
+  100% { background: var(--cs-text-secondary); visibility: visible; opacity: 0; }
 }
 
 .editor-filename {
@@ -99,11 +99,11 @@
 }
 
 .editor-fs-btn.is-active {
-  color: var(--cs-cyan);
+  color: var(--cs-text-secondary);
 }
 .editor-fs-btn.is-active:hover {
-  color: var(--cs-cyan);
-  background: var(--cs-cyan-bg);
+  color: var(--cs-text-secondary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .editor-body {
@@ -164,7 +164,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    var(--cs-cyan) 50%,
+    var(--cs-text-secondary) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
