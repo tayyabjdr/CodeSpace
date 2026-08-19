@@ -347,3 +347,53 @@
   font-variant-numeric: tabular-nums;
 }
 .sb-footer-version:hover { color: var(--cs-cyan); }
+
+/* ── Session rows (tree level 2) ─────────────────────────────── */
+
+.sb-session {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--cs-text-tertiary);
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+
+.sb-session:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-secondary);
+}
+
+.sb-session.focused {
+  background: var(--cs-bg-active);
+  color: var(--cs-text-primary);
+}
+
+.sb-session-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: 0 0 5px;
+}
+
+.sb-session-dot.running { background: var(--cs-green); }
+.sb-session-dot.done    { background: var(--cs-cyan); box-shadow: 0 0 5px var(--cs-cyan-glow); }
+.sb-session-dot.exited  { background: var(--cs-text-dim); }
+
+.sb-session-glyph {
+  font-size: 9px;
+  flex: 0 0 auto;
+  color: var(--cs-text-muted);
+}
+
+.sb-session-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+}
