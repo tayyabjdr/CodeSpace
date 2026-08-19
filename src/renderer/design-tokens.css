@@ -1,17 +1,17 @@
 /* Sarvis design language — neutral dark */
 :root {
-  /* Base surfaces — subtle bluish */
-  --cs-bg-base:      #0a0b0d;
-  --cs-bg-surface:   #0d0f12;
-  --cs-bg-elevated:  #11151b;
-  --cs-bg-sidebar:   #0a0c0f;
+  /* Base surfaces — neutral grey */
+  --cs-bg-base:      #0a0a0a;
+  --cs-bg-surface:   #141414;
+  --cs-bg-elevated:  #1f1f1f;
+  --cs-bg-sidebar:   #151515;
   --cs-bg-hover:     rgba(255, 255, 255, 0.04);
-  --cs-bg-active:    rgba(255, 255, 255, 0.06);
+  --cs-bg-active:    rgba(255, 255, 255, 0.10);
 
   /* Borders */
-  --cs-border:       #1b1e24;
-  --cs-border-mid:   #262a32;
-  --cs-border-hover: #2b3038;
+  --cs-border:       #232323;
+  --cs-border-mid:   #2c2c2c;
+  --cs-border-hover: #383838;
   --cs-border-focus: rgba(255, 255, 255, 0.24);
 
   /* Text — opacity scale */
@@ -56,6 +56,14 @@
   --cs-done-grad-start:  rgba(103, 232, 249, 0.62);
   --cs-done-grad-end:    rgba(134, 239, 172, 0.62);
 
+  /* Semantic state — the only accents that survive as colour. Everything
+     else in the chrome uses white-opacity tiers. These are aliases of the
+     accent values above, so changing a theme's accent moves its states too. */
+  --cs-state-running:  #86efac;
+  --cs-state-done:     #67e8f9;
+  --cs-state-exited:   #f59e0b;
+  --cs-state-isolated: #67e8f9;
+
   /* Status dots */
   --cs-status-live:  #86efac;
   --cs-status-idle:  #4b5563;
@@ -77,7 +85,7 @@
   --cs-editor-default-frac:  0.45;
 
   /* xterm — solid hex values; alpha lives on the layer above */
-  --cs-term-bg:        #0d0f12;
+  --cs-term-bg:        #141414;
   --cs-term-fg:        #d9d9da;
   --cs-term-cursor:    #d9d9da;
   --cs-term-selection: rgba(255, 255, 255, 0.12);
@@ -221,6 +229,12 @@ body {
   --cs-status-live:  #7acb85;
   --cs-status-idle:  #6b6577;
   --cs-status-amber: #dda04c;
+
+  /* Semantic state tokens */
+  --cs-state-running:  #7acb85;
+  --cs-state-done:     #e15a9e;
+  --cs-state-exited:   #dda04c;
+  --cs-state-isolated: #e15a9e;
 
   /* xterm — solid hex values; alpha lives on the layer above */
   --cs-term-bg:        #302e39;
