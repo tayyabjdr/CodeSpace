@@ -1,9 +1,24 @@
+/* The rail is its own block floating on the canvas, not a field adjacent to
+   it. The 13px right margin composes with .grid's own 6px padding to give
+   the ~19px gutter the reference uses between rail and panes — wider than
+   the 6px between panes, which is deliberate: it separates two kinds of
+   thing, where the pane gutters separate instances of one kind.
+
+   The border matters more than it looks. Bridge's surface ramp is a quarter
+   as steep as the default theme's (4/255 at this boundary vs 11/255), so
+   with no edge the rail and canvas nearly merge there. As a bounded card it
+   reads correctly in both themes without needing a theme-scoped special
+   case. */
 .sidebar {
   width: 270px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--cs-bg-sidebar);
+  border: 1px solid var(--cs-border);
+  border-radius: 10px;
+  margin: 6px 13px 6px 6px;
+  overflow: hidden;
   min-height: 0;
   user-select: none;
 }
