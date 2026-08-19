@@ -19,10 +19,10 @@
 
 /* Exited border must stay distinct from the base .pane border now that the
    base moved to --cs-border-mid — otherwise the status dot is the only exit
-   signal left. --cs-amber ties this border to the same amber the status dot
-   already uses for "exited", and it composites with far more contrast than
-   any neutral border token against the elevated card surface in both the
-   sarvis-dark and bridge themes. */
+   signal left. --cs-state-exited ties this border to the same state colour
+   the status dot already uses for "exited", and it composites with far more
+   contrast than any neutral border token against the elevated card surface in
+   both the sarvis-dark and bridge themes. */
 .pane.exited {
   border-color: var(--cs-state-exited);
 }
@@ -196,9 +196,10 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Done indicator — vibrant green check, minimal: no badge, no chrome.
-   Matches --cs-green at full opacity; the same accent the rest of the UI
-   uses for live/done status. */
+/* Done indicator — check rendered in the "done" semantic colour. Minimal: no
+   badge, no chrome. Uses --cs-state-done, the same token as the session-row
+   done dot and the workspace aggregate dot, so "done" reads coherently across
+   the app and is visually distinct from --cs-state-running. */
 .done-tick {
   color: var(--cs-state-done);
   flex-shrink: 0;
