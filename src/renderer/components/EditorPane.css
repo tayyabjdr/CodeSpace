@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   background: var(--cs-bg-surface);
-  border-left: 1px solid var(--cs-border);
   min-width: var(--cs-editor-min);
   min-height: 0;
   overflow: hidden;
@@ -16,7 +15,6 @@
   padding: 0 10px;
   gap: 8px;
   background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
 }
 

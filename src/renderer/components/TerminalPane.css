@@ -3,7 +3,7 @@
   flex-direction: column;
   background: var(--cs-bg-elevated);
   border: 1px solid var(--cs-border-mid);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   min-height: 0;
   box-shadow:
@@ -133,7 +133,6 @@
   padding: 0 0 0 10px;
   gap: 8px;
   background: var(--cs-bg-elevated);
-  border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
   cursor: grab;
   transition: background var(--cs-transition), border-bottom-color var(--cs-transition);
@@ -388,7 +387,6 @@
   gap: 5px;
   padding: 0 8px;
   background: var(--cs-bg-elevated);
-  border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
   position: relative;
   z-index: 1;
