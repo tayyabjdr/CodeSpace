@@ -80,7 +80,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   height: 1px;
   background: var(--cs-text-primary);
 }
@@ -323,7 +323,7 @@
 }
 .skills-panel-field input:focus,
 .skills-panel-field textarea:focus {
-  border-color: var(--cs-text-secondary);
+  border-color: var(--cs-border-hover);
 }
 .skills-panel-field-grow {
   flex: 1;
@@ -364,8 +364,7 @@
 }
 .skills-panel-cancelbtn:hover:not(:disabled) { background: var(--cs-bg-hover); }
 .skills-panel-savebtn {
-  color: var(--cs-text-secondary);
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 .skills-panel-savebtn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.05);

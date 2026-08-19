@@ -400,6 +400,10 @@
 
 .sb-session-dot.running { background: var(--cs-state-running); }
 .sb-session-dot.done    { background: var(--cs-state-done); box-shadow: 0 0 5px rgba(255, 255, 255, 0.14); }
+/* Deliberately --cs-text-dim, not --cs-state-exited: in this tree the dot sits
+   beside running/done, where "no longer alive" reads better as dim than as a
+   warning colour. --cs-state-exited (amber) is reserved for the pane border,
+   where it is the only exit signal. Do not "fix" this to match the border. */
 .sb-session-dot.exited  { background: var(--cs-text-dim); }
 
 .sb-session-glyph {
