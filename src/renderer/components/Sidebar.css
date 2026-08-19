@@ -227,7 +227,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--cs-status-live);
+  background: var(--cs-state-done);
   box-shadow: 0 0 6px var(--cs-cyan-glow);
   transition: opacity var(--cs-transition);
   animation: sbItemDotPulse 1.8s ease-in-out infinite;
@@ -401,8 +401,8 @@
   flex: 0 0 5px;
 }
 
-.sb-session-dot.running { background: var(--cs-green); }
-.sb-session-dot.done    { background: var(--cs-cyan); box-shadow: 0 0 5px var(--cs-cyan-glow); }
+.sb-session-dot.running { background: var(--cs-state-running); }
+.sb-session-dot.done    { background: var(--cs-state-done); box-shadow: 0 0 5px var(--cs-cyan-glow); }
 .sb-session-dot.exited  { background: var(--cs-text-dim); }
 
 .sb-session-glyph {

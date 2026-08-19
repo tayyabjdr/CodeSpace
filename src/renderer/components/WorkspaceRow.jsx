@@ -15,8 +15,8 @@ const IsolatedGlyph = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="url(#sb-iso-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <defs>
       <linearGradient id="sb-iso-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="var(--cs-cyan)" />
-        <stop offset="100%" stopColor="var(--cs-green)" />
+        <stop offset="0%" stopColor="var(--cs-state-isolated)" />
+        <stop offset="100%" stopColor="var(--cs-state-running)" />
       </linearGradient>
     </defs>
     <line x1="6" y1="3" x2="6" y2="15" />

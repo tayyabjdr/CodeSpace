@@ -24,7 +24,7 @@
    any neutral border token against the elevated card surface in both the
    sarvis-dark and bridge themes. */
 .pane.exited {
-  border-color: var(--cs-amber);
+  border-color: var(--cs-state-exited);
 }
 
 /* Done state — header is a static cyan→green gradient that pops, while the
@@ -154,8 +154,8 @@
   flex-shrink: 0;
 }
 
-.status-dot.status-running { background: var(--cs-status-live); }
-.status-dot.status-exited  { background: var(--cs-status-amber); }
+.status-dot.status-running { background: var(--cs-state-running); }
+.status-dot.status-exited  { background: var(--cs-state-exited); }
 
 .pane-label {
   font-family: var(--cs-font-mono);
@@ -200,7 +200,7 @@
    Matches --cs-green at full opacity; the same accent the rest of the UI
    uses for live/done status. */
 .done-tick {
-  color: var(--cs-green);
+  color: var(--cs-state-done);
   flex-shrink: 0;
   margin-left: 2px;
 }
