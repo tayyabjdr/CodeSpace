@@ -17,8 +17,14 @@
   border-color: var(--cs-border-focus);
 }
 
+/* Exited border must stay distinct from the base .pane border now that the
+   base moved to --cs-border-mid — otherwise the status dot is the only exit
+   signal left. --cs-amber ties this border to the same amber the status dot
+   already uses for "exited", and it composites with far more contrast than
+   any neutral border token against the elevated card surface in both the
+   sarvis-dark and bridge themes. */
 .pane.exited {
-  border-color: var(--cs-border-mid);
+  border-color: var(--cs-amber);
 }
 
 /* Done state — header is a static cyan→green gradient that pops, while the
@@ -108,10 +114,16 @@
   opacity: 0.45;
 }
 
-/* Drag target — single thin cyan border + soft outer glow */
+/* Drag target — single thin cyan border + soft outer glow. Box-shadow is a
+   higher-specificity full replacement, not a layer on top, so the base
+   .pane elevation shadow + inset rim highlight are repeated here first —
+   otherwise the pane goes flat for the duration of the drag. */
 .pane.drag-over {
   border-color: var(--cs-cyan-border-strong);
-  box-shadow: 0 0 18px var(--cs-cyan-glow-soft);
+  box-shadow:
+    0 2px 14px -4px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 18px var(--cs-cyan-glow-soft);
 }
 
 .pane-header {
@@ -361,9 +373,13 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
 
-/* Branch chip lives in its own thin row directly below the title bar.
-   Solid surface background sits above the done-state body pulse so the
-   chip stays legible. */
+/* Breadcrumb row directly below the title bar — a general breadcrumb band
+   (agent type, cwd) that the branch chip shares, not a branch-only row.
+   Solid --cs-bg-elevated sits above the done-state body pulse so its
+   contents stay legible. It deliberately does NOT match the terminal
+   body's --cs-bg-surface below: that value step is what makes the
+   terminal read as a screen inset into the card. That seam is intentional
+   and load-bearing — do not "fix" it into a flush match. */
 .pane-subheader {
   display: flex;
   height: 18px;
