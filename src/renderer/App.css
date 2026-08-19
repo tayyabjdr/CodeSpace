@@ -55,10 +55,15 @@
   background: var(--cs-bg-base);
 }
 
+/* gap and padding are deliberately different numbers. `gap` is the space
+   between panes and is free to change on taste. `padding` is load-bearing:
+   it composes with .app-body's 13px to land the outer canvas inset on 19px,
+   and with the rail's 13px right margin to land the rail-to-pane gutter on
+   19px too. Change padding and both of those move. */
 .grid {
   flex: 1;
   display: grid;
-  gap: 6px;
+  gap: 10px;
   padding: 6px;
   min-height: 0;
   min-width: 0;
