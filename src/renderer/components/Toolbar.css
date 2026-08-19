@@ -3,14 +3,20 @@
    left edge lands (13px .app-body padding + 6px rail margin), so the app name
    and the rail below it share one left edge. Change one and change the
    other. */
-/* min-height rather than height, so the top padding grows the bar instead of
-   eating into it — a fixed height with border-box would shrink the content
-   box and shove the controls against the bottom edge. */
+/* Vertical padding is matched top and bottom, and the right padding matches
+   both, so the 32px control squares sit with an equal 10px gap on every free
+   side — the close button's red hover reads as an inset square rather than
+   something wedged into the window corner. Left is 19px instead because it
+   aligns the app name with the sidebar block's left edge, which is a
+   different job.
+
+   min-height rather than height: with border-box a fixed height would shrink
+   the content box instead of letting the padding grow the bar. */
 .titlebar {
   min-height: var(--cs-toolbar-h);
   display: flex;
   align-items: center;
-  padding: 10px 0 0 19px;
+  padding: 10px 10px 10px 19px;
   background: var(--cs-bg-base);
   flex-shrink: 0;
   -webkit-app-region: drag;
