@@ -154,7 +154,7 @@ xterm does not inherit the pane background. `terminal-theme.js:8` reads a dedica
 
 Path shortening needs a `shortenPath(absPath)` helper. It belongs in `src/renderer/path-resolver.js` alongside the existing `basename` (`path-resolver.js:53`), which is already shared between the renderer and terminal link handling.
 
-Contract: preserve the leading root segment and the final two segments, replacing anything between them with `…`. Paths already at or under four segments are returned unchanged. The full path remains available as the element's `title`.
+Contract: a path of **fewer than four segments is returned unchanged**. At four or more, keep the leading root segment and the final two, replacing everything between them with `…`. The separator is inferred from the input. The full path remains available as the element's `title`.
 
 ```
 D:\PC Backup\ControlDeck\CodeSpace          ->  D:\…\ControlDeck\CodeSpace
