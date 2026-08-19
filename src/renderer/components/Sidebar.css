@@ -35,7 +35,7 @@
 .sb-header-label {
   flex: 1;
   font-family: var(--cs-font-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -79,7 +79,7 @@
   display: flex;              /* was: grid */
   align-items: flex-start;
   gap: 8px;                   /* was: 10px */
-  padding: 8px 10px 8px 18px; /* was: 10px 14px 10px 16px */
+  padding: 8px 10px;
   border-radius: 7px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -99,13 +99,16 @@
   background: var(--cs-bg-hover);
 }
 
-/* Chevron occupies a fixed left gutter; .sb-item-bar sits further left
-   still, at left: 5px, and needs no change. */
+/* The chevron is the row's leading element now that the active accent bar is
+   gone, so it owns the left gutter outright and centres within it. The 2px
+   top padding aligns its optical centre with the name's cap height rather
+   than the row's, since rows are two lines and the chevron belongs to the
+   first. */
 .sb-chevron,
 .sb-chevron-spacer {
-  width: 10px;
-  flex: 0 0 10px;
-  padding-top: 3px;
+  width: 16px;
+  flex: 0 0 16px;
+  padding-top: 2px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -127,29 +130,11 @@
   border-color: rgba(255, 255, 255, 0.07);
 }
 
-/* Left accent bar — appears on active */
-.sb-item-bar {
-  position: absolute;
-  left: 5px;
-  top: 11px;
-  bottom: 11px;
-  width: 2px;
-  border-radius: 1px;
-  background: transparent;
-  transition: background var(--cs-transition), top var(--cs-transition), bottom var(--cs-transition);
-}
-
-.sb-item.active .sb-item-bar {
-  background: rgba(255, 255, 255, 0.85);
-  top: 8px;
-  bottom: 8px;
-}
-
 /* Name */
 
 .sb-item-name {
   font-family: var(--cs-font-ui);
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
   color: var(--cs-text-tertiary);
@@ -178,7 +163,7 @@
 .sb-item-nickname,
 .sb-item-nickname-hint {
   font-family: var(--cs-font-ui);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 400;
   letter-spacing: -0.005em;
   white-space: nowrap;
@@ -212,7 +197,7 @@
 
 .sb-item-nickname-input {
   font-family: var(--cs-font-ui);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 400;
   letter-spacing: -0.005em;
   color: var(--cs-text-secondary);
@@ -263,7 +248,7 @@
 
 .sb-item-count {
   font-family: var(--cs-font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--cs-text-muted);
@@ -294,18 +279,8 @@
 
 .sb-item.draft .sb-item-count {
   font-family: var(--cs-font-ui);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--cs-text-muted);
-}
-
-.sb-item.draft.active .sb-item-bar {
-  background: rgba(255, 255, 255, 0.4);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.7) 40%,
-    transparent 40%, transparent 60%,
-    rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0.7) 100%
-  );
 }
 
 /* Delete — replaces status on hover */
@@ -422,7 +397,7 @@
 .sb-session-dot.exited  { background: var(--cs-text-dim); }
 
 .sb-session-glyph {
-  font-size: 9px;
+  font-size: 10px;
   flex: 0 0 auto;
   color: var(--cs-text-muted);
 }
@@ -433,7 +408,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--cs-font-mono);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* ── Tools nav (above Workspaces) ────────────────────────────── */
@@ -455,7 +430,7 @@
   background: transparent;
   cursor: pointer;
   font-family: var(--cs-font-ui);
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
   color: var(--cs-text-tertiary);

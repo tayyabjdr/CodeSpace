@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 const ChevronGlyph = ({ open }) => (
   <svg
-    width="9" height="9" viewBox="0 0 24 24" fill="none"
+    width="12" height="12" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
     style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 160ms ease' }}
     aria-hidden
@@ -82,8 +82,6 @@ export default function WorkspaceRow({
       className={`sb-item${isActive ? ' active' : ''}${isDraft ? ' draft' : ''}`}
       onClick={() => onSelect(ws.id)}
     >
-      <span className="sb-item-bar" />
-
       {hasSessions ? (
         <button
           type="button"
