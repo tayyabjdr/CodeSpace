@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useState, useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import Onboarding from './components/Onboarding.jsx'
 import Toolbar from './components/Toolbar.jsx'
 import TerminalPane from './components/TerminalPane.jsx'
@@ -21,6 +21,7 @@ import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
 import { basename } from './path-resolver.js'
+import { focusSessionIn, withExpanded } from './workspace-ops.js'
 import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
 import useCloseGuard from './hooks/useCloseGuard.js'
 import './design-tokens.css'
@@ -95,6 +96,18 @@ function AppInner() {
   const [loaded, setLoaded] = useState(false)
   const [workspaces, setWorkspaces] = useState([])
   const [activeId, setActiveId] = useState(null)
+  // Session-only. Deliberately not persisted: terminals[] is lazily spawned,
+  // so a restored "expanded" flag would open a chevron above an empty list.
+  const [expandedIds, setExpandedIds] = useState(() => new Set())
+
+  const toggleExpand = useCallback((wsId) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(wsId)) next.delete(wsId)
+      else next.add(wsId)
+      return next
+    })
+  }, [])
   const [pendingDelete, setPendingDelete] = useState(null)
   // Dirty-close prompt for an isolated agent's worktree.
   // shape: { wsId, termId, branch, agentName }
@@ -292,24 +305,13 @@ function AppInner() {
     return () => window.removeEventListener('focus', onFocus)
   }, [activeWorkspace])
 
-  // Workspaces that have at least one done terminal AND aren't the active one
-  // → sidebar shows the notify dot beside their name until you switch in.
   const doneTermIds = useSyncExternalStore(doneTracker.subscribe, doneTracker.getDoneTermIds)
+  const exitedPtyIds = useSyncExternalStore(ptyPool.subscribeExits, ptyPool.getExitedPtyIds)
 
   const themeId = useSyncExternalStore(
     subscribeSettings,
     () => getSettings().appearance?.theme || DEFAULT_THEME
   )
-  const notifyingWorkspaceIds = useMemo(() => {
-    const set = new Set()
-    for (const w of workspaces) {
-      if (w.id === activeId) continue
-      for (const t of (w.terminals ?? [])) {
-        if (doneTermIds.has(t.id)) { set.add(w.id); break }
-      }
-    }
-    return set
-  }, [workspaces, activeId, doneTermIds])
 
   // Lazy-spawn terminals when a workspace becomes active for the first time.
   // Depend only on activeId so identity churn on `workspaces` doesn't re-fire.
@@ -527,6 +529,20 @@ function AppInner() {
       return
     }
     setActiveId(wsId)
+    setExpandedIds(prev => withExpanded(prev, wsId))
+  }, [activeWorkspace])
+
+  // focusSessionIn targets wsId explicitly. Do NOT reach for setFocusedId /
+  // updateActive here — they close over the outgoing activeId and would
+  // write the focus onto the workspace being navigated away from.
+  const handleSelectSession = useCallback((wsId, termId) => {
+    if (activeWorkspace?.editor?.dirty) {
+      setPendingDirtyAction({ kind: 'switch-workspace', payload: { wsId, termId } })
+      return
+    }
+    setWorkspaces(prev => focusSessionIn(prev, wsId, termId))
+    setActiveId(wsId)
+    setExpandedIds(prev => withExpanded(prev, wsId))
   }, [activeWorkspace])
 
   const handleRenameNickname = useCallback((wsId, value) => {
@@ -856,7 +872,12 @@ function AppInner() {
   const proceedDirtyAction = useCallback((action) => {
     if (action.kind === 'open-file') openFileImmediate(action.payload)
     else if (action.kind === 'close-pane') setEditorPatch({ open: false })
-    else if (action.kind === 'switch-workspace') setActiveId(action.payload.wsId)
+    else if (action.kind === 'switch-workspace') {
+      const { wsId, termId } = action.payload
+      if (termId) setWorkspaces(prev => focusSessionIn(prev, wsId, termId))
+      setActiveId(wsId)
+      setExpandedIds(prev => withExpanded(prev, wsId))
+    }
   }, [openFileImmediate, setEditorPatch])
 
   // Track .app-body width so the resizer can clamp against the visible area.
@@ -983,8 +1004,13 @@ function AppInner() {
         <Sidebar
           workspaces={workspaces}
           activeId={activeId}
-          notifyingIds={notifyingWorkspaceIds}
+          expandedIds={expandedIds}
+          doneTermIds={doneTermIds}
+          exitedPtyIds={exitedPtyIds}
+          focusedTerminalId={activeWorkspace?.focusedTerminalId ?? null}
           onSelect={handleSelectWorkspace}
+          onToggleExpand={toggleExpand}
+          onSelectSession={handleSelectSession}
           onCreate={handleStartDraft}
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
