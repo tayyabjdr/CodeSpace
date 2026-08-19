@@ -10,7 +10,6 @@ import UpdateToast from './components/UpdateToast.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
-import RightToolbar from './components/RightToolbar.jsx'
 import SkillsPanel from './components/SkillsPanel.jsx'
 import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
 import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
@@ -1018,6 +1017,8 @@ function AppInner() {
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
           onRenameNickname={handleRenameNickname}
+          skillsOpen={activePanel === 'skills'}
+          onToggleSkills={() => handleSelectPanel('skills')}
         />
         <div className={`body-main${fsTerminalId ? ' fs-terminal' : ''}${fsEditor ? ' fs-editor' : ''}`}>
           <div className="grid-wrap">
@@ -1128,10 +1129,6 @@ function AppInner() {
             </>
           )}
         </div>
-        <RightToolbar
-          activePanel={activePanel}
-          onSelectPanel={handleSelectPanel}
-        />
       </div>
 
       {settingsOpen && <SettingsPage onClose={handleCloseSettings} />}

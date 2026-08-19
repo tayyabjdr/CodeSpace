@@ -19,6 +19,7 @@ const GearGlyph = () => (
 
 export default function Sidebar({
   workspaces, activeId, expandedIds, doneTermIds, exitedPtyIds, focusedTerminalId,
+  skillsOpen, onToggleSkills,
   onSelect, onToggleExpand, onSelectSession, onCreate, onDelete, onOpenSettings, onRenameNickname
 }) {
   const listRef = useRef(null)
@@ -93,6 +94,17 @@ export default function Sidebar({
 
   return (
     <aside className="sidebar">
+      <nav className="sb-nav" aria-label="Tools">
+        <button
+          type="button"
+          className={`sb-nav-item${skillsOpen ? ' is-open' : ''}`}
+          aria-pressed={skillsOpen}
+          onClick={onToggleSkills}
+        >
+          Skills
+        </button>
+      </nav>
+
       <div className="sb-header">
         <span className="sb-header-label">workspaces</span>
         <button

@@ -202,4 +202,37 @@ describe('Sidebar tree', () => {
     expect(input.value).toBe('ab')
     expect(onToggleExpand).not.toHaveBeenCalled()
   })
+
+  it('renders a Skills nav row above the workspaces header', () => {
+    const { container } = render(<Sidebar {...base} skillsOpen={false} onToggleSkills={() => {}} />)
+    const nav = container.querySelector('.sb-nav-item')
+    expect(nav).toBeTruthy()
+    expect(nav.textContent).toBe('Skills')
+
+    // Order matters: the nav sits above the Workspaces header, not below it.
+    const header = container.querySelector('.sb-header')
+    expect(nav.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('calls onToggleSkills when the Skills row is clicked', async () => {
+    const onToggleSkills = vi.fn()
+    render(<Sidebar {...base} skillsOpen={false} onToggleSkills={onToggleSkills} />)
+    await userEvent.click(screen.getByText('Skills'))
+    expect(onToggleSkills).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports the panel open state to assistive tech', () => {
+    const { container, rerender } = render(
+      <Sidebar {...base} skillsOpen={false} onToggleSkills={() => {}} />
+    )
+    expect(container.querySelector('.sb-nav-item').getAttribute('aria-pressed')).toBe('false')
+
+    rerender(<Sidebar {...base} skillsOpen onToggleSkills={() => {}} />)
+    expect(container.querySelector('.sb-nav-item').getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('marks the Skills row active when its panel is open', () => {
+    const { container } = render(<Sidebar {...base} skillsOpen onToggleSkills={() => {}} />)
+    expect(container.querySelector('.sb-nav-item').className).toContain('is-open')
+  })
 })

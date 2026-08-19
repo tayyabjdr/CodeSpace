@@ -416,3 +416,39 @@
   font-family: var(--cs-font-mono);
   font-size: 11px;
 }
+
+/* ── Tools nav (above Workspaces) ────────────────────────────── */
+
+.sb-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 6px 2px;
+  flex-shrink: 0;
+}
+
+.sb-nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--cs-text-tertiary);
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+
+.sb-nav-item:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-secondary);
+}
+
+.sb-nav-item.is-open {
+  background: var(--cs-bg-active);
+  color: var(--cs-text-primary);
+}
