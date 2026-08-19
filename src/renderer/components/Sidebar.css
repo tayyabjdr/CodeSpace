@@ -1,5 +1,5 @@
 .sidebar {
-  width: 220px;
+  width: 270px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -63,11 +63,10 @@
 
 .sb-item {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: start;
-  gap: 10px;
-  padding: 10px 14px 10px 16px;
+  display: flex;              /* was: grid */
+  align-items: flex-start;
+  gap: 8px;                   /* was: 10px */
+  padding: 8px 10px 8px 18px; /* was: 10px 14px 10px 16px */
   border-radius: 7px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -86,6 +85,29 @@
 .sb-item:hover {
   background: var(--cs-bg-hover);
 }
+
+/* Chevron occupies a fixed left gutter; .sb-item-bar sits further left
+   still, at left: 5px, and needs no change. */
+.sb-chevron,
+.sb-chevron-spacer {
+  width: 10px;
+  flex: 0 0 10px;
+  padding-top: 3px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding-left: 0;
+  padding-right: 0;
+  cursor: pointer;
+  color: var(--cs-icon-muted);
+  transition: color var(--cs-transition);
+}
+
+.sb-chevron:hover { color: var(--cs-icon-secondary); }
+
+.sb-item-text { flex: 1; min-width: 0; }
 
 .sb-item.active {
   background: var(--cs-bg-active);
