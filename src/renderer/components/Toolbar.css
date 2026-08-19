@@ -3,11 +3,14 @@
    left edge lands (13px .app-body padding + 6px rail margin), so the app name
    and the rail below it share one left edge. Change one and change the
    other. */
+/* min-height rather than height, so the top padding grows the bar instead of
+   eating into it — a fixed height with border-box would shrink the content
+   box and shove the controls against the bottom edge. */
 .titlebar {
-  height: var(--cs-toolbar-h);
+  min-height: var(--cs-toolbar-h);
   display: flex;
   align-items: center;
-  padding: 0 0 0 19px;
+  padding: 10px 0 0 19px;
   background: var(--cs-bg-base);
   flex-shrink: 0;
   -webkit-app-region: drag;
@@ -165,15 +168,21 @@
   height: 100%;
 }
 
+/* Square buttons rather than full-bleed strips. These used to be
+   toolbar-height on both axes with no radius, so their hover background ran
+   edge to edge and relied on the bar having no padding. Once the bar takes
+   top padding that assumption breaks — the strip can no longer reach the top
+   edge and the background stops fitting the bar. As a 32px rounded square it
+   is self-contained and indifferent to the bar's padding. */
 .titlebar-window-btn {
-  width: var(--cs-toolbar-h);
-  height: var(--cs-toolbar-h);
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   padding: 0;
   color: var(--cs-text-primary);
   opacity: 0.45;
