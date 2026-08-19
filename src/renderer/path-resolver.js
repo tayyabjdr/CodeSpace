@@ -55,3 +55,15 @@ export function basename(p) {
   const m = p.match(/[^\\/]+$/)
   return m ? m[0] : p
 }
+
+// Collapses a long path for display: keeps the root segment and the final
+// two, eliding the middle. Fewer than four segments is already short enough
+// to show whole. The full path is still shown via `title` at the call site.
+export function shortenPath(p) {
+  if (typeof p !== 'string' || p === '') return ''
+  const isWindows = /^[A-Za-z]:[\\/]/.test(p)
+  const sep = isWindows ? '\\' : '/'
+  const parts = p.split(/[\\/]/)
+  if (parts.length < 4) return p
+  return [parts[0], '…', parts[parts.length - 2], parts[parts.length - 1]].join(sep)
+}

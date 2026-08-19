@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { resolvePath, isAbsolutePath, basename } from '../src/renderer/path-resolver.js'
+import { resolvePath, isAbsolutePath, basename, shortenPath } from '../src/renderer/path-resolver.js'
 
 function makeApi(existing) {
   return {
@@ -72,5 +72,32 @@ describe('basename', () => {
     expect(basename(null)).toBe('')
     expect(basename(undefined)).toBe('')
     expect(basename('')).toBe('')
+  })
+})
+
+describe('shortenPath', () => {
+  it('returns non-strings and empties as an empty string', () => {
+    expect(shortenPath('')).toBe('')
+    expect(shortenPath(undefined)).toBe('')
+    expect(shortenPath(null)).toBe('')
+  })
+
+  it('leaves a path of fewer than four segments unchanged', () => {
+    expect(shortenPath('D:\\dev\\app')).toBe('D:\\dev\\app')
+    expect(shortenPath('D:\\dev')).toBe('D:\\dev')
+  })
+
+  it('elides the middle of a four-segment windows path', () => {
+    expect(shortenPath('D:\\PC Backup\\ControlDeck\\CodeSpace'))
+      .toBe('D:\\…\\ControlDeck\\CodeSpace')
+  })
+
+  it('elides everything between root and the last two segments', () => {
+    expect(shortenPath('D:\\PC Backup\\ControlDeck\\portfolio\\src'))
+      .toBe('D:\\…\\portfolio\\src')
+  })
+
+  it('uses forward slashes for posix paths', () => {
+    expect(shortenPath('/home/tj/dev/app/src')).toBe('/…/app/src')
   })
 })
