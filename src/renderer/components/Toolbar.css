@@ -3,16 +3,11 @@
    left edge lands (13px .app-body padding + 6px rail margin), so the app name
    and the rail below it share one left edge. Change one and change the
    other. */
-/* min-height rather than height, so the 8px top padding grows the bar instead
-   of eating into it. With a fixed 42px and border-box, that padding would
-   shrink the content box to 34 and re-centre the 28px buttons into it,
-   leaving 2px of clearance underneath — the contents would look shoved
-   against the bottom edge rather than given room at the top. */
 .titlebar {
-  min-height: var(--cs-toolbar-h);
+  height: var(--cs-toolbar-h);
   display: flex;
   align-items: center;
-  padding: 8px 0 0 19px;
+  padding: 0 0 0 19px;
   background: var(--cs-bg-base);
   flex-shrink: 0;
   -webkit-app-region: drag;
