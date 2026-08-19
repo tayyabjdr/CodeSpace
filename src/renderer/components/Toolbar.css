@@ -130,13 +130,13 @@
 }
 
 .titlebar-editor-toggle.is-open {
-  color: var(--cs-cyan);
-  background: var(--cs-cyan-bg);
+  color: var(--cs-text-secondary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .titlebar-editor-toggle.is-open:hover {
-  background: var(--cs-cyan-bg);
-  color: var(--cs-cyan);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--cs-text-secondary);
 }
 
 /* Subtle vertical divider between custom controls (volume/editor) and the

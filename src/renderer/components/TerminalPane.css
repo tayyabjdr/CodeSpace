@@ -118,11 +118,11 @@
    .pane elevation shadow + inset rim highlight are repeated here first —
    otherwise the pane goes flat for the duration of the drag. */
 .pane.drag-over {
-  border-color: var(--cs-cyan-border-strong);
+  border-color: rgba(255, 255, 255, 0.22);
   box-shadow:
     0 2px 14px -4px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 18px var(--cs-cyan-glow-soft);
+    0 0 18px rgba(255, 255, 255, 0.14);
 }
 
 .pane-header {
@@ -186,7 +186,7 @@
   height: 18px;
   min-width: 80px;
   max-width: 180px;
-  caret-color: var(--cs-cyan, #67e8f9);
+  caret-color: var(--cs-text-secondary);
 }
 
 .pane-label-input:focus {
@@ -239,11 +239,11 @@
   opacity: 1;
 }
 
-/* Active (fullscreen on) state — cyan tint matches the focused-pane accent
-   already used elsewhere (the dirty-dot, the empty-btn hover glow). */
+/* Active (fullscreen on) state — the icon glyph itself flips between
+   expand/collapse, so the tint here is reinforcement, not the signal. */
 .pane-fs-btn.is-active,
 .pane.fullscreen .pane-fs-btn {
-  color: var(--cs-cyan);
+  color: var(--cs-text-secondary);
   opacity: 1;
 }
 
@@ -307,7 +307,7 @@
   background-clip: padding-box;
 }
 .xterm-viewport::-webkit-scrollbar-thumb:active {
-  background: var(--cs-cyan-glow);
+  background: rgba(255, 255, 255, 0.34);
   background-clip: padding-box;
 }
 
@@ -409,9 +409,9 @@
   user-select: none;
 }
 .tp-badge-claude {
-  color: var(--cs-cyan, #67e8f9);
-  border-color: var(--cs-cyan-border);
-  background: var(--cs-cyan-fill-weak);
+  color: var(--cs-text-secondary);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
 }
 .tp-badge-codex {
   color: var(--cs-violet, #c4b5fd);

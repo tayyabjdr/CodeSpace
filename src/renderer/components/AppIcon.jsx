@@ -7,7 +7,7 @@ export default function AppIcon({ size = 18, className }) {
       viewBox="0 0 512 512"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ color: 'var(--cs-cyan)' }}
+      style={{ color: 'var(--cs-text-primary)' }}
       aria-hidden
     >
       <defs>
