@@ -399,14 +399,14 @@
 /* Active agent card: cells boot in sequence with white flashes */
 .ob-shell.ob-launching .ob-card.active .ob-preview-cell {
   animation: bootCell 0.85s ease forwards !important;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.10);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
 @keyframes bootCell {
-  0%   { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.3); box-shadow: none; }
-  35%  { background: rgba(255, 255, 255, 0.22); border-color: var(--cs-text-secondary); box-shadow: 0 0 14px rgba(255, 255, 255, 0.14); }
-  100% { background: rgba(255, 255, 255, 0.22); border-color: rgba(255, 255, 255, 0.22); box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); }
+  0%   { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.3); box-shadow: none; }
+  35%  { background: rgba(255, 255, 255, 0.45); border-color: var(--cs-text-secondary); box-shadow: 0 0 14px rgba(255, 255, 255, 0.14); }
+  100% { background: rgba(255, 255, 255, 0.20); border-color: rgba(255, 255, 255, 0.22); box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); }
 }
 
 /* Cell stagger — first cell lights at 0ms, last cell ~400ms in */
@@ -510,7 +510,7 @@
 .ob-toggle input { position: absolute; opacity: 0; pointer-events: none; }
 .ob-toggle-track {
   flex: 0 0 auto; width: 32px; height: 18px; border-radius: 999px;
-  background: var(--cs-border-subtle, #1b1e24);
+  background: var(--cs-border);
   border: 1px solid var(--cs-border, #2b3038);
   position: relative; transition: background 180ms ease;
 }
@@ -566,9 +566,9 @@
   padding: 8px 10px;
   font: inherit;
   font-size: 12.5px;
-  background: var(--cs-surface-1, #11151b);
+  background: var(--cs-bg-elevated);
   color: var(--cs-text-primary, rgba(255,255,255,0.88));
-  border: 1px solid var(--cs-border-2, #2b3038);
+  border: 1px solid var(--cs-border-hover);
   border-radius: 6px;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
