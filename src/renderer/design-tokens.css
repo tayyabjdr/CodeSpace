@@ -59,10 +59,10 @@
   /* Semantic state — the only accents that survive as colour. Everything
      else in the chrome uses white-opacity tiers. These are aliases of the
      accent values above, so changing a theme's accent moves its states too. */
-  --cs-state-running:  #86efac;
-  --cs-state-done:     #67e8f9;
-  --cs-state-exited:   #f59e0b;
-  --cs-state-isolated: #67e8f9;
+  --cs-state-running:  var(--cs-green);
+  --cs-state-done:     var(--cs-cyan);
+  --cs-state-exited:   var(--cs-amber);
+  --cs-state-isolated: var(--cs-cyan);
 
   /* Status dots */
   --cs-status-live:  #86efac;
@@ -229,12 +229,6 @@ body {
   --cs-status-live:  #7acb85;
   --cs-status-idle:  #6b6577;
   --cs-status-amber: #dda04c;
-
-  /* Semantic state tokens */
-  --cs-state-running:  #7acb85;
-  --cs-state-done:     #e15a9e;
-  --cs-state-exited:   #dda04c;
-  --cs-state-isolated: #e15a9e;
 
   /* xterm — solid hex values; alpha lives on the layer above */
   --cs-term-bg:        #302e39;

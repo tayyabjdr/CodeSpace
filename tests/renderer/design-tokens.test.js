@@ -31,12 +31,14 @@ describe('design tokens', () => {
     for (const t of STATE_TOKENS) expect(root).toContain(t)
   })
 
-  it('declares every state token in the bridge theme', () => {
-    // Easy to forget, and silent when wrong: a token missing from the bridge
-    // block just inherits the default theme's colour, so Bridge would show
-    // cyan "done" dots instead of rose ones and nothing would error.
-    const bridge = block(":root[data-theme='bridge']")
-    for (const t of STATE_TOKENS) expect(bridge).toContain(t)
+  it('declares the state tokens as references, so they follow the active theme', () => {
+    // Not hex literals: [data-theme='bridge'] applies to the same element as
+    // :root, so a var() reference resolves against that theme's own accent.
+    // Hardcoding here would silently keep Bridge's status dots cyan.
+    const root = block(':root {')
+    for (const t of STATE_TOKENS) {
+      expect(root).toMatch(new RegExp(`${t}:\\s*var\\(--cs-[a-z-]+\\)`))
+    }
   })
 
   it('keeps the default surface ramp pure neutral grey', () => {
