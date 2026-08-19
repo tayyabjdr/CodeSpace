@@ -34,7 +34,7 @@ A horizontal scan across the sidebar/canvas boundary found a raised edge in the 
 
 ## 1. Palette retune
 
-Ten values change in the `:root` block of `src/renderer/design-tokens.css`. The `[data-theme='bridge']` block is **not** retuned — Bridge keeps its warm plum identity.
+Nine values change in the `:root` block of `src/renderer/design-tokens.css`. The `[data-theme='bridge']` block is **not** retuned — Bridge keeps its warm plum identity.
 
 | Token | Current | New | Role |
 | --- | --- | --- | --- |
@@ -151,7 +151,7 @@ Pane cards move from `8px` to `10px`, matching the reference. Sidebar rows stay 
 
 | File | Change | Detail |
 | --- | --- | --- |
-| `src/renderer/design-tokens.css` | modify | Retune 10 `:root` values; add 4 `--cs-state-*` to both theme blocks |
+| `src/renderer/design-tokens.css` | modify | Retune 9 `:root` values; add 4 `--cs-state-*` to both theme blocks |
 | `src/renderer/components/Sidebar.jsx` | modify | Skills nav row above the Workspaces header |
 | `src/renderer/components/Sidebar.css` | modify | Nav row styles; remove 3 dividers; state tokens |
 | `src/renderer/components/RightToolbar.jsx` | delete | — |
