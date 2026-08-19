@@ -52,8 +52,8 @@
 .grid {
   flex: 1;
   display: grid;
-  gap: 4px;
-  padding: 4px;
+  gap: 6px;
+  padding: 6px;
   min-height: 0;
   min-width: 0;
   background: var(--cs-bg-base);

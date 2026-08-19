@@ -1,12 +1,15 @@
 .pane {
   display: flex;
   flex-direction: column;
-  background: var(--cs-bg-surface);
-  border: 1px solid var(--cs-border);
-  border-radius: 0;
+  background: var(--cs-bg-elevated);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 8px;
   overflow: hidden;
   min-height: 0;
-  transition: border-color var(--cs-transition);
+  box-shadow:
+    0 2px 14px -4px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color var(--cs-transition), box-shadow var(--cs-transition);
   animation: scaleIn 0.2s ease both;
 }
 
@@ -117,7 +120,7 @@
   align-items: center;
   padding: 0 0 0 10px;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--cs-bg-elevated);
   border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
   cursor: grab;
@@ -366,7 +369,7 @@
   height: 18px;
   align-items: center;
   padding: 0 8px;
-  background: var(--cs-bg-surface);
+  background: var(--cs-bg-elevated);
   border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
   position: relative;
