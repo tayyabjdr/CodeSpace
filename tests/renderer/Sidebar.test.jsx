@@ -99,10 +99,77 @@ describe('Sidebar tree', () => {
 
   it('expands with ArrowRight and collapses with ArrowLeft', async () => {
     const onToggleExpand = vi.fn()
-    const { container } = render(<Sidebar {...base} onToggleExpand={onToggleExpand} />)
+    const { container, rerender } = render(<Sidebar {...base} onToggleExpand={onToggleExpand} />)
     container.querySelectorAll('[data-sb-node]')[0].focus()
     await userEvent.keyboard('{ArrowRight}')
     expect(onToggleExpand).toHaveBeenCalledWith('w1')
+
+    // Controlled component: re-render as the caller would after honoring
+    // the toggle, then verify the reverse key collapses the same row.
+    onToggleExpand.mockClear()
+    rerender(<Sidebar {...base} expandedIds={new Set(['w1'])} onToggleExpand={onToggleExpand} />)
+    container.querySelectorAll('[data-sb-node]')[0].focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(onToggleExpand).toHaveBeenCalledWith('w1')
+  })
+
+  it('moves focus to the first session when ArrowRight is pressed on an already-expanded workspace', async () => {
+    const { container } = render(<Sidebar {...base} expandedIds={new Set(['w1'])} />)
+    container.querySelectorAll('[data-sb-node]')[0].focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement.getAttribute('data-sb-id')).toBe('t1')
+  })
+
+  it('moves focus to the parent workspace when ArrowLeft is pressed on a session', async () => {
+    const { container } = render(<Sidebar {...base} expandedIds={new Set(['w1'])} />)
+    container.querySelectorAll('[data-sb-node]')[1].focus()
+    expect(document.activeElement.getAttribute('data-sb-id')).toBe('t1')
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(document.activeElement.getAttribute('data-sb-id')).toBe('w1')
+  })
+
+  it('activates a workspace with Enter, firing onSelect', async () => {
+    const onSelect = vi.fn()
+    const { container } = render(<Sidebar {...base} onSelect={onSelect} />)
+    container.querySelectorAll('[data-sb-node]')[0].focus()
+    await userEvent.keyboard('{Enter}')
+    expect(onSelect).toHaveBeenCalledWith('w1')
+  })
+
+  it('activates a session with Space, firing onSelectSession', async () => {
+    const onSelectSession = vi.fn()
+    const { container } = render(
+      <Sidebar {...base} expandedIds={new Set(['w1'])} onSelectSession={onSelectSession} />
+    )
+    container.querySelectorAll('[data-sb-node]')[1].focus()
+    await userEvent.keyboard(' ')
+    expect(onSelectSession).toHaveBeenCalledWith('w1', 't1')
+  })
+
+  it('deletes a workspace on Delete', async () => {
+    const onDelete = vi.fn()
+    const { container } = render(<Sidebar {...base} onDelete={onDelete} />)
+    container.querySelectorAll('[data-sb-node]')[0].focus()
+    await userEvent.keyboard('{Delete}')
+    expect(onDelete).toHaveBeenCalledWith('w1')
+  })
+
+  it('deletes a workspace on Shift+Backspace', async () => {
+    const onDelete = vi.fn()
+    const { container } = render(<Sidebar {...base} onDelete={onDelete} />)
+    container.querySelectorAll('[data-sb-node]')[0].focus()
+    await userEvent.keyboard('{Shift>}{Backspace}{/Shift}')
+    expect(onDelete).toHaveBeenCalledWith('w1')
+  })
+
+  it('does not delete on Delete when focus is on a session row', async () => {
+    const onDelete = vi.fn()
+    const { container } = render(
+      <Sidebar {...base} expandedIds={new Set(['w1'])} onDelete={onDelete} />
+    )
+    container.querySelectorAll('[data-sb-node]')[1].focus()
+    await userEvent.keyboard('{Delete}')
+    expect(onDelete).not.toHaveBeenCalled()
   })
 
   it('does not steal keys while a nickname is being edited', async () => {
