@@ -242,7 +242,7 @@
   color: var(--cs-text-primary);
 }
 .cs-settings-btn:focus-visible {
-  outline: 1px solid var(--cs-text-secondary);
+  outline: 1px solid var(--cs-border-focus);
   outline-offset: 2px;
 }
 
@@ -328,7 +328,7 @@
 }
 
 .cs-settings-theme-swatch.swatch-sarvis-dark {
-  --swatch-from: #0d0f12;
+  --swatch-from: #141414;
   --swatch-accent: #67e8f9;
 }
 
