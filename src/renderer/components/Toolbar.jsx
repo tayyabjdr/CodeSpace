@@ -50,7 +50,7 @@ export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor 
     <div className="titlebar">
       <div className="titlebar-left">
         <span className="titlebar-mark" aria-hidden>
-          <AppIcon size={16} />
+          <AppIcon size={18} />
         </span>
         <span className="titlebar-name">CodeSpace</span>
       </div>

@@ -1,8 +1,13 @@
+/* The titlebar sits outside .app-body, so it does not inherit that element's
+   canvas inset. 19px here is not arbitrary — it is where the sidebar block's
+   left edge lands (13px .app-body padding + 6px rail margin), so the app name
+   and the rail below it share one left edge. Change one and change the
+   other. */
 .titlebar {
   height: var(--cs-toolbar-h);
   display: flex;
   align-items: center;
-  padding: 0 0 0 14px;
+  padding: 0 0 0 19px;
   background: var(--cs-bg-base);
   flex-shrink: 0;
   -webkit-app-region: drag;
@@ -27,7 +32,7 @@
 
 .titlebar-name {
   font-family: var(--cs-font-ui);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: -0.005em;
   color: var(--cs-text-secondary);
