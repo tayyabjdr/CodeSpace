@@ -352,6 +352,7 @@ function AppInner() {
           focusedTerminalId: terminals[0]?.id ?? null
         }
       }))
+      setExpandedIds(prev => withExpanded(prev, activeId))
     })()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -428,6 +429,7 @@ function AppInner() {
         unconfigured: false
       }
     }))
+    setExpandedIds(prev => withExpanded(prev, activeId))
   }, [activeId, workspaces, materializeAgents])
 
   // Discard a draft → remove it from the list. If it was active, fall back
@@ -529,7 +531,6 @@ function AppInner() {
       return
     }
     setActiveId(wsId)
-    setExpandedIds(prev => withExpanded(prev, wsId))
   }, [activeWorkspace])
 
   // focusSessionIn targets wsId explicitly. Do NOT reach for setFocusedId /
@@ -874,9 +875,11 @@ function AppInner() {
     else if (action.kind === 'close-pane') setEditorPatch({ open: false })
     else if (action.kind === 'switch-workspace') {
       const { wsId, termId } = action.payload
-      if (termId) setWorkspaces(prev => focusSessionIn(prev, wsId, termId))
+      if (termId) {
+        setWorkspaces(prev => focusSessionIn(prev, wsId, termId))
+        setExpandedIds(prev => withExpanded(prev, wsId))
+      }
       setActiveId(wsId)
-      setExpandedIds(prev => withExpanded(prev, wsId))
     }
   }, [openFileImmediate, setEditorPatch])
 
