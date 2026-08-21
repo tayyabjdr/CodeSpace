@@ -1,6 +1,6 @@
 {
   "name": "codespace",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Vibecoding terminal workspace",
   "main": "out/main/index.js",
   "scripts": {
