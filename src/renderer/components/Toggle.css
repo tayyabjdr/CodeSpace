@@ -16,8 +16,8 @@
 }
 .cs-toggle:hover { border-color: var(--cs-border-hover); }
 .cs-toggle.on {
-  background: var(--cs-cyan-bg);
-  border-color: var(--cs-cyan-glow);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 .cs-toggle.disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -33,8 +33,8 @@
 }
 .cs-toggle.on .cs-toggle-thumb {
   transform: translateX(calc(var(--w) - var(--h)));
-  background: var(--cs-cyan);
-  box-shadow: 0 0 8px var(--cs-cyan-glow);
+  background: var(--cs-text-secondary);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.14);
 }
 .cs-toggle:focus-visible {
   outline: 1px solid var(--cs-border-focus);

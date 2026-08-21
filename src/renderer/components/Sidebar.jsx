@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import WorkspaceRow from './WorkspaceRow.jsx'
+import SessionRow from './SessionRow.jsx'
 import './Sidebar.css'
 
 const PlusGlyph = () => (
@@ -15,71 +17,94 @@ const GearGlyph = () => (
   </svg>
 )
 
-export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, onCreate, onDelete, onOpenSettings, onRenameNickname }) {
+export default function Sidebar({
+  workspaces, activeId, expandedIds, doneTermIds, exitedPtyIds, focusedTerminalId,
+  skillsOpen, onToggleSkills,
+  onSelect, onToggleExpand, onSelectSession, onCreate, onDelete, onOpenSettings, onRenameNickname
+}) {
   const listRef = useRef(null)
   const [version, setVersion] = useState('')
   useEffect(() => {
     window.electronAPI?.getAppVersion?.().then(setVersion).catch(() => setVersion(''))
   }, [])
 
-  const [editingId, setEditingId] = useState(null)   // ws.id of the row currently editing, or null
-  const [draft, setDraft] = useState('')             // local typed value while editing
-  const inputRef = useRef(null)
+  const sessionsOf = (ws) => (ws.spawned ? (ws.terminals ?? []) : [])
 
-  useEffect(() => {
-    if (editingId && inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
+  const statusOf = (term) => {
+    if (exitedPtyIds?.has(term.ptyId)) return 'exited'
+    if (doneTermIds?.has(term.id)) return 'done'
+    return 'running'
+  }
+
+  // The visible flattened list drives roving navigation: a collapsed
+  // workspace's sessions are not in the sequence at all.
+  const flat = useMemo(() => {
+    const out = []
+    for (const ws of workspaces) {
+      out.push({ kind: 'workspace', id: ws.id, ws })
+      if (expandedIds?.has(ws.id)) {
+        for (const t of sessionsOf(ws)) out.push({ kind: 'session', id: t.id, ws, term: t })
+      }
     }
-  }, [editingId])
+    return out
+  }, [workspaces, expandedIds])
 
-  const startEditNickname = (ws, e) => {
-    e.stopPropagation()
-    setDraft(ws.nickname ?? '')
-    setEditingId(ws.id)
-  }
-
-  const commitNickname = () => {
-    if (!editingId) return
-    const id = editingId
-    setEditingId(null)
-    onRenameNickname?.(id, draft)
-  }
-
-  const cancelNickname = () => {
-    setEditingId(null)
-    setDraft('')
-  }
-
-  const handleNicknameKeyDown = (e) => {
-    if (e.key === 'Enter')      { e.preventDefault(); commitNickname() }
-    else if (e.key === 'Escape') { e.preventDefault(); cancelNickname() }
-    e.stopPropagation()   // never let nickname input chars bubble to row roving-nav
-  }
-
-  // Roving keyboard nav across workspace items: Up/Down to move focus,
-  // Enter/Space to activate, Home/End to jump to extremes.
   const handleKeyDown = (e, index) => {
-    if (editingId) return   // input owns keys; row nav must not steal them
-    const items = listRef.current?.querySelectorAll('[data-sb-item]')
-    if (!items || items.length === 0) return
-    const focus = (i) => items[Math.max(0, Math.min(items.length - 1, i))]?.focus()
+    // A focused nickname input owns its keys; bail before touching anything.
+    if (e.target.tagName === 'INPUT') return
+
+    const nodes = listRef.current?.querySelectorAll('[data-sb-node]')
+    if (!nodes || nodes.length === 0) return
+    const focus = (i) => nodes[Math.max(0, Math.min(nodes.length - 1, i))]?.focus()
+    const node = flat[index]
+
     if (e.key === 'ArrowDown') { e.preventDefault(); focus(index + 1) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); focus(index - 1) }
     else if (e.key === 'Home') { e.preventDefault(); focus(0) }
-    else if (e.key === 'End') { e.preventDefault(); focus(items.length - 1) }
+    else if (e.key === 'End') { e.preventDefault(); focus(nodes.length - 1) }
+    else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      // A childless workspace (or a session leaf) has nothing to expand
+      // into — ARIA APG says Right should absorb the keypress there, not
+      // behave like ArrowDown.
+      if (node.kind === 'workspace' && sessionsOf(node.ws).length > 0) {
+        if (!expandedIds?.has(node.ws.id)) onToggleExpand(node.ws.id)
+        else focus(index + 1)
+      }
+    }
+    else if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      if (node.kind === 'session') {
+        focus(flat.findIndex(n => n.kind === 'workspace' && n.ws.id === node.ws.id))
+      } else if (expandedIds?.has(node.ws.id)) {
+        onToggleExpand(node.ws.id)
+      }
+    }
     else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      onSelect(workspaces[index].id)
+      if (node.kind === 'workspace') onSelect(node.ws.id)
+      else onSelectSession(node.ws.id, node.term.id)
     }
     else if (e.key === 'Delete' || (e.shiftKey && e.key === 'Backspace')) {
+      if (node.kind !== 'workspace') return
       e.preventDefault()
-      onDelete(workspaces[index].id)
+      onDelete(node.ws.id)
     }
   }
 
   return (
     <aside className="sidebar">
+      <nav className="sb-nav" aria-label="Tools">
+        <button
+          type="button"
+          className={`sb-nav-item${skillsOpen ? ' is-open' : ''}`}
+          aria-pressed={skillsOpen}
+          onClick={onToggleSkills}
+        >
+          Skills
+        </button>
+      </nav>
+
       <div className="sb-header">
         <span className="sb-header-label">workspaces</span>
         <button
@@ -92,98 +117,33 @@ export default function Sidebar({ workspaces, activeId, notifyingIds, onSelect, 
         </button>
       </div>
 
-      <div className="sb-list" role="listbox" aria-label="Workspaces" ref={listRef}>
-        {workspaces.map((ws, i) => {
-          const isActive = ws.id === activeId
-          const isNotifying = notifyingIds?.has(ws.id) ?? false
-          const isDraft = !!ws.unconfigured
-          const count = ws.spawned
-            ? (ws.terminals?.length ?? 0)
-            : (ws.agentCounts?.claude ?? 0) + (ws.agentCounts?.codex ?? 0)
-          return (
-            <div
-              key={ws.id}
-              data-sb-item
-              role="option"
-              tabIndex={isActive ? 0 : -1}
-              aria-selected={isActive}
-              className={`sb-item${isActive ? ' active' : ''}${isDraft ? ' draft' : ''}`}
-              onClick={() => onSelect(ws.id)}
-              onKeyDown={(e) => handleKeyDown(e, i)}
-            >
-              <span className="sb-item-bar" />
-              <div className="sb-item-text">
-                <span className="sb-item-name" title={ws.name}>{ws.name}</span>
-                {editingId === ws.id ? (
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    className="sb-item-nickname-input"
-                    value={draft}
-                    maxLength={40}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={handleNicknameKeyDown}
-                    onBlur={commitNickname}
-                    onClick={(e) => e.stopPropagation()}
-                    onDoubleClick={(e) => e.stopPropagation()}
-                    aria-label="Edit nickname"
-                  />
-                ) : ws.nickname ? (
-                  <span
-                    className="sb-item-nickname"
-                    title={ws.nickname}
-                    onClick={(e) => e.stopPropagation()}
-                    onDoubleClick={(e) => startEditNickname(ws, e)}
-                  >
-                    {ws.nickname}
-                  </span>
-                ) : (
-                  <span
-                    className="sb-item-nickname-hint"
-                    onClick={(e) => e.stopPropagation()}
-                    onDoubleClick={(e) => startEditNickname(ws, e)}
-                  >
-                    add nickname
-                  </span>
-                )}
+      <div className="sb-list" role="tree" aria-label="Workspaces" ref={listRef}>
+        {flat.map((node, i) => (
+          <div key={node.kind + node.id} onKeyDown={(e) => handleKeyDown(e, i)}>
+            {node.kind === 'workspace' ? (
+              <WorkspaceRow
+                ws={node.ws}
+                isActive={node.ws.id === activeId}
+                isExpanded={!!expandedIds?.has(node.ws.id)}
+                hasSessions={sessionsOf(node.ws).length > 0}
+                showDoneDot={sessionsOf(node.ws).some(t => doneTermIds?.has(t.id))}
+                onSelect={onSelect}
+                onToggleExpand={onToggleExpand}
+                onDelete={onDelete}
+                onRenameNickname={onRenameNickname}
+              />
+            ) : (
+              <div role="group">
+                <SessionRow
+                  term={node.term}
+                  status={statusOf(node.term)}
+                  isFocused={node.ws.id === activeId && node.term.id === focusedTerminalId}
+                  onSelect={(termId) => onSelectSession(node.ws.id, termId)}
+                />
               </div>
-              <span className="sb-item-status" aria-hidden>
-                {isNotifying && <span className="sb-item-dot" title="An agent finished" />}
-                {ws.isolated && (
-                  <span className="sb-iso" title="Isolated agents" aria-label="Isolated agents">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="url(#sb-iso-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <defs>
-                        <linearGradient id="sb-iso-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
-                          <stop offset="0%" stopColor="var(--cs-cyan)" />
-                          <stop offset="100%" stopColor="var(--cs-green)" />
-                        </linearGradient>
-                      </defs>
-                      <line x1="6" y1="3" x2="6" y2="15" />
-                      <circle cx="18" cy="6" r="3" />
-                      <circle cx="6" cy="18" r="3" />
-                      <path d="M18 9a9 9 0 0 1-9 9" />
-                    </svg>
-                  </span>
-                )}
-                <span className="sb-item-count">{isDraft ? '✦' : count}</span>
-              </span>
-              <button
-                className="sb-item-delete"
-                title="Delete workspace"
-                tabIndex={-1}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete(ws.id)
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                </svg>
-              </button>
-            </div>
-          )
-        })}
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="sb-footer">

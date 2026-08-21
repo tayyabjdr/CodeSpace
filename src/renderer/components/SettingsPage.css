@@ -20,7 +20,6 @@
   width: 188px;
   flex-shrink: 0;
   background: var(--cs-bg-sidebar);
-  border-right: 1px solid var(--cs-border);
   display: flex;
   flex-direction: column;
   padding: 16px 10px 12px;
@@ -148,9 +147,6 @@
   padding: 15px 17px;
   min-height: 32px;
 }
-.cs-settings-row + .cs-settings-row {
-  border-top: 1px solid var(--cs-border);
-}
 .cs-settings-label {
   display: flex;
   flex-direction: column;
@@ -196,13 +192,12 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 12px 17px;
-  border-top: 1px solid var(--cs-border);
   font-size: 11.5px;
   color: var(--cs-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
-/* Version pill — cyan glowing meta with a leading dot */
+/* Version pill — meta text with a leading dot */
 .cs-settings-version-link {
   display: inline-flex;
   align-items: center;
@@ -212,17 +207,17 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
-  color: var(--cs-cyan);
+  color: var(--cs-text-secondary);
   text-decoration: none;
-  text-shadow: 0 0 12px var(--cs-cyan-glow);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.14);
   transition: color var(--cs-transition);
 }
 .cs-settings-version-link::before {
   content: '';
   width: 5px;
   height: 5px;
-  background: var(--cs-cyan);
-  box-shadow: 0 0 8px var(--cs-cyan-glow);
+  background: var(--cs-text-secondary);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.14);
 }
 .cs-settings-version-link:hover { color: #a5f3fc; }
 
@@ -247,11 +242,11 @@
   color: var(--cs-text-primary);
 }
 .cs-settings-btn:focus-visible {
-  outline: 1px solid var(--cs-cyan);
+  outline: 1px solid var(--cs-border-focus);
   outline-offset: 2px;
 }
 
-/* Custom range slider — cyan track fill, glowing thumb */
+/* Custom range slider — filled track, ringed thumb */
 .cs-settings-range {
   appearance: none;
   -webkit-appearance: none;
@@ -268,8 +263,8 @@
   height: var(--track-h);
   background: linear-gradient(
     to right,
-    var(--cs-cyan) 0%,
-    var(--cs-cyan) var(--fill, 50%),
+    var(--cs-text-secondary) 0%,
+    var(--cs-text-secondary) var(--fill, 50%),
     var(--cs-border-mid) var(--fill, 50%),
     var(--cs-border-mid) 100%
   );
@@ -280,9 +275,9 @@
   width: var(--thumb-size);
   height: var(--thumb-size);
   background: var(--cs-bg-base);
-  border: 2px solid var(--cs-cyan);
+  border: 2px solid var(--cs-text-secondary);
   margin-top: calc((var(--track-h) - var(--thumb-size)) / 2);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 8px var(--cs-cyan-glow);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 255, 255, 0.14);
   cursor: grab;
   transition: transform 120ms ease, box-shadow var(--cs-transition);
 }
@@ -290,7 +285,7 @@
 .cs-settings-range:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.2); }
 .cs-settings-range:focus-visible { outline: none; }
 .cs-settings-range:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 2px var(--cs-cyan-glow), 0 0 12px var(--cs-cyan-glow);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14), 0 0 12px rgba(255, 255, 255, 0.14);
 }
 
 .cs-settings-theme-group {
@@ -320,7 +315,7 @@
 
 .cs-settings-theme-option.selected {
   border-color: var(--cs-border-focus);
-  background: var(--cs-cyan-bg);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--cs-text-primary);
 }
 
@@ -333,7 +328,7 @@
 }
 
 .cs-settings-theme-swatch.swatch-sarvis-dark {
-  --swatch-from: #0d0f12;
+  --swatch-from: #141414;
   --swatch-accent: #67e8f9;
 }
 

@@ -15,6 +15,27 @@ const exitListeners = new Map() // ptyId -> Set<(code: number) => void>
 const exitCodes = new Map()     // ptyId -> number (if exited)
 const cleanups = new Map()      // ptyId -> () => void (IPC unsubscribe)
 
+// Store-shaped view of exitCodes for useSyncExternalStore consumers (the
+// sidebar tree). Mirrors done-tracker.js. The snapshot is cached and only
+// rebuilt on mutation — returning a fresh Set per call would give React a
+// new reference every render and loop forever.
+const exitStoreListeners = new Set()
+let exitedSnapshot = new Set()
+
+function notifyExitStore() {
+  exitedSnapshot = new Set(exitCodes.keys())
+  for (const cb of exitStoreListeners) cb()
+}
+
+export function subscribeExits(cb) {
+  exitStoreListeners.add(cb)
+  return () => exitStoreListeners.delete(cb)
+}
+
+export function getExitedPtyIds() {
+  return exitedSnapshot
+}
+
 const pendingCreates = new Map() // token -> Promise<ptyId>
 const cancelledTokens = new Set()
 
@@ -36,6 +57,7 @@ function ensureSubscription(ptyId) {
   })
   const offExit = window.electronAPI.onPtyExit(ptyId, code => {
     exitCodes.set(ptyId, code)
+    notifyExitStore()
     const set = exitListeners.get(ptyId)
     if (set) for (const fn of set) fn(code)
   })
@@ -120,6 +142,7 @@ export function killPty(ptyId) {
   liveListeners.delete(ptyId)
   exitListeners.delete(ptyId)
   exitCodes.delete(ptyId)
+  notifyExitStore()
 }
 
 export function writePty(ptyId, data) {

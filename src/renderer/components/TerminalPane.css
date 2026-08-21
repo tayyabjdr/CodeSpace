@@ -1,12 +1,15 @@
 .pane {
   display: flex;
   flex-direction: column;
-  background: var(--cs-bg-surface);
-  border: 1px solid var(--cs-border);
-  border-radius: 0;
+  background: var(--cs-bg-elevated);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 10px;
   overflow: hidden;
   min-height: 0;
-  transition: border-color var(--cs-transition);
+  box-shadow:
+    0 2px 14px -4px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color var(--cs-transition), box-shadow var(--cs-transition);
   animation: scaleIn 0.2s ease both;
 }
 
@@ -14,13 +17,19 @@
   border-color: var(--cs-border-focus);
 }
 
+/* Exited border must stay distinct from the base .pane border now that the
+   base moved to --cs-border-mid — otherwise the status dot is the only exit
+   signal left. --cs-state-exited ties this border to the same state colour
+   the status dot already uses for "exited", and it composites with far more
+   contrast than any neutral border token against the elevated card surface in
+   both the sarvis-dark and bridge themes. */
 .pane.exited {
-  border-color: var(--cs-border-mid);
+  border-color: var(--cs-state-exited);
 }
 
-/* Done state — header is a static cyan→green gradient that pops, while the
-   pane body itself breathes with a soft cyan-green halo (border + outer glow)
-   on the same calm 1.6s ease cadence as the onboarding agent-card cells.
+/* Done state — header shows a static cyan→green gradient. The pane body gets
+   no border or box-shadow treatment of its own; see the .pane-done-pulse
+   overlay below for how the body signals "done" instead.
    The status dot paints its own circle on top of the header, so its
    background is unaffected. */
 .pane.done .pane-header {
@@ -29,7 +38,6 @@
     var(--cs-done-grad-start) 0%,
     var(--cs-done-grad-end) 100%
   );
-  border-bottom-color: var(--cs-green-border-strong);
 }
 
 /* Body pulse — a 4×2 grid of invisible cells overlays the pane body and
@@ -72,7 +80,10 @@
   color: var(--cs-text-primary);
 }
 
-/* The green check would disappear into the gradient; darken it for contrast. */
+/* The tick is only ever rendered while .pane also has .done, so this is the
+   only color .done-tick receives. At full brightness it would disappear into
+   the done-header gradient, so it's darkened against that gradient for
+   contrast instead of using --cs-state-done. */
 .pane.done .done-tick {
   color: var(--cs-bg-base, #0a0b0d);
 }
@@ -105,10 +116,16 @@
   opacity: 0.45;
 }
 
-/* Drag target — single thin cyan border + soft outer glow */
+/* Drag target — single thin cyan border + soft outer glow. Box-shadow is a
+   higher-specificity full replacement, not a layer on top, so the base
+   .pane elevation shadow + inset rim highlight are repeated here first —
+   otherwise the pane goes flat for the duration of the drag. */
 .pane.drag-over {
-  border-color: var(--cs-cyan-border-strong);
-  box-shadow: 0 0 18px var(--cs-cyan-glow-soft);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 2px 14px -4px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 18px rgba(255, 255, 255, 0.14);
 }
 
 .pane-header {
@@ -117,11 +134,10 @@
   align-items: center;
   padding: 0 0 0 10px;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--cs-border);
+  background: var(--cs-bg-elevated);
   flex-shrink: 0;
   cursor: grab;
-  transition: background var(--cs-transition), border-bottom-color var(--cs-transition);
+  transition: background var(--cs-transition);
 }
 
 .pane-header:active {
@@ -139,8 +155,8 @@
   flex-shrink: 0;
 }
 
-.status-dot.status-running { background: var(--cs-status-live); }
-.status-dot.status-exited  { background: var(--cs-status-amber); }
+.status-dot.status-running { background: var(--cs-state-running); }
+.status-dot.status-exited  { background: var(--cs-state-exited); }
 
 .pane-label {
   font-family: var(--cs-font-mono);
@@ -173,7 +189,7 @@
   height: 18px;
   min-width: 80px;
   max-width: 180px;
-  caret-color: var(--cs-cyan, #67e8f9);
+  caret-color: var(--cs-text-secondary);
 }
 
 .pane-label-input:focus {
@@ -181,11 +197,10 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Done indicator — vibrant green check, minimal: no badge, no chrome.
-   Matches --cs-green at full opacity; the same accent the rest of the UI
-   uses for live/done status. */
+/* Done indicator — minimal check icon, no badge, no chrome. Its color comes
+   entirely from .pane.done .done-tick above (see that rule's comment); this
+   base rule only carries layout. */
 .done-tick {
-  color: var(--cs-green);
   flex-shrink: 0;
   margin-left: 2px;
 }
@@ -225,11 +240,11 @@
   opacity: 1;
 }
 
-/* Active (fullscreen on) state — cyan tint matches the focused-pane accent
-   already used elsewhere (the dirty-dot, the empty-btn hover glow). */
+/* Active (fullscreen on) state — the icon glyph itself flips between
+   expand/collapse, so the tint here is reinforcement, not the signal. */
 .pane-fs-btn.is-active,
 .pane.fullscreen .pane-fs-btn {
-  color: var(--cs-cyan);
+  color: var(--cs-text-secondary);
   opacity: 1;
 }
 
@@ -293,7 +308,7 @@
   background-clip: padding-box;
 }
 .xterm-viewport::-webkit-scrollbar-thumb:active {
-  background: var(--cs-cyan-glow);
+  background: rgba(255, 255, 255, 0.34);
   background-clip: padding-box;
 }
 
@@ -358,16 +373,20 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
 
-/* Branch chip lives in its own thin row directly below the title bar.
-   Solid surface background sits above the done-state body pulse so the
-   chip stays legible. */
+/* Breadcrumb row directly below the title bar — a general breadcrumb band
+   (agent type, cwd) that the branch chip shares, not a branch-only row.
+   Solid --cs-bg-elevated sits above the done-state body pulse so its
+   contents stay legible. It deliberately does NOT match the terminal
+   body's --cs-bg-surface below: that value step is what makes the
+   terminal read as a screen inset into the card. That seam is intentional
+   and load-bearing — do not "fix" it into a flush match. */
 .pane-subheader {
   display: flex;
   height: 18px;
   align-items: center;
+  gap: 5px;
   padding: 0 8px;
-  background: var(--cs-bg-surface);
-  border-bottom: 1px solid var(--cs-border);
+  background: var(--cs-bg-elevated);
   flex-shrink: 0;
   position: relative;
   z-index: 1;
@@ -391,12 +410,13 @@
   user-select: none;
 }
 .tp-badge-claude {
-  color: var(--cs-cyan, #67e8f9);
-  border-color: var(--cs-cyan-border);
-  background: var(--cs-cyan-fill-weak);
+  color: var(--cs-text-secondary);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
 }
 .tp-badge-codex {
   color: var(--cs-violet, #c4b5fd);
   border-color: var(--cs-violet-border);
   background: var(--cs-violet-fill-weak);
 }
+

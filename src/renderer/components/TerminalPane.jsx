@@ -264,6 +264,12 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
           </button>
         </div>
       </div>
+      {/* The band exists only to carry the branch. Agent type is already the
+          pane's own name and the sidebar's glyph, and the cwd is the workspace
+          you picked — both were repeating what the user already knew. A
+          worktree branch is the one thing here you cannot read anywhere else,
+          so an isolated pane keeps the row and every other pane goes straight
+          from header to terminal. */}
       {branch && (
         <div className="pane-subheader">
           <button

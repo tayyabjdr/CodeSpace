@@ -1,10 +1,17 @@
+/* The titlebar sits outside .app-body, so it does not inherit that element's
+   canvas inset. 19px here is not arbitrary — it is where the sidebar block's
+   left edge lands (13px .app-body padding + 6px rail margin), so the app name
+   and the rail below it share one left edge. Change one and change the
+   other. */
+/* No vertical or right padding: the window buttons stretch the bar's full
+   height, which they cannot do through padding. Left is 19px because it
+   aligns the app name with the sidebar block's left edge. */
 .titlebar {
   height: var(--cs-toolbar-h);
   display: flex;
   align-items: center;
-  padding: 0 0 0 14px;
-  background: var(--cs-bg-sidebar);
-  border-bottom: 1px solid var(--cs-border-mid);
+  padding: 0 0 0 19px;
+  background: var(--cs-bg-base);
   flex-shrink: 0;
   -webkit-app-region: drag;
   user-select: none;
@@ -28,10 +35,10 @@
 
 .titlebar-name {
   font-family: var(--cs-font-ui);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: -0.005em;
-  color: var(--cs-text-secondary);
+  color: var(--cs-text-primary);
 }
 
 /* Center — actions */
@@ -131,13 +138,13 @@
 }
 
 .titlebar-editor-toggle.is-open {
-  color: var(--cs-cyan);
-  background: var(--cs-cyan-bg);
+  color: var(--cs-text-secondary);
+  background: rgba(255, 255, 255, 0.10);
 }
 
 .titlebar-editor-toggle.is-open:hover {
-  background: var(--cs-cyan-bg);
-  color: var(--cs-cyan);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--cs-text-secondary);
 }
 
 /* Subtle vertical divider between custom controls (volume/editor) and the
@@ -161,9 +168,18 @@
   height: 100%;
 }
 
+/* Fills the bar top to bottom, and aspect-ratio makes it exactly as wide as
+   it is tall, so the hover background is a true square that tracks
+   --cs-toolbar-h instead of restating it. align-self overrides the parent's
+   align-items: center, which would otherwise shrink it to its content.
+
+   No radius on purpose: a rounded corner on a button flush with the bar's
+   top and bottom edges leaves visible notches where the hover fill pulls
+   away from them. */
 .titlebar-window-btn {
-  width: var(--cs-toolbar-h);
-  height: var(--cs-toolbar-h);
+  align-self: stretch;
+  aspect-ratio: 1;
+  width: auto;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -18,7 +18,7 @@
 }
 
 .update-toast-icon {
-  color: var(--cs-cyan);
+  color: var(--cs-text-primary);
   font-size: 14px;
   line-height: 1;
 }
@@ -52,12 +52,12 @@
 }
 
 .update-toast-btn-primary {
-  background: var(--cs-cyan-bg);
-  border-color: var(--cs-cyan-glow);
-  color: var(--cs-cyan);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--cs-text-primary);
 }
 
 .update-toast-btn-primary:hover {
-  background: var(--cs-cyan-glow);
-  border-color: var(--cs-cyan);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--cs-text-secondary);
 }

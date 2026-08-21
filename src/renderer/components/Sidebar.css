@@ -1,10 +1,24 @@
+/* The rail is its own block floating on the canvas, not a field adjacent to
+   it. The 13px right margin composes with .grid's own 6px padding to give
+   the ~19px gutter the reference uses between rail and panes — wider than
+   the 6px between panes, which is deliberate: it separates two kinds of
+   thing, where the pane gutters separate instances of one kind.
+
+   The border matters more than it looks. Bridge's surface ramp is a quarter
+   as steep as the default theme's (4/255 at this boundary vs 11/255), so
+   with no edge the rail and canvas nearly merge there. As a bounded card it
+   reads correctly in both themes without needing a theme-scoped special
+   case. */
 .sidebar {
-  width: 220px;
+  width: 270px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--cs-bg-sidebar);
-  border-right: 1px solid var(--cs-border);
+  border: 1px solid var(--cs-border);
+  border-radius: 10px;
+  margin: 6px 13px 6px 6px;
+  overflow: hidden;
   min-height: 0;
   user-select: none;
 }
@@ -16,13 +30,12 @@
   align-items: center;
   gap: 9px;
   padding: 14px 16px 12px;
-  border-bottom: 1px solid var(--cs-border);
 }
 
 .sb-header-label {
   flex: 1;
   font-family: var(--cs-font-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -63,11 +76,10 @@
 
 .sb-item {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: start;
-  gap: 10px;
-  padding: 10px 14px 10px 16px;
+  display: flex;              /* was: grid */
+  align-items: flex-start;
+  gap: 8px;                   /* was: 10px */
+  padding: 8px 10px;
   border-radius: 7px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -87,34 +99,42 @@
   background: var(--cs-bg-hover);
 }
 
+/* The chevron is the row's leading element now that the active accent bar is
+   gone, so it owns the left gutter outright and centres within it. The 2px
+   top padding aligns its optical centre with the name's cap height rather
+   than the row's, since rows are two lines and the chevron belongs to the
+   first. */
+.sb-chevron,
+.sb-chevron-spacer {
+  width: 16px;
+  flex: 0 0 16px;
+  padding-top: 2px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding-left: 0;
+  padding-right: 0;
+  cursor: pointer;
+  color: var(--cs-icon-muted);
+  transition: color var(--cs-transition);
+}
+
+.sb-chevron:hover { color: var(--cs-icon-secondary); }
+
+.sb-item-text { flex: 1; min-width: 0; }
+
 .sb-item.active {
   background: var(--cs-bg-active);
   border-color: rgba(255, 255, 255, 0.07);
-}
-
-/* Left accent bar — appears on active */
-.sb-item-bar {
-  position: absolute;
-  left: 5px;
-  top: 11px;
-  bottom: 11px;
-  width: 2px;
-  border-radius: 1px;
-  background: transparent;
-  transition: background var(--cs-transition), top var(--cs-transition), bottom var(--cs-transition);
-}
-
-.sb-item.active .sb-item-bar {
-  background: rgba(255, 255, 255, 0.85);
-  top: 8px;
-  bottom: 8px;
 }
 
 /* Name */
 
 .sb-item-name {
   font-family: var(--cs-font-ui);
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
   color: var(--cs-text-tertiary);
@@ -143,7 +163,7 @@
 .sb-item-nickname,
 .sb-item-nickname-hint {
   font-family: var(--cs-font-ui);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 400;
   letter-spacing: -0.005em;
   white-space: nowrap;
@@ -177,7 +197,7 @@
 
 .sb-item-nickname-input {
   font-family: var(--cs-font-ui);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 400;
   letter-spacing: -0.005em;
   color: var(--cs-text-secondary);
@@ -205,30 +225,30 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--cs-status-live);
-  box-shadow: 0 0 6px var(--cs-cyan-glow);
+  background: var(--cs-state-done);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.14);
   transition: opacity var(--cs-transition);
   animation: sbItemDotPulse 1.8s ease-in-out infinite;
   margin-right: 2px;
 }
 
-/* Subtle breathe — the dot scales gently and its green glow expands and
+/* Subtle breathe — the dot scales gently and its glow expands and
    relaxes so a finished workspace catches the eye from across the rail
    without ever feeling like flicker. */
 @keyframes sbItemDotPulse {
   0%, 100% {
     transform: scale(0.92);
-    box-shadow: 0 0 4px var(--cs-cyan-glow);
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.14);
   }
   50% {
     transform: scale(1.10);
-    box-shadow: 0 0 11px var(--cs-cyan-glow);
+    box-shadow: 0 0 11px rgba(255, 255, 255, 0.14);
   }
 }
 
 .sb-item-count {
   font-family: var(--cs-font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--cs-text-muted);
@@ -259,18 +279,8 @@
 
 .sb-item.draft .sb-item-count {
   font-family: var(--cs-font-ui);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--cs-text-muted);
-}
-
-.sb-item.draft.active .sb-item-bar {
-  background: rgba(255, 255, 255, 0.4);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.7) 40%,
-    transparent 40%, transparent 60%,
-    rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0.7) 100%
-  );
 }
 
 /* Delete — replaces status on hover */
@@ -306,12 +316,12 @@
 .sb-iso {
   display: inline-flex; align-items: center;
   opacity: 0.9;
-  filter: drop-shadow(0 0 3px var(--cs-cyan-glow));
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.14));
   transition: opacity var(--cs-transition), filter var(--cs-transition);
 }
 .sb-iso:hover {
   opacity: 1;
-  filter: drop-shadow(0 0 5px var(--cs-green-border));
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22));
 }
 
 .sb-footer {
@@ -319,7 +329,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-top: 1px solid var(--cs-border);
   flex-shrink: 0;
 }
 .sb-footer-btn {
@@ -346,4 +355,94 @@
   text-decoration: none;
   font-variant-numeric: tabular-nums;
 }
-.sb-footer-version:hover { color: var(--cs-cyan); }
+.sb-footer-version:hover { color: var(--cs-text-secondary); }
+
+/* ── Session rows (tree level 2) ─────────────────────────────── */
+
+.sb-session {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--cs-text-tertiary);
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+
+.sb-session:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-secondary);
+}
+
+.sb-session.focused {
+  background: var(--cs-bg-active);
+  color: var(--cs-text-primary);
+}
+
+.sb-session-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: 0 0 5px;
+}
+
+.sb-session-dot.running { background: var(--cs-state-running); }
+.sb-session-dot.done    { background: var(--cs-state-done); box-shadow: 0 0 5px rgba(255, 255, 255, 0.14); }
+/* Deliberately --cs-text-dim, not --cs-state-exited: in this tree the dot sits
+   beside running/done, where "no longer alive" reads better as dim than as a
+   warning colour. --cs-state-exited (amber) is reserved for the pane border,
+   where it is the only exit signal. Do not "fix" this to match the border. */
+.sb-session-dot.exited  { background: var(--cs-text-dim); }
+
+.sb-session-glyph {
+  font-size: 10px;
+  flex: 0 0 auto;
+  color: var(--cs-text-muted);
+}
+
+.sb-session-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--cs-font-mono);
+  font-size: 12px;
+}
+
+/* ── Tools nav (above Workspaces) ────────────────────────────── */
+
+.sb-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 6px 2px;
+  flex-shrink: 0;
+}
+
+.sb-nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--cs-font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--cs-text-tertiary);
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+
+.sb-nav-item:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-secondary);
+}
+
+.sb-nav-item.is-open {
+  background: var(--cs-bg-active);
+  color: var(--cs-text-primary);
+}

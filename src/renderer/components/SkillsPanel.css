@@ -4,11 +4,10 @@
   bottom: 0;
   right: 0;
   background: var(--cs-bg-sidebar);
-  border-left: 1px solid var(--cs-border);
   border-radius: 0;
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.7),
-    0 0 0 1px var(--cs-cyan-fill-weak);
+    0 0 0 1px rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -18,7 +17,6 @@
 
 .skills-panel-header {
   padding: 10px 12px;
-  border-bottom: 1px solid var(--cs-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -54,7 +52,6 @@
 
 .skills-panel-tabs {
   display: flex;
-  border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
 }
 .skills-panel-tab {
@@ -83,7 +80,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   height: 1px;
   background: var(--cs-text-primary);
 }
@@ -96,7 +93,6 @@
 
 .skills-panel-filter {
   padding: 8px 10px;
-  border-bottom: 1px solid var(--cs-border);
   flex-shrink: 0;
   position: relative;
 }
@@ -139,7 +135,7 @@
 .skills-panel-loading-bar {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, var(--cs-cyan) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--cs-text-secondary) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: editor-shimmer 0.6s linear infinite;
 }
@@ -260,7 +256,6 @@
 
 .skills-panel-footer {
   padding: 7px 12px;
-  border-top: 1px solid var(--cs-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -328,7 +323,7 @@
 }
 .skills-panel-field input:focus,
 .skills-panel-field textarea:focus {
-  border-color: var(--cs-cyan);
+  border-color: var(--cs-border-hover);
 }
 .skills-panel-field-grow {
   flex: 1;
@@ -369,12 +364,11 @@
 }
 .skills-panel-cancelbtn:hover:not(:disabled) { background: var(--cs-bg-hover); }
 .skills-panel-savebtn {
-  color: var(--cs-cyan);
-  border-color: var(--cs-cyan-glow);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 .skills-panel-savebtn:hover:not(:disabled) {
-  background: var(--cs-cyan-bg);
-  border-color: var(--cs-cyan);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--cs-text-secondary);
 }
 .skills-panel-cancelbtn:disabled,
 .skills-panel-savebtn:disabled {

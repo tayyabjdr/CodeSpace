@@ -4,7 +4,7 @@ import { playDoneSound } from '../done-sound.js'
 import './VolumeControl.css'
 
 const SpeakerHigh = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 5L6 9H3v6h3l5 4V5z" />
     <path d="M15.5 8.5a5 5 0 0 1 0 7" />
     <path d="M18.5 5.5a9 9 0 0 1 0 13" />
@@ -12,14 +12,14 @@ const SpeakerHigh = () => (
 )
 
 const SpeakerLow = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 5L6 9H3v6h3l5 4V5z" />
     <path d="M15.5 8.5a5 5 0 0 1 0 7" />
   </svg>
 )
 
 const SpeakerMuted = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 5L6 9H3v6h3l5 4V5z" />
     <line x1="22" y1="9" x2="16" y2="15" />
     <line x1="16" y1="9" x2="22" y2="15" />
