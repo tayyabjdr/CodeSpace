@@ -53,7 +53,7 @@
   --cs-state-isolated: var(--cs-cyan);
 
   /* Typography */
-  --cs-font-ui:   "Geist Variable", "Geist", "Segoe UI Variable", -apple-system, BlinkMacSystemFont, sans-serif;
+  --cs-font-ui:   "Google Sans Variable", "Google Sans", "Segoe UI Variable", -apple-system, BlinkMacSystemFont, sans-serif;
   --cs-font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "Cascadia Code", "Consolas", monospace;
 
   /* Layout */
@@ -115,10 +115,17 @@ body {
   background: var(--cs-bg-base);
   color: var(--cs-text-primary);
   font-family: var(--cs-font-ui);
-  font-feature-settings: "ss01" on, "cv11" on, "tnum" on;
+  font-feature-settings: "tnum" on;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow: hidden;
+}
+
+/* The UI is sans throughout. Without this, the browser defaults <code>,
+   <kbd> and <pre> to its monospace face. Only the terminal and the code
+   editor use --cs-font-mono, and they set it themselves. */
+code, kbd, samp, pre {
+  font-family: inherit;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

@@ -159,7 +159,7 @@
 .status-dot.status-exited  { background: var(--cs-state-exited); }
 
 .pane-label {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -176,7 +176,7 @@
 }
 
 .pane-label-input {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -328,7 +328,7 @@
   font-size: 13.5px;
   font-weight: 500;
   color: var(--cs-text-primary);
-  letter-spacing: -0.005em;
+  letter-spacing: normal;
 }
 
 .pane-error-body {
@@ -362,7 +362,7 @@
   display: inline-flex; align-items: center; gap: 4px;
   padding: 1px 4px;
   background: transparent; border: 0; cursor: pointer;
-  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-family: var(--cs-font-ui);
   font-size: 10.5px; color: var(--cs-text-tertiary);
   border-radius: 3px;
   max-width: 100%; min-width: 0;
@@ -392,12 +392,12 @@
   z-index: 1;
 }
 
-/* Agent-type badge — small monospace pill rendered next to the agent name
+/* Agent-type badge — small pill rendered next to the agent name
    in the pane header. Hidden while the pane is in rename mode. */
 .tp-agent-badge {
   display: inline-flex;
   align-items: center;
-  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-family: var(--cs-font-ui);
   font-size: 9.5px;
   text-transform: lowercase;
   letter-spacing: 0.03em;

@@ -25,7 +25,7 @@
   line-height: 1.5;
 }
 .agent-picker-empty code {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   background: rgba(255,255,255,0.06);
   padding: 1px 4px;
   border-radius: 3px;
@@ -51,7 +51,7 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--cs-text-primary, rgba(255,255,255,0.92));
-  letter-spacing: -0.01em;
+  letter-spacing: normal;
 }
 
 .agent-picker-stepper {
@@ -86,7 +86,7 @@
 }
 
 .ap-count {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 12px;
   min-width: 14px;
   text-align: center;

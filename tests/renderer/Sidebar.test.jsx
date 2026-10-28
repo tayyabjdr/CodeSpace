@@ -214,6 +214,13 @@ describe('Sidebar tree', () => {
     expect(nav.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it('renders Skills and Workspaces as matching tabs with icons', () => {
+    const { container } = render(<Sidebar {...base} skillsOpen={false} onToggleSkills={() => {}} />)
+    const tabs = [...container.querySelectorAll('.sb-nav-item')]
+    expect(tabs.map(t => t.querySelector('.sb-nav-label').textContent)).toEqual(['Skills', 'Workspaces'])
+    for (const t of tabs) expect(t.querySelector('.sb-nav-icon svg')).toBeTruthy()
+  })
+
   it('calls onToggleSkills when the Skills row is clicked', async () => {
     const onToggleSkills = vi.fn()
     render(<Sidebar {...base} skillsOpen={false} onToggleSkills={onToggleSkills} />)

@@ -28,7 +28,7 @@
   margin: 0 6px 14px;
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: normal;
   color: var(--cs-text-primary);
 }
 .cs-settings-nav-item {
@@ -121,7 +121,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: normal;
   color: var(--cs-text-primary);
 }
 .cs-settings-desc {
@@ -161,7 +161,7 @@
   line-height: 1.5;
 }
 .cs-settings-caption code {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 11px;
   background: var(--cs-bg-elevated);
   color: var(--cs-text-primary);
@@ -175,7 +175,7 @@
   flex-shrink: 0;
 }
 .cs-settings-value {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 11px;
   color: var(--cs-text-tertiary);
   font-variant-numeric: tabular-nums;
@@ -202,7 +202,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -303,7 +303,7 @@
   border-radius: 8px;
   color: var(--cs-text-secondary);
   font: 500 12.5px var(--cs-font-ui);
-  letter-spacing: -0.005em;
+  letter-spacing: normal;
   cursor: pointer;
   transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
 }

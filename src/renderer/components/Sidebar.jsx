@@ -17,6 +17,20 @@ const GearGlyph = () => (
   </svg>
 )
 
+const SkillsGlyph = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+  </svg>
+)
+
+const WorkspacesGlyph = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3l9 5-9 5-9-5z" />
+    <path d="M3 13l9 5 9-5" />
+  </svg>
+)
+
 export default function Sidebar({
   workspaces, activeId, expandedIds, doneTermIds, exitedPtyIds, focusedTerminalId,
   skillsOpen, onToggleSkills,
@@ -94,6 +108,9 @@ export default function Sidebar({
 
   return (
     <aside className="sidebar">
+      {/* Skills and Workspaces share the .sb-nav-item tab look: icon, label,
+          same type and padding. Skills toggles its panel; the Workspaces row
+          heads the always-visible list below and carries the add button. */}
       <nav className="sb-nav" aria-label="Tools">
         <button
           type="button"
@@ -101,21 +118,22 @@ export default function Sidebar({
           aria-pressed={skillsOpen}
           onClick={onToggleSkills}
         >
-          Skills
+          <span className="sb-nav-icon" aria-hidden><SkillsGlyph /></span>
+          <span className="sb-nav-label">Skills</span>
         </button>
+        <div className="sb-nav-item sb-header">
+          <span className="sb-nav-icon" aria-hidden><WorkspacesGlyph /></span>
+          <span className="sb-nav-label">Workspaces</span>
+          <button
+            type="button"
+            className="sb-header-add"
+            title="New workspace"
+            onClick={onCreate}
+          >
+            <PlusGlyph />
+          </button>
+        </div>
       </nav>
-
-      <div className="sb-header">
-        <span className="sb-header-label">workspaces</span>
-        <button
-          type="button"
-          className="sb-header-add"
-          title="New workspace"
-          onClick={onCreate}
-        >
-          <PlusGlyph />
-        </button>
-      </div>
 
       <div className="sb-list" role="tree" aria-label="Workspaces" ref={listRef}>
         {flat.map((node, i) => (

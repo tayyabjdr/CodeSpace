@@ -35,7 +35,7 @@
   font-family: var(--cs-font-ui);
   font-size: 14px;
   font-weight: 500;
-  letter-spacing: -0.005em;
+  letter-spacing: normal;
   color: var(--cs-text-primary);
 }
 
@@ -70,7 +70,7 @@
 }
 
 .titlebar-new-plus {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 13px;
   font-weight: 500;
   line-height: 1;
@@ -84,7 +84,7 @@
 }
 
 .titlebar-new-kbd kbd {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 9.5px;
   font-weight: 500;
   letter-spacing: 0.04em;

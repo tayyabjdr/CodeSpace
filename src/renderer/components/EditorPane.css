@@ -38,7 +38,7 @@
 }
 
 .editor-filename {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -51,7 +51,7 @@
 
 .editor-chip {
   flex-shrink: 0;
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -82,7 +82,7 @@
   justify-content: center;
   border-radius: 5px;
   color: var(--cs-text-dim);
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 14px;
   line-height: 1;
   transition: color var(--cs-transition), background var(--cs-transition);
@@ -151,7 +151,7 @@
   color: var(--cs-text-tertiary);
 }
 .editor-empty-hint {
-  font-family: var(--cs-font-mono);
+  font-family: var(--cs-font-ui);
   font-size: 10.5px;
   color: var(--cs-text-muted);
   letter-spacing: 0.06em;
