@@ -1,11 +1,9 @@
 /* The titlebar sits outside .app-body, so it does not inherit that element's
-   canvas inset. 19px here is not arbitrary — it is where the sidebar block's
+   canvas inset. 19px left is not arbitrary — it is where the sidebar block's
    left edge lands (13px .app-body padding + 6px rail margin), so the app name
    and the rail below it share one left edge. Change one and change the
-   other. */
-/* No vertical or right padding: the window buttons stretch the bar's full
-   height, which they cannot do through padding. Left is 19px because it
-   aligns the app name with the sidebar block's left edge. */
+   other. No right padding: the window buttons run flush to the top, bottom
+   and right edges. */
 .titlebar {
   height: var(--cs-toolbar-h);
   display: flex;
@@ -112,6 +110,7 @@
 
 .titlebar-controls {
   margin-left: auto;
+  align-self: stretch;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -158,28 +157,21 @@
   flex-shrink: 0;
 }
 
-/* Standard Windows controls — full-height flush squares against the right
-   edge, matching the pane title bar +/× treatment. Strokes use solid color +
+/* Standard Windows controls — full-height squares flush with the bar's top,
+   bottom and right edges. .titlebar-controls stretches to the bar's height so
+   align-self: stretch has something to fill. Strokes use solid color +
    opacity so the X intersection on the close icon doesn't compound darker. */
 .titlebar-window-controls {
   display: flex;
-  align-items: stretch;
-  gap: 0;
-  height: 100%;
+  align-self: stretch;
 }
 
-/* Fills the bar top to bottom, and aspect-ratio makes it exactly as wide as
-   it is tall, so the hover background is a true square that tracks
-   --cs-toolbar-h instead of restating it. align-self overrides the parent's
-   align-items: center, which would otherwise shrink it to its content.
-
-   No radius on purpose: a rounded corner on a button flush with the bar's
-   top and bottom edges leaves visible notches where the hover fill pulls
-   away from them. */
+/* As wide as the bar is tall. No radius: a rounded corner on a button flush
+   with the bar's edges leaves notches where the hover fill pulls away. */
 .titlebar-window-btn {
-  align-self: stretch;
-  aspect-ratio: 1;
-  width: auto;
+  width: var(--cs-toolbar-h);
+  height: var(--cs-toolbar-h);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
