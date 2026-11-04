@@ -4,9 +4,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { readFile as nodeReadFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
+import { writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs'
 
-import { readFile, writeFile, pathExists, MAX_BYTES, BINARY_PROBE_BYTES } from '../src/main/editor-fs.js'
+import { readFile, writeFile, pathExists, probeFile, MAX_BYTES, BINARY_PROBE_BYTES } from '../src/main/editor-fs.js'
 
 let dir
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'editor-fs-')) })
@@ -76,5 +76,62 @@ describe('editor-fs.pathExists', () => {
   })
   it('returns false for a missing path', async () => {
     expect(await pathExists(join(dir, 'missing'))).toBe(false)
+  })
+})
+
+describe('editor-fs.probeFile', () => {
+  it('returns ok for a small text file', async () => {
+    const p = join(dir, 'a.txt')
+    writeFileSync(p, 'hello world')
+    expect(await probeFile(p)).toEqual({ ok: true })
+  })
+
+  it('returns ok for an empty file', async () => {
+    const p = join(dir, 'empty.txt')
+    writeFileSync(p, '')
+    expect(await probeFile(p)).toEqual({ ok: true })
+  })
+
+  it('returns reason=not-found for a missing file', async () => {
+    const r = await probeFile(join(dir, 'missing.txt'))
+    expect(r).toMatchObject({ ok: false, reason: 'not-found' })
+  })
+
+  it('returns reason=directory for a folder', async () => {
+    const p = join(dir, 'sub')
+    mkdirSync(p)
+    const r = await probeFile(p)
+    expect(r).toMatchObject({ ok: false, reason: 'directory' })
+  })
+
+  it('returns reason=too-large for files over 20 MB', async () => {
+    const p = join(dir, 'big.txt')
+    writeFileSync(p, Buffer.alloc(MAX_BYTES + 1, 'a'))
+    const r = await probeFile(p)
+    expect(r).toMatchObject({ ok: false, reason: 'too-large' })
+  })
+
+  it('returns reason=binary when the first 8KB contain a null byte', async () => {
+    const p = join(dir, 'bin')
+    const buf = Buffer.alloc(BINARY_PROBE_BYTES, 'a')
+    buf[100] = 0x00
+    writeFileSync(p, buf)
+    const r = await probeFile(p)
+    expect(r).toMatchObject({ ok: false, reason: 'binary' })
+  })
+
+  it('does not flag a null byte that lies beyond the probe window', async () => {
+    const p = join(dir, 'long.txt')
+    const buf = Buffer.alloc(BINARY_PROBE_BYTES + 100, 0x61) // 0x61 is 'a'
+    buf[BINARY_PROBE_BYTES + 50] = 0x00
+    writeFileSync(p, buf)
+    expect(await probeFile(p)).toEqual({ ok: true })
+  })
+
+  it('agrees with readFile on a file at the 20 MB limit', async () => {
+    const p = join(dir, 'limit.txt')
+    writeFileSync(p, Buffer.alloc(MAX_BYTES, 'a'))
+    expect(await probeFile(p)).toEqual({ ok: true })
+    expect((await readFile(p)).ok).toBe(true)
   })
 })

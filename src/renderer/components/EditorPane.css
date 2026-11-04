@@ -5,6 +5,7 @@
   min-width: var(--cs-editor-min);
   min-height: 0;
   overflow: hidden;
+  position: relative;
   animation: scaleIn 0.2s ease both;
 }
 
@@ -148,7 +149,7 @@
 .editor-empty-title {
   font-family: var(--cs-font-ui);
   font-size: 13px;
-  color: var(--cs-text-tertiary);
+  color: var(--cs-text-secondary);
 }
 .editor-empty-hint {
   font-family: var(--cs-font-ui);
@@ -170,4 +171,84 @@
   background-size: 200% 100%;
   animation: editor-shimmer 0.6s linear infinite;
   pointer-events: none;
+}
+
+.editor-empty-alt {
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  color: var(--cs-text-dim);
+  letter-spacing: 0.06em;
+}
+
+/* The empty state is the drop zone and the browse target, so it reads as
+   interactive rather than as a status message. */
+.editor-empty {
+  cursor: pointer;
+  transition: border-color var(--cs-transition), background var(--cs-transition);
+}
+.editor-empty:hover {
+  border-color: var(--cs-border-hover);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* Drag-over: an inset ring rather than a border, since the pane is docked
+   flush to the window edge and has no border of its own to brighten. */
+.editor-pane.drag-over::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px var(--cs-border-focus),
+    inset 0 0 28px rgba(255, 255, 255, 0.05);
+  z-index: 2;
+}
+.editor-pane.drag-over .editor-empty {
+  border-color: var(--cs-border-focus);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Refusal notice — the pane keeps showing the file it already had, so the
+   message sits over the content and clears itself. */
+.editor-reject {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: calc(100% - 28px);
+  padding: 7px 12px;
+  border: 1px solid var(--cs-border-mid);
+  border-radius: var(--cs-radius);
+  background: var(--cs-bg-elevated);
+  box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.7);
+  text-align: center;
+  pointer-events: none;
+  animation: editor-reject 2600ms ease both;
+}
+.editor-reject-title {
+  font-family: var(--cs-font-ui);
+  font-size: 11px;
+  color: var(--cs-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-reject-body {
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--cs-text-muted);
+  margin-top: 2px;
+}
+
+@keyframes editor-reject {
+  0%   { opacity: 0; transform: translate(-50%, 6px); }
+  8%   { opacity: 1; transform: translate(-50%, 0); }
+  86%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-reject { animation: none; transform: translateX(-50%); }
 }

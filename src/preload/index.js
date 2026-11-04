@@ -53,6 +53,7 @@ const api = {
   closePrompted:    () => ipcRenderer.send('win:closePrompted'),
   confirmClose:     () => ipcRenderer.send('win:confirmClose'),
   selectDirectory:   () => ipcRenderer.invoke('dialog:selectDirectory'),
+  selectFile:        (defaultPath) => ipcRenderer.invoke('dialog:selectFile', defaultPath),
   getDesktopPath:    () => ipcRenderer.invoke('app:getDesktopPath'),
   loadWorkspaces:    () => ipcRenderer.invoke('workspaces:load'),
   saveWorkspaces:    (state) => ipcRenderer.invoke('workspaces:save', state),
@@ -68,6 +69,7 @@ const api = {
     readFile:       (absPath) => ipcRenderer.invoke('editor:readFile', absPath),
     writeFile:      (absPath, content) => ipcRenderer.invoke('editor:writeFile', absPath, content),
     pathExists:     (absPath) => ipcRenderer.invoke('editor:pathExists', absPath),
+    probeFile:      (absPath) => ipcRenderer.invoke('editor:probe', absPath),
     revealInFolder: (absPath) => ipcRenderer.send('editor:revealInFolder', absPath),
   },
 

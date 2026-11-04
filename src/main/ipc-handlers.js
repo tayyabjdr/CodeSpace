@@ -86,6 +86,7 @@ export function registerHandlers(mainWindow) {
   ipcMain.handle('editor:readFile',   async (_event, absPath) => { assertAbsPath(absPath); return editorFs.readFile(absPath) })
   ipcMain.handle('editor:writeFile',  async (_event, absPath, content) => { assertAbsPath(absPath); return editorFs.writeFile(absPath, content) })
   ipcMain.handle('editor:pathExists', async (_event, absPath) => { assertAbsPath(absPath); return editorFs.pathExists(absPath) })
+  ipcMain.handle('editor:probe',      async (_event, absPath) => { assertAbsPath(absPath); return editorFs.probeFile(absPath) })
   ipcMain.on('editor:revealInFolder', (_event, absPath) => {
     try { shell.showItemInFolder(absPath) }
     catch (err) {

@@ -12,7 +12,8 @@ vi.mock('electron', () => ({
 vi.mock('../src/main/editor-fs.js', () => ({
   readFile:   vi.fn(),
   writeFile:  vi.fn(),
-  pathExists: vi.fn()
+  pathExists: vi.fn(),
+  probeFile:  vi.fn()
 }))
 
 vi.mock('../src/main/pty-manager.js', () => ({
@@ -191,6 +192,26 @@ describe('editor IPC channels', () => {
   it('editor:pathExists rejects non-absolute paths', async () => {
     registerHandlers(mockWindow)
     const handler = getHandler('handle', 'editor:pathExists')
+    await expect(handler({}, 'relative.txt')).rejects.toThrow(/must be absolute/)
+  })
+
+  it('registers editor:probe', () => {
+    registerHandlers(mockWindow)
+    expect(ipcMain.handle).toHaveBeenCalledWith('editor:probe', expect.any(Function))
+  })
+
+  it('editor:probe delegates to editor-fs.probeFile', async () => {
+    editorFs.probeFile.mockResolvedValue({ ok: false, reason: 'binary' })
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:probe')
+    const result = await handler({}, '/pics/shot.png')
+    expect(editorFs.probeFile).toHaveBeenCalledWith('/pics/shot.png')
+    expect(result).toEqual({ ok: false, reason: 'binary' })
+  })
+
+  it('editor:probe rejects non-absolute paths', async () => {
+    registerHandlers(mockWindow)
+    const handler = getHandler('handle', 'editor:probe')
     await expect(handler({}, 'relative.txt')).rejects.toThrow(/must be absolute/)
   })
 })

@@ -1,4 +1,4 @@
-import { readFile as nodeReadFile, writeFile as nodeWriteFile, stat as nodeStat, access as nodeAccess } from 'node:fs/promises'
+import { readFile as nodeReadFile, writeFile as nodeWriteFile, stat as nodeStat, access as nodeAccess, open as nodeOpen } from 'node:fs/promises'
 
 export const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 export const BINARY_PROBE_BYTES = 8 * 1024 // 8 KB
@@ -43,5 +43,38 @@ export async function pathExists(absPath) {
     return true
   } catch {
     return false
+  }
+}
+
+// Answers "would readFile accept this?" without paying to read the whole file.
+// Drag-and-drop and the Open dialog call this before the editor commits to a
+// path, so a rejected file leaves the currently-open one untouched. Shares
+// MAX_BYTES and the null-byte rule with readFile so the two can't drift.
+export async function probeFile(absPath) {
+  let stat
+  try {
+    stat = await nodeStat(absPath)
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return { ok: false, reason: 'not-found' }
+    return { ok: false, reason: 'denied' }
+  }
+  if (stat.isDirectory()) return { ok: false, reason: 'directory' }
+  if (!stat.isFile()) return { ok: false, reason: 'denied' }
+  if (stat.size > MAX_BYTES) return { ok: false, reason: 'too-large' }
+
+  let handle
+  try {
+    handle = await nodeOpen(absPath, 'r')
+    const want = Math.min(stat.size, BINARY_PROBE_BYTES)
+    if (want > 0) {
+      const buf = Buffer.alloc(want)
+      const { bytesRead } = await handle.read(buf, 0, want, 0)
+      if (buf.subarray(0, bytesRead).includes(0x00)) return { ok: false, reason: 'binary' }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: 'denied' }
+  } finally {
+    await handle?.close().catch(() => {})
   }
 }

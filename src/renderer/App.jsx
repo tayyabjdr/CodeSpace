@@ -19,6 +19,7 @@ import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
+import { checkOpenable } from './open-file.js'
 import { basename } from './path-resolver.js'
 import { focusSessionIn, withExpanded } from './workspace-ops.js'
 import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
@@ -808,6 +809,27 @@ function AppInner() {
     }
   }, [activeWorkspace, setEditorPatch, updateActive])
 
+  // Files arriving from outside the terminal: dropped on the editor pane, or
+  // picked from the Open dialog. Both check the file before the editor commits
+  // to it, so a refusal leaves the current file on screen and the pane just
+  // reports why. Opening goes through openFileInEditor, so the unsaved-changes
+  // prompt still fires exactly as it does for a Ctrl+click.
+  const handleEditorDropFile = useCallback(async (path) => {
+    const reason = await checkOpenable(path, window.electronAPI.editor)
+    if (reason) return reason
+    openFileInEditor({ path, line: null })
+    return null
+  }, [openFileInEditor])
+
+  const handleEditorBrowse = useCallback(async () => {
+    const path = await window.electronAPI.selectFile(activeWorkspace?.dir)
+    if (!path) return null // cancelled
+    const reason = await checkOpenable(path, window.electronAPI.editor)
+    if (reason) return { path, reason }
+    openFileInEditor({ path, line: null })
+    return null
+  }, [openFileInEditor, activeWorkspace])
+
   // Editor I/O state — scoped to the active workspace.
   const [editorLoadState, setEditorLoadState] = useState('empty')
   const [editorContent, setEditorContent] = useState('')
@@ -1100,6 +1122,8 @@ function AppInner() {
                   onChange={handleEditorChange}
                   onScroll={setEditorScroll}
                   onRetry={triggerEditorReload}
+                  onDropFile={handleEditorDropFile}
+                  onBrowse={handleEditorBrowse}
                 />
               </Suspense>
             </>

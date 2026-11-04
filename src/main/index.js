@@ -136,6 +136,18 @@ function createWindow() {
     return result.canceled ? null : result.filePaths[0]
   })
 
+  // No extension filter: "openable text" is a denylist (see renderer/text-file.js),
+  // and any whitelist here would hide Dockerfile, LICENSE, .env and every
+  // extensionless file. The picked path runs through the same probe a drop does.
+  ipcMain.handle('dialog:selectFile', async (_event, defaultPath) => {
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Open file',
+      properties: ['openFile'],
+      ...(typeof defaultPath === 'string' && defaultPath ? { defaultPath } : {}),
+    })
+    return result.canceled ? null : result.filePaths[0]
+  })
+
   ipcMain.handle('app:getDesktopPath', () => join(homedir(), 'Desktop'))
 
   ipcMain.handle('workspaces:load', async () => {

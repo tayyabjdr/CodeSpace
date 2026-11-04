@@ -2,9 +2,13 @@
 // CodeMirror is wired in Phase 4; the body slot renders a <pre> placeholder
 // so the layout/header/states can be verified independently.
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import useEditor, { PLAIN_MODE_THRESHOLD } from '../hooks/useEditor.js'
+import { isProbablyText, rejectBody } from '../text-file.js'
 import './EditorPane.css'
+
+// How long a refusal stays on screen before fading out.
+const REJECT_MS = 2600
 
 const REASON_COPY = {
   'not-found':  { title: 'File no longer at this path', body: 'It may have been moved or deleted.', cta: null },
@@ -27,14 +31,73 @@ export default function EditorPane({
   isFullscreen, onToggleFullscreen,
   onClose, onRevealInFolder, onRetry,
   onSave, onDirtyChange, onChange, onScroll,
+  onDropFile, onBrowse,
 }) {
   const handleReveal = useCallback(() => file && onRevealInFolder?.(file), [file, onRevealInFolder])
   const reason = errorReason ? REASON_COPY[errorReason] : null
 
+  const [dragOver, setDragOver] = useState(false)
+  const [reject, setReject] = useState(null)
+  const rejectTimer = useRef(null)
+  useEffect(() => () => clearTimeout(rejectTimer.current), [])
+
+  const flashReject = useCallback((name, why) => {
+    clearTimeout(rejectTimer.current)
+    setReject({ name, body: rejectBody(why) })
+    rejectTimer.current = setTimeout(() => setReject(null), REJECT_MS)
+  }, [])
+
+  // Drops are handled in the CAPTURE phase and stopped there. CodeMirror
+  // installs its own drop handler that reads a dropped file and pastes the
+  // text into the open document — it must never see the event. Only `Files`
+  // drags are intercepted, so CodeMirror keeps its own drag-to-move-text.
+  const carriesFiles = (dt) => !!dt && Array.from(dt.types ?? []).includes('Files')
+
+  const handleDragOver = (e) => {
+    if (!carriesFiles(e.dataTransfer)) return
+    e.preventDefault()   // also tells App's window-level swallow to skip this
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'copy'
+    setDragOver(true)
+  }
+
+  const handleDragLeave = (e) => {
+    if (e.currentTarget.contains(e.relatedTarget)) return
+    setDragOver(false)
+  }
+
+  // onBrowse resolves to null (opened, or the dialog was cancelled) or to
+  // { path, reason } — it finds its own path, so it can't take one like a drop.
+  const handleBrowse = () => {
+    Promise.resolve(onBrowse?.()).then(res => {
+      if (res?.reason) flashReject(basename(res.path ?? ''), res.reason)
+    })
+  }
+
+  const handleDrop = (e) => {
+    if (!carriesFiles(e.dataTransfer)) return
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+    const path = Array.from(e.dataTransfer.files ?? [])[0]?.path
+    if (!path) return
+    const name = basename(path)
+    if (!isProbablyText(name)) {
+      flashReject(name, 'not-text')
+      return
+    }
+    clearTimeout(rejectTimer.current)
+    setReject(null)
+    Promise.resolve(onDropFile?.(path)).then(why => { if (why) flashReject(name, why) })
+  }
+
   return (
     <div
-      className={`editor-pane${isFullscreen ? ' fullscreen' : ''}`}
+      className={`editor-pane${isFullscreen ? ' fullscreen' : ''}${dragOver ? ' drag-over' : ''}`}
       style={width && !isFullscreen ? { flex: `0 0 ${width}px` } : undefined}
+      onDragOverCapture={handleDragOver}
+      onDragLeaveCapture={handleDragLeave}
+      onDropCapture={handleDrop}
     >
       {file && (
         <div
@@ -80,10 +143,11 @@ export default function EditorPane({
       )}
 
       {!file && (
-        <div className="editor-empty">
+        <div className="editor-empty" onDoubleClick={handleBrowse}>
           <span className="editor-empty-mark">✦</span>
-          <p className="editor-empty-title">Editor is open</p>
-          <p className="editor-empty-hint">Ctrl+click any path in your terminal</p>
+          <p className="editor-empty-title">Drop a file here</p>
+          <p className="editor-empty-hint">or double-click to browse</p>
+          <p className="editor-empty-alt">Ctrl+click a path in your terminal</p>
         </div>
       )}
 
@@ -106,6 +170,13 @@ export default function EditorPane({
             onChange={onChange}
             onScroll={onScroll}
           />
+        </div>
+      )}
+
+      {reject && (
+        <div className="editor-reject" role="status">
+          <p className="editor-reject-title">Can't open {reject.name}</p>
+          <p className="editor-reject-body">{reject.body}</p>
         </div>
       )}
 
