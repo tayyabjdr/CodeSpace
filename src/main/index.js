@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog, clipboard, session, screen } from 'electron'
 import { join } from 'path'
-import { homedir } from 'os'
+import { homedir, release } from 'os'
 import { mkdirSync, readFileSync } from 'fs'
 import { registerHandlers } from './ipc-handlers.js'
 import { killAllSessions } from './pty-manager.js'
@@ -33,6 +33,16 @@ function hasPersistedWorkspaces() {
     return false
   }
 }
+
+// Registered at module scope, not inside createWindow: the sandboxed preload
+// asks for this synchronously as it loads, which can happen before any
+// window-scoped handlers are wired up. The renderer needs the Windows build to
+// tell xterm it is reading a ConPTY — without that, xterm pulls scrollback into
+// the viewport on grow while ConPTY opens blank rows, and the buffer ends up
+// with duplicated lines and gaps after a resize.
+ipcMain.on('app:ptyHostInfo', (event) => {
+  event.returnValue = { platform: process.platform, osRelease: release() }
+})
 
 function createWindow() {
   // In dev, electron.exe's default icon would otherwise show in the taskbar.

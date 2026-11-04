@@ -8,6 +8,13 @@ export const DONE_SILENCE_MS = 4000
 // many ticks; coalescing avoids stacking TUI redraws.
 export const FONT_RESIZE_DEBOUNCE_MS = 180
 
+// Window/splitter resize → fit() + SIGWINCH debounce. ResizeObserver fires on
+// every frame of a drag, and ConPTY rewraps its buffer and signals the agent on
+// every resize it's handed, so an uncoalesced drag stacks dozens of TUI redraws
+// and leaves duplicated lines behind. Short enough that the grid still looks
+// like it tracks the drag.
+export const PTY_RESIZE_DEBOUNCE_MS = 100
+
 // Workspaces.json persistence debounce — long enough to absorb rapid state
 // flips (creating a workspace and switching focus is two state updates),
 // short enough that a quit shortly after still saves.

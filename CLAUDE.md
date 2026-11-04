@@ -34,7 +34,7 @@ Three processes, three source roots under `src/`:
 **`src/renderer/`** — React app:
 - `App.jsx` is the top-level state machine. Holds `workspaces[]` (each with id, name, dir, agentCount + session-only `terminals`, `agentCounter`, `focusedTerminalId`, `fontSize`, `spawned`) and `activeWorkspaceId`. When `workspaces.length === 0` it renders `Onboarding`; otherwise the running shell with `Sidebar` + grid.
 - **`pty-pool.js`** is the critical piece. PTY lifecycle is decoupled from xterm mount lifecycle: a single IPC subscription per PTY fans out data to any currently-attached listener and appends to a 64KB ring per PTY. When a `TerminalPane` mounts, it `attach()`es to its PTY, gets the ring replayed, then live data. On unmount the listener detaches but the PTY keeps running. **Workspace deletion is the only path that calls `killPty`.**
-- `hooks/useTerminal.js` — wires the xterm `Terminal` to the pool, manages fit/resize, debounces font-size changes (180ms) before sending SIGWINCH so a Ctrl+wheel scroll burst doesn't stack TUI redraws, intercepts Ctrl+V/Ctrl+Shift+C for clipboard via Electron IPC.
+- `hooks/useTerminal.js` — wires the xterm `Terminal` to the pool, manages fit/resize, debounces font-size changes (180ms) and window/splitter resizes (100ms) before sending SIGWINCH so neither a Ctrl+wheel burst nor a drag stacks TUI redraws, skips any PTY resize that doesn't change cols/rows (conpty rewraps and signals the child even on an identical size), intercepts Ctrl+V/Ctrl+Shift+C for clipboard via Electron IPC. Passes xterm `windowsPty` from `windows-pty.js` — see "Windows quirks".
 - `components/TerminalPane.jsx` — pane shell. Header is the drag handle (`draggable={!editing}`); pane is the drop target; swapping is a renderer-only reorder of the active workspace's `terminals` array (same `key={t.id}` keeps xterm in place). Double-click the label to rename. "Done" notification only arms after Enter is pressed in that pane, then 4s of silence.
 
 ### Persistence model
@@ -68,6 +68,8 @@ These are environment realities, not bugs to fix:
 - Sometimes Claude spawns visibly outside the app — same conpty fallback. Tell the user to close the orphan; the in-app pane is fine.
 - `pty.spawn` for Claude uses `powershell.exe -NoLogo -NoProfile -Command 'claude ...'`. Switching to `cmd.exe /c claude` may avoid some conpty fallback paths but is untested.
 - node-pty native rebuild on a fresh checkout requires Python 3.12 + setuptools + a patched `node_modules/node-pty/deps/winpty/src/winpty.gyp`. See the project memory for the exact patch.
+- xterm must be told it is reading a ConPTY via the `windowsPty` option (`renderer/windows-pty.js`). Left unset, xterm pulls scrollback rows up into the viewport when the terminal grows, while ConPTY instead opens blank rows and lets the agent repaint into them — so a resize leaves duplicated lines and blank gaps in the buffer. The build number matters too: xterm only keeps reflow on for conpty >= 21376.
+- The preload runs with `sandbox: true`, so it can only `require` `electron`, `events`, `timers` and `url`. Anything else throws while it loads and the renderer comes up with no `electronAPI` at all — it builds fine, so `tests/preload-sandbox.test.js` guards it. Node-side values it needs (e.g. `os.release()`) come from main over the `app:ptyHostInfo` sync channel.
 
 ## Specs and history
 

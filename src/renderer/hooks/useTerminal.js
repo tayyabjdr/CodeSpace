@@ -1,11 +1,12 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import * as ptyPool from '../pty-pool.js'
 import { parsePathsInLine } from '../path-parser.js'
 import { resolvePath } from '../path-resolver.js'
-import { FONT_RESIZE_DEBOUNCE_MS } from '../constants.js'
+import { FONT_RESIZE_DEBOUNCE_MS, PTY_RESIZE_DEBOUNCE_MS } from '../constants.js'
 import { buildTerminalTheme } from '../terminal-theme.js'
+import { windowsPtyOption } from '../windows-pty.js'
 
 export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange, linkOpts, themeId) {
   const [error, setError] = useState(null)
@@ -16,6 +17,21 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
   const onPtyReadyRef = useRef(onPtyReady)
   const onFontSizeChangeRef = useRef(onFontSizeChange)
   const linkOptsRef = useRef(linkOpts)
+
+  // Dimensions last pushed to the PTY. ConPTY's ResizePseudoConsole is
+  // unconditional — it rewraps the console buffer and signals the child even
+  // when the size hasn't changed — and node-pty passes every call straight
+  // through, so a resize that doesn't cross a character-cell boundary must
+  // never reach it. Every PTY resize in this hook goes through here.
+  const lastPtyDimsRef = useRef(null)
+  const syncPtySize = useCallback((term) => {
+    const id = ptyIdRef.current
+    if (!id || !term) return
+    const last = lastPtyDimsRef.current
+    if (last && last.cols === term.cols && last.rows === term.rows) return
+    lastPtyDimsRef.current = { cols: term.cols, rows: term.rows }
+    ptyPool.resizePty(id, term.cols, term.rows)
+  }, [])
 
   // keep latest callbacks without re-running mount effect
   useEffect(() => { onPtyReadyRef.current = onPtyReady }, [onPtyReady])
@@ -34,9 +50,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     clearTimeout(fontResizeTimerRef.current)
     fontResizeTimerRef.current = setTimeout(() => {
       fitRef.current?.fit()
-      if (ptyIdRef.current) {
-        ptyPool.resizePty(ptyIdRef.current, term.cols, term.rows)
-      }
+      syncPtySize(term)
       term.scrollToBottom()
     }, FONT_RESIZE_DEBOUNCE_MS)
 
@@ -60,6 +74,11 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     let cancelled = false
     let ro
 
+    const winPty = windowsPtyOption(
+      window.electronAPI?.platform,
+      window.electronAPI?.osRelease
+    )
+
     try {
       term = new Terminal({
         cursorBlink: true,
@@ -73,6 +92,12 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
         // left alone. Ctrl+Down (below) is the explicit "jump to bottom".
         scrollOnUserInput: false,
         theme: buildTerminalTheme(),
+        // Tell xterm it is reading a Windows ConPTY. Without this it pulls
+        // scrollback rows up into the viewport when the terminal grows, while
+        // ConPTY opens blank rows at the bottom and repaints into them — the
+        // mismatch is what duplicates lines and tears blank gaps into the
+        // buffer on resize. Spread so xterm keeps its own default off Windows.
+        ...(winPty ? { windowsPty: winPty } : {}),
       })
 
       fitAddon = new FitAddon()
@@ -171,7 +196,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
           onUserInput?.(data)
         })
 
-        ptyPool.resizePty(id, term.cols, term.rows)
+        syncPtySize(term)
       } catch (err) {
         if (err?.cancelled) return
         if (cancelled) return
@@ -194,9 +219,20 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     }
     start()
 
+    // A window or splitter drag fires ResizeObserver on every frame. Handing
+    // each one to the PTY makes ConPTY rewrap its buffer and signal the agent
+    // dozens of times a second, and the agent's TUI repaints on every signal —
+    // the same stacked redraws the font-size path above avoids. Coalesce a drag
+    // into one fit + one resize, and debounce fit() alongside it so xterm and
+    // the PTY stay on the same dimensions the whole way through: anything the
+    // agent streams mid-drag then wraps once, at a width both ends agree on.
+    let resizeTimer = null
     ro = new ResizeObserver(() => {
-      fitAddon.fit()
-      if (ptyIdRef.current) ptyPool.resizePty(ptyIdRef.current, term.cols, term.rows)
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => {
+        fitAddon.fit()
+        syncPtySize(term)
+      }, PTY_RESIZE_DEBOUNCE_MS)
     })
     ro.observe(containerRef.current)
 
@@ -223,6 +259,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     return () => {
       cancelled = true
       if (rafId) cancelAnimationFrame(rafId)
+      clearTimeout(resizeTimer)
       detach?.()
       dataDisposable?.dispose()
       ro?.disconnect()

@@ -1,6 +1,16 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// This preload runs sandboxed (see webPreferences in main/index.js), so it
+// cannot require('os') to read the Windows build itself. Main hands it over
+// synchronously while the preload loads — before any renderer code runs — so
+// the first xterm Terminal can be configured for ConPTY without waiting on a
+// round trip. Keep this the only sync IPC here; it costs a few ms once.
+const ptyHost = ipcRenderer.sendSync('app:ptyHostInfo') ?? {}
+
 const api = {
+  platform:  ptyHost.platform,
+  osRelease: ptyHost.osRelease,
+
   createPty: (shell, cwd, cols, rows) =>
     ipcRenderer.invoke('pty:create', { shell, cwd, cols, rows }),
 
