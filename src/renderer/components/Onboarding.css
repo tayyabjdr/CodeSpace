@@ -530,16 +530,14 @@
   font-size: 11px; padding: 0 4px; border-radius: 3px;
   background: var(--cs-bg-elevated, #11151b); color: var(--cs-text-primary, #e6e9ef);
 }
-.ob-isolation-error {
+.ob-isolation-note {
   margin: 8px 0 0; padding: 8px 10px; border-radius: 6px;
-  background: rgba(255, 99, 99, 0.08);
-  border: 1px solid rgba(255, 99, 99, 0.22);
-  color: #ffb4b4; font-size: 12px; line-height: 1.45;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--cs-border, #2b3038);
+  color: var(--cs-text-dim, #8c93a0); font-size: 12px; line-height: 1.45;
 }
-.ob-isolation-error code {
-  font-family: var(--cs-font-ui);
-  font-size: 11.5px; background: rgba(0,0,0,0.25); padding: 0 4px; border-radius: 3px;
-}
+.ob-toggle:has(input:disabled) { cursor: default; }
+.ob-toggle input:disabled ~ .ob-toggle-text { opacity: 0.55; }
 
 /* Onboarding split control */
 .ob-split {
