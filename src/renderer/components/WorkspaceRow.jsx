@@ -28,7 +28,7 @@ const IsolatedGlyph = () => (
 
 export default function WorkspaceRow({
   ws, isActive, isExpanded, hasSessions, showDoneDot,
-  onSelect, onToggleExpand, onDelete, onRenameNickname
+  onSelect, onToggleExpand, onDelete, onRenameNickname, onToggleIsolated
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
@@ -45,6 +45,8 @@ export default function WorkspaceRow({
   const count = ws.spawned
     ? (ws.terminals?.length ?? 0)
     : (ws.agentCounts?.claude ?? 0) + (ws.agentCounts?.codex ?? 0)
+
+  const liveCount = ws.terminals?.length ?? 0
 
   const startEdit = (e) => {
     e.stopPropagation()
@@ -135,16 +137,28 @@ export default function WorkspaceRow({
       {/* Delete stays a sibling of .sb-item-status, as today: it is
           position:absolute against .sb-item and must not inherit the
           status row's flex gap. */}
-      <span className="sb-item-status" aria-hidden>
+      <span className="sb-item-status">
         {showDoneDot && !isExpanded && (
-          <span className="sb-item-dot" title="An agent finished" />
+          <span className="sb-item-dot" title="An agent finished" aria-hidden />
         )}
         {ws.isolated && (
-          <span className="sb-iso" title="Isolated agents" aria-label="Isolated agents">
+          <button
+            type="button"
+            className="sb-iso"
+            tabIndex={-1}
+            disabled={liveCount > 0}
+            title={liveCount > 0
+              ? "Isolated agents. Close this workspace's agents to turn off."
+              : 'Isolated agents. Click to turn off.'}
+            aria-label={liveCount > 0
+              ? "Isolated agents. Close this workspace's agents to turn off."
+              : 'Isolated agents. Click to turn off.'}
+            onClick={(e) => { e.stopPropagation(); onToggleIsolated?.(ws.id, false) }}
+          >
             <IsolatedGlyph />
-          </span>
+          </button>
         )}
-        <span className="sb-item-count">{isDraft ? '✦' : count}</span>
+        <span className="sb-item-count" aria-hidden>{isDraft ? '✦' : count}</span>
       </span>
 
       <button

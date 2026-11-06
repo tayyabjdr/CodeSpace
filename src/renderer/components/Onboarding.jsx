@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ONBOARDING_BOOT_DELAY_MS } from '../constants.js'
 import AppIcon from './AppIcon.jsx'
+import { ISOLATION_NOTES } from '../isolation-notice.js'
 import RecentDirectories from './RecentDirectories.jsx'
 import './Onboarding.css'
 
@@ -49,12 +50,6 @@ function TerminalPreview({ count }) {
       ))}
     </div>
   )
-}
-
-const ISOLATION_NOTES = {
-  'not-a-repo': "This folder isn't a git repo, so agents will share it.",
-  'no-commits': 'This repo has no commits yet, so agents will share the folder. Make a first commit to separate them.',
-  'git-missing': "Git wasn't found, so agents will share this folder."
 }
 
 export default function Onboarding({

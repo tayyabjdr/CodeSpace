@@ -34,7 +34,7 @@ const WorkspacesGlyph = () => (
 export default function Sidebar({
   workspaces, activeId, expandedIds, doneTermIds, exitedPtyIds, focusedTerminalId,
   skillsOpen, onToggleSkills,
-  onSelect, onToggleExpand, onSelectSession, onCreate, onDelete, onOpenSettings, onRenameNickname
+  onSelect, onToggleExpand, onSelectSession, onCreate, onDelete, onOpenSettings, onRenameNickname, onToggleIsolated
 }) {
   const listRef = useRef(null)
   const [version, setVersion] = useState('')
@@ -149,6 +149,7 @@ export default function Sidebar({
                 onToggleExpand={onToggleExpand}
                 onDelete={onDelete}
                 onRenameNickname={onRenameNickname}
+                onToggleIsolated={onToggleIsolated}
               />
             ) : (
               <div role="group">

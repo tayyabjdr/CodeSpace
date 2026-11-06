@@ -122,3 +122,24 @@ describe('WorkspaceRow', () => {
     expect(container.querySelector('[role="treeitem"]').getAttribute('aria-expanded')).toBe('true')
   })
 })
+
+describe('WorkspaceRow isolated glyph', () => {
+  const ISO = { ...WS, isolated: true, terminals: [], spawned: true }
+
+  it('turns isolation off without selecting the row when no agents are live', async () => {
+    const onToggleIsolated = vi.fn(); const onSelect = vi.fn()
+    render(<WorkspaceRow ws={ISO} {...base} onSelect={onSelect} onToggleIsolated={onToggleIsolated} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Isolated agents. Click to turn off.' }))
+    expect(onToggleIsolated).toHaveBeenCalledWith('w1', false)
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('is disabled with an explaining title while agents are live', async () => {
+    const onToggleIsolated = vi.fn()
+    render(<WorkspaceRow ws={{ ...ISO, terminals: [{ id: 't1' }] }} {...base} onToggleIsolated={onToggleIsolated} />)
+    const btn = screen.getByTitle(/Close this workspace's agents/)
+    expect(btn.disabled).toBe(true)
+    await userEvent.click(btn)
+    expect(onToggleIsolated).not.toHaveBeenCalled()
+  })
+})

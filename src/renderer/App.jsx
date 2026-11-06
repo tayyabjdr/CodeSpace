@@ -10,6 +10,8 @@ import UpdateToast from './components/UpdateToast.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
+import IsolationNotice from './components/IsolationNotice.jsx'
+import { isolationNotice } from './isolation-notice.js'
 import SkillsPanel from './components/SkillsPanel.jsx'
 import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
 import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
@@ -130,19 +132,27 @@ function AppInner() {
 
   const materializeAgents = useCallback(async (workspace, items, startNum) => {
     const agents = []
+    const failures = []
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const id = makeId()
       let cwd = workspace.dir
       let branch = null
       if (workspace.isolated) {
-        const r = await window.electronAPI.worktree.create({
-          repoDir: workspace.dir,
-          workspaceName: workspace.name,
-          agentId: id
-        })
-        if (r?.error) {
+        let r
+        try {
+          r = await window.electronAPI.worktree.create({
+            repoDir: workspace.dir,
+            workspaceName: workspace.name,
+            agentId: id
+          })
+        } catch (err) {
+          r = { error: 'unknown', detail: err?.message }
+        }
+        if (!r || r.error) {
           console.error('worktree.create failed', r)
+          // Never fall back to the shared folder: surface it and let the user retry.
+          failures.push({ item, error: r?.error ?? 'unknown', detail: r?.detail ?? r?.error ?? 'unknown error' })
           continue
         }
         cwd = r.path
@@ -155,7 +165,7 @@ function AppInner() {
         cwd, ptyId: null, autoName: null, branch
       })
     }
-    return agents
+    return { agents, failures }
   }, [])
 
   // Load persisted workspaces + defaults on first mount.
@@ -175,6 +185,7 @@ function AppInner() {
         agentCounts: w.agentCounts ?? { claude: w.agentCount ?? 0, codex: 0 },
         nickname: w.nickname ?? null,
         terminals: [],          // session-only — lazy spawn
+        failures: [],           // session-only — failed worktree creates
         agentCounter: 0,
         focusedTerminalId: null,
         fullscreenPaneId: null,
@@ -230,7 +241,13 @@ function AppInner() {
         workspaces: persistable.map(w => {
           const claude = w.terminals.filter(t => t.shell === 'claude').length
           const codex  = w.terminals.filter(t => t.shell === 'codex').length
-          const live = w.spawned ? { claude, codex } : (w.agentCounts ?? { claude: 0, codex: 0 })
+          const failed = w.failures ?? []
+          const live = w.spawned
+            ? {
+                claude: claude + failed.filter(f => f.item?.shell === 'claude').length,
+                codex: codex + failed.filter(f => f.item?.shell === 'codex').length
+              }
+            : (w.agentCounts ?? { claude: 0, codex: 0 })
           return {
             id: w.id, name: w.name, dir: w.dir,
             agentCounts: live,
@@ -344,13 +361,14 @@ function AppInner() {
         if (cancelled) return
       }
       const items = countsToItems(w0.agentCounts)
-      const terminals = await materializeAgents(w0, items, 1)
+      const { agents: terminals, failures } = await materializeAgents(w0, items, 1)
       if (cancelled) return
       setWorkspaces(prev => prev.map(w => {
         if (w.id !== activeId || w.spawned) return w
         return {
           ...w,
           terminals,
+          failures,
           agentCounter: items.length,
           spawned: true,
           focusedTerminalId: terminals[0]?.id ?? null
@@ -417,7 +435,7 @@ function AppInner() {
     if (!draft) return
     const provisional = { ...draft, name: resolvedName, dir, agentCounts: counts, isolated: !!isolated }
     const items = countsToItems(counts)
-    const terminals = await materializeAgents(provisional, items, 1)
+    const { agents: terminals, failures } = await materializeAgents(provisional, items, 1)
     setWorkspaces(prev => prev.map(w => {
       if (w.id !== activeId || !w.unconfigured) return w
       return {
@@ -427,6 +445,7 @@ function AppInner() {
         agentCounts: counts,
         isolated: !!isolated,
         terminals,
+        failures,
         agentCounter: items.length,
         spawned: true,
         focusedTerminalId: terminals[0]?.id ?? null,
@@ -569,12 +588,13 @@ function AppInner() {
     if (!AGENT_TYPES.includes(shell)) return
     if (!availability[shell]) return
     const nextNum = w.agentCounter + 1
-    const [agent] = await materializeAgents(w, [{ shell }], nextNum)
-    if (!agent) return
+    const { agents: [agent], failures } = await materializeAgents(w, [{ shell }], nextNum)
+    if (!agent && failures.length === 0) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
       agentCounter: Math.max(x.agentCounter, nextNum),
-      terminals: [...x.terminals, agent]
+      terminals: agent ? [...x.terminals, agent] : x.terminals,
+      failures: [...(x.failures ?? []), ...failures]
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
 
@@ -591,14 +611,62 @@ function AppInner() {
     }
     if (items.length === 0) return
     const startNum = w.agentCounter + 1
-    const newAgents = await materializeAgents(w, items, startNum)
-    if (newAgents.length === 0) return
+    const { agents: newAgents, failures } = await materializeAgents(w, items, startNum)
+    if (newAgents.length === 0 && failures.length === 0) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
       agentCounter: Math.max(x.agentCounter, startNum + newAgents.length - 1),
-      terminals: [...x.terminals, ...newAgents]
+      terminals: [...x.terminals, ...newAgents],
+      failures: [...(x.failures ?? []), ...failures]
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
+
+  // Switch a workspace between shared and separate folders. Only allowed with
+  // no live agents; it never spawns, agents added afterwards use the new mode.
+  const setWorkspaceIsolated = useCallback((wsId, isolated) => {
+    setWorkspaces(prev => prev.map(w => {
+      if (w.id !== wsId || w.unconfigured) return w
+      if ((w.terminals?.length ?? 0) > 0) return w
+      if (!!w.isolated === !!isolated) return w
+      return { ...w, isolated: !!isolated, failures: [] }
+    }))
+  }, [])
+
+  // Retry only the failed items; successes join the same workspace.
+  const retryFailures = useCallback(async () => {
+    if (!activeId) return
+    const w = workspaces.find(x => x.id === activeId)
+    const failed = w?.failures ?? []
+    if (!w || failed.length === 0) return
+    const startNum = w.agentCounter + 1
+    const { agents, failures } = await materializeAgents(w, failed.map(f => f.item), startNum)
+    setWorkspaces(prev => prev.map(x => x.id === activeId ? {
+      ...x,
+      agentCounter: Math.max(x.agentCounter, startNum + agents.length - 1),
+      terminals: [...x.terminals, ...agents],
+      failures,
+      focusedTerminalId: x.focusedTerminalId ?? agents[0]?.id ?? null
+    } : x))
+  }, [activeId, workspaces, materializeAgents])
+
+  // Eligibility of the active workspace's folder, checked when its id/dir
+  // changes and only while it is not isolated. Never polled.
+  const [canIsoState, setCanIsoState] = useState(null) // { key, result }
+  const [dismissedNotices, setDismissedNotices] = useState(() => new Set())
+  const isoProbe = (() => {
+    const w = workspaces.find(x => x.id === activeId)
+    return w && !w.unconfigured && !w.isolated && w.dir ? { id: w.id, dir: w.dir } : null
+  })()
+  const isoProbeKey = isoProbe ? `${isoProbe.id}|${isoProbe.dir}` : null
+  useEffect(() => {
+    if (!isoProbe || !window.electronAPI?.worktree?.canIsolate) return
+    let cancelled = false
+    Promise.resolve(window.electronAPI.worktree.canIsolate(isoProbe.dir))
+      .then(result => { if (!cancelled && result) setCanIsoState({ key: isoProbeKey, result }) })
+      .catch(() => {})
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isoProbeKey])
 
   const openPicker = useCallback((anchor) => {
     if (!anchor) { setPickerState({ pos: null }); return }
@@ -1008,6 +1076,18 @@ function AppInner() {
   const fsEditor = fullscreenId === 'editor' && !!activeWorkspace?.editor?.open
   const anyFullscreen = !!fsTerminalId || fsEditor
   const n = terminals.length
+  const canIso = canIsoState && canIsoState.key === isoProbeKey ? canIsoState.result : null
+  const notice = activeWorkspace && !activeWorkspace.unconfigured
+    ? isolationNotice({
+        isolated: !!activeWorkspace.isolated,
+        canIso,
+        liveAgents: terminals.length,
+        failures: activeWorkspace.failures ?? []
+      })
+    : { kind: null, actionEnabled: false }
+  const noticeShown = notice.kind && !anyFullscreen
+    && (notice.kind === 'spawn-failed' || !dismissedNotices.has(activeId))
+  const dismissNotice = () => setDismissedNotices(prev => new Set(prev).add(activeId))
   const cols = anyFullscreen ? 1 : (
     n <= 1 ? 1 :
     n === 2 ? 2 :
@@ -1043,6 +1123,7 @@ function AppInner() {
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
           onRenameNickname={handleRenameNickname}
+          onToggleIsolated={setWorkspaceIsolated}
           skillsOpen={activePanel === 'skills'}
           onToggleSkills={() => handleSelectPanel('skills')}
         />
@@ -1056,6 +1137,18 @@ function AppInner() {
                 onNameChange={handleDraftNameChange}
               />
             ) : (
+            <div className="grid-col">
+            {noticeShown && (
+              <IsolationNotice
+                kind={notice.kind}
+                actionEnabled={notice.actionEnabled}
+                reason={canIso?.reason}
+                failures={activeWorkspace?.failures ?? []}
+                onSwitch={() => setWorkspaceIsolated(activeId, true)}
+                onRetry={retryFailures}
+                onDismiss={dismissNotice}
+              />
+            )}
             <div
               className="grid"
               style={{
@@ -1093,6 +1186,7 @@ function AppInner() {
                   themeId={themeId}
                 />
               ))}
+            </div>
             </div>
             )}
           </div>
