@@ -49,3 +49,16 @@ describe('mergeRetryFailures', () => {
     expect(mergeRetryFailures(undefined, [], [])).toEqual([])
   })
 })
+
+describe('isolationNotice / setup warnings', () => {
+  it('shows a setup-warning for an isolated workspace that has warnings', () => {
+    expect(isolationNotice({ isolated: true, canIso: null, liveAgents: 1, failures: [], warnings: ['w'] }))
+      .toEqual({ kind: 'setup-warning', actionEnabled: false })
+  })
+  it('spawn failures and can-isolate outrank warnings; no warnings means no notice', () => {
+    expect(isolationNotice({ isolated: true, liveAgents: 0, failures: [{}], warnings: ['w'] }).kind).toBe('spawn-failed')
+    expect(isolationNotice({ isolated: false, canIso: { ok: true }, liveAgents: 0, failures: [], warnings: ['w'] }).kind).toBe('can-isolate')
+    expect(isolationNotice({ isolated: true, liveAgents: 1, failures: [], warnings: [] }).kind).toBe(null)
+    expect(isolationNotice({ isolated: true, liveAgents: 1, failures: [] }).kind).toBe(null)
+  })
+})

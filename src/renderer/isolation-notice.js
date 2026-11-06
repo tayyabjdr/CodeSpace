@@ -7,9 +7,16 @@ export const ISOLATION_NOTES = {
 }
 
 // Decides which notice, if any, a workspace should show above its grid.
-// Add new kinds (e.g. a setup warning) as further early returns by priority.
-export function isolationNotice({ isolated, canIso, liveAgents, failures }) {
+// Priority: spawn failures, then the can-isolate / cannot-isolate hints, then
+// setup warnings (e.g. node_modules couldn't be linked) as the lowest.
+export function isolationNotice({ isolated, canIso, liveAgents, failures, warnings = [] }) {
   if (failures && failures.length > 0) return { kind: 'spawn-failed', actionEnabled: true }
+  const base = baseNotice({ isolated, canIso, liveAgents })
+  if (!base.kind && warnings && warnings.length > 0) return { kind: 'setup-warning', actionEnabled: false }
+  return base
+}
+
+function baseNotice({ isolated, canIso, liveAgents }) {
   if (isolated) return { kind: null, actionEnabled: false }
   if (!canIso) return { kind: null, actionEnabled: false }
   if (canIso.ok) return { kind: 'can-isolate', actionEnabled: liveAgents === 0 }

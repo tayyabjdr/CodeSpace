@@ -133,6 +133,7 @@ function AppInner() {
   const materializeAgents = useCallback(async (workspace, items, startNum) => {
     const agents = []
     const failures = []
+    const warnings = []
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const id = makeId()
@@ -157,6 +158,7 @@ function AppInner() {
         }
         cwd = r.path
         branch = r.branch
+        if (Array.isArray(r.warnings)) warnings.push(...r.warnings)
       }
       agents.push({
         id,
@@ -165,7 +167,7 @@ function AppInner() {
         cwd, ptyId: null, autoName: null, branch
       })
     }
-    return { agents, failures }
+    return { agents, failures, warnings }
   }, [])
 
   // Load persisted workspaces + defaults on first mount.
@@ -186,6 +188,7 @@ function AppInner() {
         nickname: w.nickname ?? null,
         terminals: [],          // session-only — lazy spawn
         failures: [],           // session-only — failed worktree creates
+        warnings: [],           // session-only — worktree setup warnings
         agentCounter: 0,
         focusedTerminalId: null,
         fullscreenPaneId: null,
@@ -361,7 +364,7 @@ function AppInner() {
         if (cancelled) return
       }
       const items = countsToItems(w0.agentCounts)
-      const { agents: terminals, failures } = await materializeAgents(w0, items, 1)
+      const { agents: terminals, failures, warnings } = await materializeAgents(w0, items, 1)
       if (cancelled) return
       setWorkspaces(prev => prev.map(w => {
         if (w.id !== activeId || w.spawned) return w
@@ -369,6 +372,7 @@ function AppInner() {
           ...w,
           terminals,
           failures,
+          warnings,
           agentCounter: items.length,
           spawned: true,
           focusedTerminalId: terminals[0]?.id ?? null
@@ -435,7 +439,7 @@ function AppInner() {
     if (!draft) return
     const provisional = { ...draft, name: resolvedName, dir, agentCounts: counts, isolated: !!isolated }
     const items = countsToItems(counts)
-    const { agents: terminals, failures } = await materializeAgents(provisional, items, 1)
+    const { agents: terminals, failures, warnings } = await materializeAgents(provisional, items, 1)
     setWorkspaces(prev => prev.map(w => {
       if (w.id !== activeId || !w.unconfigured) return w
       return {
@@ -446,6 +450,7 @@ function AppInner() {
         isolated: !!isolated,
         terminals,
         failures,
+        warnings,
         agentCounter: items.length,
         spawned: true,
         focusedTerminalId: terminals[0]?.id ?? null,
@@ -588,13 +593,14 @@ function AppInner() {
     if (!AGENT_TYPES.includes(shell)) return
     if (!availability[shell]) return
     const nextNum = w.agentCounter + 1
-    const { agents: [agent], failures } = await materializeAgents(w, [{ shell }], nextNum)
+    const { agents: [agent], failures, warnings } = await materializeAgents(w, [{ shell }], nextNum)
     if (!agent && failures.length === 0) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
       agentCounter: Math.max(x.agentCounter, nextNum),
       terminals: agent ? [...x.terminals, agent] : x.terminals,
-      failures: [...(x.failures ?? []), ...failures]
+      failures: [...(x.failures ?? []), ...failures],
+      warnings: [...(x.warnings ?? []), ...warnings]
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
 
@@ -611,13 +617,14 @@ function AppInner() {
     }
     if (items.length === 0) return
     const startNum = w.agentCounter + 1
-    const { agents: newAgents, failures } = await materializeAgents(w, items, startNum)
+    const { agents: newAgents, failures, warnings } = await materializeAgents(w, items, startNum)
     if (newAgents.length === 0 && failures.length === 0) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
       agentCounter: nextAgentCounter(x.agentCounter, startNum, items.length),
       terminals: [...x.terminals, ...newAgents],
-      failures: [...(x.failures ?? []), ...failures]
+      failures: [...(x.failures ?? []), ...failures],
+      warnings: [...(x.warnings ?? []), ...warnings]
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
 
@@ -628,7 +635,7 @@ function AppInner() {
       if (w.id !== wsId || w.unconfigured) return w
       if ((w.terminals?.length ?? 0) > 0) return w
       if (!!w.isolated === !!isolated) return w
-      return { ...w, isolated: !!isolated, failures: [] }
+      return { ...w, isolated: !!isolated, failures: [], warnings: [] }
     }))
   }, [])
 
@@ -646,12 +653,13 @@ function AppInner() {
     const wsId = activeId
     try {
       const startNum = w.agentCounter + 1
-      const { agents, failures } = await materializeAgents(w, failed.map(f => f.item), startNum)
+      const { agents, failures, warnings } = await materializeAgents(w, failed.map(f => f.item), startNum)
       setWorkspaces(prev => prev.map(x => x.id === wsId ? {
         ...x,
         agentCounter: nextAgentCounter(x.agentCounter, startNum, failed.length),
         terminals: [...x.terminals, ...agents],
         failures: mergeRetryFailures(x.failures, failed, failures),
+        warnings: [...(x.warnings ?? []), ...warnings],
         focusedTerminalId: x.focusedTerminalId ?? agents[0]?.id ?? null
       } : x))
     } finally {
@@ -1093,7 +1101,8 @@ function AppInner() {
         isolated: !!activeWorkspace.isolated,
         canIso,
         liveAgents: terminals.length,
-        failures: activeWorkspace.failures ?? []
+        failures: activeWorkspace.failures ?? [],
+        warnings: activeWorkspace.warnings ?? []
       })
     : { kind: null, actionEnabled: false }
   const noticeShown = notice.kind && !anyFullscreen
@@ -1155,6 +1164,7 @@ function AppInner() {
                 actionEnabled={notice.actionEnabled}
                 reason={canIso?.reason}
                 failures={activeWorkspace?.failures ?? []}
+                warnings={activeWorkspace?.warnings ?? []}
                 onSwitch={() => setWorkspaceIsolated(activeId, true)}
                 retrying={retryingId === activeId}
                 onRetry={retryFailures}

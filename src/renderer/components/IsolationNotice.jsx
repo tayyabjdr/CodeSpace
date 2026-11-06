@@ -4,7 +4,7 @@ import './IsolationNotice.css'
 const SWITCH_BLOCKED = "Close this workspace's agents to switch."
 
 export default function IsolationNotice({
-  kind, actionEnabled, reason, failures = [], retrying = false, onSwitch, onRetry, onDismiss
+  kind, actionEnabled, reason, failures = [], warnings = [], retrying = false, onSwitch, onRetry, onDismiss
 }) {
   if (!kind) return null
 
@@ -13,6 +13,8 @@ export default function IsolationNotice({
     const n = failures.length
     const detail = failures.find(f => f?.detail)?.detail ?? failures[0]?.error ?? 'unknown error'
     text = `Couldn't create a folder for ${n} ${n === 1 ? 'agent' : 'agents'}: ${detail}`
+  } else if (kind === 'setup-warning') {
+    text = `Some agent folders aren't fully set up: ${warnings[0]}`
   } else if (kind === 'can-isolate') {
     text = 'Agents here share one folder, so their changes can collide.'
   } else {

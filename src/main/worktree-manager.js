@@ -1,6 +1,7 @@
 import { execFileSync } from 'child_process'
 import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync, rmdirSync, lstatSync } from 'fs'
 import { join, dirname, basename, resolve } from 'path'
+import { setupWorktree, removeDepsLink } from './worktree-setup.js'
 
 let gitAvailable = null
 
@@ -210,7 +211,12 @@ async function _createImpl({ repoDir, workspaceName, agentId }) {
   meta.agents[agentId] = { path: wtPath, branch, baseSha, createdAt: new Date().toISOString() }
   writeMeta(repoDir, meta)
 
-  return { path: wtPath, branch, baseSha }
+  // Never fails the create: problems come back as warnings.
+  let warnings = []
+  try { warnings = setupWorktree({ repoDir, wtPath }).warnings }
+  catch { warnings = ["Couldn't finish setting up this agent's folder. Run an install there."] }
+
+  return { path: wtPath, branch, baseSha, warnings }
 }
 
 export async function create(args) {
@@ -245,6 +251,18 @@ async function _closeImpl({ repoDir, agentId }) {
       const out = execGit(['-C', repoDir, 'rev-list', '--count', `${entry.baseSha}..${entry.branch}`])
       aheadCount = parseInt(out.trim(), 10) || 0
     } catch {}
+  }
+
+  // The worktree's node_modules is a link to the user's real one. Take the
+  // link off BEFORE anything deletes recursively, and if that fails touch
+  // nothing: a leftover folder is cheap, a deleted node_modules is not.
+  try { removeDepsLink(wtPath) }
+  catch (e) {
+    return {
+      ok: false,
+      error: 'deps-unlink-failed',
+      detail: `Couldn't detach node_modules from ${wtPath}: ${e?.message ?? e}`
+    }
   }
 
   try { execGit(['-C', repoDir, 'worktree', 'remove', '--force', wtPath]) }
@@ -331,7 +349,11 @@ export async function wipeAll({ repoDir, liveAgentIds = [] }) {
         })
         continue
       }
-      try { await _closeImpl({ repoDir, agentId: id }) } catch {}
+      let res = null
+      try { res = await _closeImpl({ repoDir, agentId: id }) } catch {}
+      if (res && res.ok === false) {
+        kept.push({ agentId: id, branch: entry.branch, path: entryWorktreePath(repoDir, id, entry) })
+      }
     }
     try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}
     try {

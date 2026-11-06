@@ -46,4 +46,12 @@ describe('IsolationNotice', () => {
     await userEvent.click(btn)
     expect(onRetry).not.toHaveBeenCalled()
   })
+
+  it('setup-warning shows the first warning and can be dismissed', async () => {
+    const onDismiss = vi.fn()
+    render(<IsolationNotice kind="setup-warning" warnings={["Couldn't link node_modules. Run an install in this agent's folder.", 'second']} onDismiss={onDismiss} />)
+    expect(screen.getByText("Some agent folders aren't fully set up: Couldn't link node_modules. Run an install in this agent's folder.")).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: /dismiss/i }))
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+  })
 })
