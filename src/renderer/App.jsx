@@ -327,8 +327,12 @@ function AppInner() {
         // Wipe them; branches with commits survive. Dirty worktrees (uncommitted
         // work, e.g. the user lost power last session) are preserved on disk
         // and surfaced here so the work isn't silently destroyed.
+        // Every workspace on this repo may already have live agents; never wipe those.
+        const liveAgentIds = workspaces
+          .filter(x => x.dir === w0.dir)
+          .flatMap(x => (x.terminals ?? []).map(t => t.id))
         try {
-          const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir })
+          const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir, liveAgentIds })
           if (r?.kept?.length) {
             console.warn(
               `[worktree] ${r.kept.length} worktree(s) from previous session had uncommitted changes and were preserved at:\n` +

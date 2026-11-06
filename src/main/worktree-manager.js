@@ -1,6 +1,6 @@
 import { execFileSync } from 'child_process'
-import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync, rmdirSync, lstatSync } from 'fs'
+import { join, dirname, basename, resolve } from 'path'
 
 let gitAvailable = null
 
@@ -29,18 +29,65 @@ export function isGitRepo(dir) {
   }
 }
 
-export function ensureGitignoreExcludes(repoDir) {
-  const path = join(repoDir, '.gitignore')
-  let body = ''
-  if (existsSync(path)) {
-    body = readFileSync(path, 'utf8')
-    const lines = body.split(/\r?\n/)
-    if (lines.some(l => l.trim() === '.codespace/')) return
-    if (body.length > 0 && !body.endsWith('\n')) body += '\n'
-    body += '.codespace/\n'
-  } else {
-    body = '.codespace/\n'
+export function canIsolate(dir) {
+  if (!isGitAvailable()) return { ok: false, reason: 'git-missing' }
+  if (!isGitRepo(dir)) return { ok: false, reason: 'not-a-repo' }
+  try {
+    execFileSync('git', ['-C', dir, 'rev-parse', '--verify', '--quiet', 'HEAD'], {
+      stdio: 'ignore',
+      windowsHide: true
+    })
+  } catch {
+    return { ok: false, reason: 'no-commits' }
   }
+  return { ok: true, reason: null }
+}
+
+// Worktrees live beside the repo, not inside it, so tools that scan the repo
+// (test runners, watchers) never see a nested copy of the project.
+const WT_ROOT_NAME = '.codespace-worktrees'
+
+function legacyWorktreePath(repoDir, agentId) {
+  return join(repoDir, '.codespace', 'worktrees', agentId)
+}
+
+export function worktreePath(repoDir, agentId) {
+  const parent = dirname(repoDir)
+  const name = basename(repoDir)
+  if (!name || parent === repoDir) return legacyWorktreePath(repoDir, agentId)
+  return join(parent, WT_ROOT_NAME, name, agentId)
+}
+
+// Where an existing agent's worktree really is. v1 entries have no `path`.
+function entryWorktreePath(repoDir, agentId, entry) {
+  return entry?.path || legacyWorktreePath(repoDir, agentId)
+}
+
+// After a worktree is gone, drop its now-empty repo folder and the shared
+// root. Non-recursive on purpose: anything still inside blocks the removal.
+function pruneWorktreeRoots(wtPath) {
+  const repoFolder = dirname(wtPath)
+  const root = dirname(repoFolder)
+  if (basename(root) !== WT_ROOT_NAME) return
+  try { rmdirSync(repoFolder) } catch {}
+  try { rmdirSync(root) } catch {}
+}
+
+export function ensureLocalExcludes(repoDir) {
+  const out = execFileSync('git', ['-C', repoDir, 'rev-parse', '--git-common-dir'], {
+    stdio: ['ignore', 'pipe', 'ignore'],
+    windowsHide: true,
+    encoding: 'utf8'
+  }).trim()
+  const infoDir = join(resolve(repoDir, out), 'info')
+  const path = join(infoDir, 'exclude')
+  let body = existsSync(path) ? readFileSync(path, 'utf8') : ''
+  const have = new Set(body.split(/\r?\n/).map(l => l.trim()))
+  const missing = ['.codespace/', '/node_modules'].filter(l => !have.has(l))
+  if (missing.length === 0) return
+  if (body.length > 0 && !body.endsWith('\n')) body += '\n'
+  body += missing.join('\n') + '\n'
+  mkdirSync(infoDir, { recursive: true })
   writeFileSync(path, body, 'utf8')
 }
 
@@ -83,7 +130,7 @@ export function writeMeta(repoDir, data) {
   renameSync(tmp, p)
 }
 
-function execGit(args, opts = {}) {
+export function execGit(args, opts = {}) {
   return execFileSync('git', args, {
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
@@ -119,7 +166,7 @@ function pickBranchName(repoDir, base) {
 }
 
 const repoLocks = new Map()
-async function withRepoLock(repoDir, fn) {
+export async function withRepoLock(repoDir, fn) {
   const prev = repoLocks.get(repoDir) ?? Promise.resolve()
   let release
   const next = new Promise(r => { release = r })
@@ -143,11 +190,11 @@ async function _createImpl({ repoDir, workspaceName, agentId }) {
     const err = new Error('source repo has no commits'); err.code = 'no-commits'; throw err
   }
 
-  ensureGitignoreExcludes(repoDir)
+  ensureLocalExcludes(repoDir)
 
   const slug = slugify(workspaceName)
   const branch = pickBranchName(repoDir, `cs/${slug}/${shortId(agentId)}`)
-  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+  const wtPath = worktreePath(repoDir, agentId)
 
   try {
     execGit(['-C', repoDir, 'worktree', 'add', '-b', branch, wtPath, baseSha])
@@ -160,7 +207,7 @@ async function _createImpl({ repoDir, workspaceName, agentId }) {
 
   const meta = readMeta(repoDir)
   meta.gitignoreTouched = true
-  meta.agents[agentId] = { branch, baseSha, createdAt: new Date().toISOString() }
+  meta.agents[agentId] = { path: wtPath, branch, baseSha, createdAt: new Date().toISOString() }
   writeMeta(repoDir, meta)
 
   return { path: wtPath, branch, baseSha }
@@ -178,7 +225,7 @@ function metaEntry(repoDir, agentId) {
 export async function checkDirty({ repoDir, agentId }) {
   const { entry } = metaEntry(repoDir, agentId)
   if (!entry) return { missing: true }
-  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+  const wtPath = entryWorktreePath(repoDir, agentId, entry)
   if (!existsSync(wtPath)) return { missing: true }
   let out
   try { out = execGit(['-C', wtPath, 'status', '--porcelain']) }
@@ -190,7 +237,7 @@ async function _closeImpl({ repoDir, agentId }) {
   const m = readMeta(repoDir)
   const entry = m.agents[agentId]
   if (!entry) return { ok: true, missing: true }
-  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+  const wtPath = entryWorktreePath(repoDir, agentId, entry)
 
   let aheadCount = 0
   if (existsSync(wtPath)) {
@@ -202,6 +249,13 @@ async function _closeImpl({ repoDir, agentId }) {
 
   try { execGit(['-C', repoDir, 'worktree', 'remove', '--force', wtPath]) }
   catch {}
+
+  // git can leave an empty folder behind (locked files on Windows). Only a
+  // real directory is deleted, never a link that could point elsewhere.
+  try {
+    if (lstatSync(wtPath).isDirectory()) rmSync(wtPath, { recursive: true, force: true })
+  } catch {}
+  pruneWorktreeRoots(wtPath)
 
   try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}
 
@@ -227,15 +281,15 @@ export async function closeAllForWorkspace({ repoDir, agentIds }) {
     try {
       const dir = join(repoDir, '.codespace', 'worktrees')
       const entries = readdirSync(dir).filter(n => n !== '.cs-meta.json')
-      if (entries.length === 0) rmSync(dir, { recursive: true, force: true })
+      if (entries.length === 0 && Object.keys(readMeta(repoDir).agents).length === 0) rmSync(dir, { recursive: true, force: true })
     } catch {}
   })
 }
 
 // Synchronous dirty check (no lock — caller already holds it).
 // Returns false on any error so cleanup isn't blocked by an unrelated git fault.
-function _isDirty(repoDir, agentId) {
-  const wtPath = join(repoDir, '.codespace', 'worktrees', agentId)
+function _isDirty(repoDir, agentId, entry) {
+  const wtPath = entryWorktreePath(repoDir, agentId, entry)
   if (!existsSync(wtPath)) return false
   try {
     const out = execGit(['-C', wtPath, 'status', '--porcelain'])
@@ -245,17 +299,35 @@ function _isDirty(repoDir, agentId) {
   }
 }
 
-export async function wipeAll({ repoDir }) {
+function listStranded(repoDir, protectedBranches) {
+  let refs
+  try { refs = execGit(['-C', repoDir, 'for-each-ref', '--format=%(refname:short)', 'refs/heads/cs/']) }
+  catch { return [] }
+  const stranded = []
+  for (const branch of refs.split(/\r?\n/).map(l => l.trim()).filter(Boolean)) {
+    if (protectedBranches.has(branch)) continue
+    try {
+      const ahead = parseInt(execGit(['-C', repoDir, 'rev-list', '--count', `HEAD..${branch}`]).trim(), 10) || 0
+      if (ahead > 0) stranded.push({ branch, ahead })
+    } catch {}
+  }
+  return stranded
+}
+
+export async function wipeAll({ repoDir, liveAgentIds = [] }) {
   return withRepoLock(repoDir, async () => {
+    const live = new Set(liveAgentIds)
     const m = readMeta(repoDir)
     const ids = Object.keys(m.agents)
     const kept = []
     for (const id of ids) {
-      if (_isDirty(repoDir, id)) {
+      if (live.has(id)) continue
+      const entry = m.agents[id]
+      if (_isDirty(repoDir, id, entry)) {
         kept.push({
           agentId: id,
-          branch: m.agents[id].branch,
-          path: join(repoDir, '.codespace', 'worktrees', id)
+          branch: entry.branch,
+          path: entryWorktreePath(repoDir, id, entry)
         })
         continue
       }
@@ -265,9 +337,11 @@ export async function wipeAll({ repoDir }) {
     try {
       const dir = join(repoDir, '.codespace', 'worktrees')
       const entries = readdirSync(dir).filter(n => n !== '.cs-meta.json')
-      if (entries.length === 0) rmSync(dir, { recursive: true, force: true })
+      if (entries.length === 0 && Object.keys(readMeta(repoDir).agents).length === 0) rmSync(dir, { recursive: true, force: true })
     } catch {}
-    return { kept }
+    // Branches still tied to a tracked agent (live or kept dirty) are in use.
+    const inUse = new Set(Object.values(readMeta(repoDir).agents).map(e => e.branch))
+    return { kept, stranded: listStranded(repoDir, inUse) }
   })
 }
 
@@ -276,7 +350,7 @@ export async function repairOrphans({ repoDir }) {
     const m = readMeta(repoDir)
     let changed = false
     for (const [id, entry] of Object.entries(m.agents)) {
-      const wtPath = join(repoDir, '.codespace', 'worktrees', id)
+      const wtPath = entryWorktreePath(repoDir, id, entry)
       if (!existsSync(wtPath)) {
         delete m.agents[id]
         changed = true

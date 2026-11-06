@@ -29,7 +29,9 @@ vi.mock('../src/main/worktree-manager.js', () => ({
   create:         vi.fn(async () => ({ path: 'C:/repo/.codespace/worktrees/aid', branch: 'cs/x/abcd1234', baseSha: 'sha' })),
   close:          vi.fn(async () => ({ ok: true })),
   closeAllForWorkspace: vi.fn(async () => {}),
-  checkDirty:     vi.fn(async () => ({ dirty: false }))
+  checkDirty:     vi.fn(async () => ({ dirty: false })),
+  canIsolate:     vi.fn(() => ({ ok: true, reason: null })),
+  wipeAll:        vi.fn(async () => ({ kept: [], stranded: [{ branch: 'cs/x/1', ahead: 2 }] }))
 }))
 
 import { ipcMain } from 'electron'
@@ -230,9 +232,25 @@ describe('ipc-handlers / worktree', () => {
 
   it('registers worktree:* handlers', () => {
     registerHandlers(mockWindow)
-    for (const ch of ['worktree:isGitAvailable', 'worktree:isGitRepo', 'worktree:create', 'worktree:close', 'worktree:closeAll', 'worktree:checkDirty']) {
+    for (const ch of ['worktree:isGitAvailable', 'worktree:isGitRepo', 'worktree:create', 'worktree:close', 'worktree:closeAll', 'worktree:checkDirty', 'worktree:canIsolate']) {
       expect(ipcMain.handle).toHaveBeenCalledWith(ch, expect.any(Function))
     }
+  })
+
+  it('worktree:canIsolate delegates and rejects relative paths', async () => {
+    registerHandlers(mockWindow)
+    const fn = getHandler('handle', 'worktree:canIsolate')
+    expect(await fn({}, 'C:/repo')).toEqual({ ok: true, reason: null })
+    expect(wt.canIsolate).toHaveBeenCalledWith('C:/repo')
+    expect(await fn({}, 'rel')).toEqual({ ok: false, reason: 'not-a-repo' })
+  })
+
+  it('worktree:wipeAll returns kept and stranded and forwards liveAgentIds', async () => {
+    registerHandlers(mockWindow)
+    const fn = getHandler('handle', 'worktree:wipeAll')
+    const r = await fn({}, { repoDir: 'C:/repo', liveAgentIds: ['a'] })
+    expect(r).toEqual({ ok: true, kept: [], stranded: [{ branch: 'cs/x/1', ahead: 2 }] })
+    expect(wt.wipeAll).toHaveBeenCalledWith({ repoDir: 'C:/repo', liveAgentIds: ['a'] })
   })
 
   it('worktree:create rejects non-absolute repoDir', async () => {

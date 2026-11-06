@@ -178,6 +178,11 @@ export function registerHandlers(mainWindow) {
     return worktree.isGitRepo(dir)
   })
 
+  ipcMain.handle('worktree:canIsolate', (_e, dir) => {
+    if (typeof dir !== 'string' || !isAbsolute(dir)) return { ok: false, reason: 'not-a-repo' }
+    return worktree.canIsolate(dir)
+  })
+
   ipcMain.handle('worktree:create', async (_e, args) => {
     if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)
         || typeof args.workspaceName !== 'string' || typeof args.agentId !== 'string') {
@@ -215,7 +220,7 @@ export function registerHandlers(mainWindow) {
     if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
     try {
       const result = await worktree.wipeAll(args)
-      return { ok: true, kept: result?.kept ?? [] }
+      return { ok: true, kept: result?.kept ?? [], stranded: result?.stranded ?? [] }
     }
     catch (err) { return { error: err.code || 'unknown' } }
   })

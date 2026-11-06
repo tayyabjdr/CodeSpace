@@ -106,6 +106,7 @@ const api = {
   worktree: {
     isGitAvailable: () => ipcRenderer.invoke('worktree:isGitAvailable'),
     isGitRepo:      (dir) => ipcRenderer.invoke('worktree:isGitRepo', dir),
+    canIsolate:     (dir) => ipcRenderer.invoke('worktree:canIsolate', dir),
     create:         (args) => ipcRenderer.invoke('worktree:create', args),
     close:          (args) => ipcRenderer.invoke('worktree:close', args),
     closeAll:       (args) => ipcRenderer.invoke('worktree:closeAll', args),
