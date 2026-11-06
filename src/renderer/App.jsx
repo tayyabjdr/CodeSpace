@@ -114,6 +114,7 @@ function AppInner() {
   // Dirty-close prompt for an isolated agent's worktree.
   // shape: { wsId, termId, branch, agentName }
   const [pendingWorktreeClose, setPendingWorktreeClose] = useState(null)
+  const [leftoverFolders, setLeftoverFolders] = useState(null) // [{ agentId, path, detail }] from a failed workspace cleanup
   // Dirty-prompt: triggered when the user opens another file / closes the
   // editor / switches workspace while the active editor has unsaved changes.
   // shape: { kind: 'open-file' | 'close-pane' | 'switch-workspace', payload }
@@ -354,11 +355,22 @@ function AppInner() {
         try {
           const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir, liveAgentIds })
           if (r?.kept?.length) {
-            console.warn(
-              `[worktree] ${r.kept.length} worktree(s) from previous session had uncommitted changes and were preserved at:\n` +
-              r.kept.map(k => `  ${k.path}  (${k.branch})`).join('\n') +
-              `\nReview the changes there and either commit them on the branch or discard the directory.`
-            )
+            const dirty = r.kept.filter(k => k.reason !== 'cleanup-failed')
+            const stuck = r.kept.filter(k => k.reason === 'cleanup-failed')
+            if (dirty.length) {
+              console.warn(
+                `[worktree] ${dirty.length} worktree(s) from previous session had uncommitted changes and were preserved at:\n` +
+                dirty.map(k => `  ${k.path}  (${k.branch})`).join('\n') +
+                `\nReview the changes there and either commit them on the branch or discard the directory.`
+              )
+            }
+            if (stuck.length) {
+              console.warn(
+                `[worktree] ${stuck.length} worktree(s) from previous session could not be cleaned up and were left at:\n` +
+                stuck.map(k => `  ${k.path}  (${k.branch})${k.detail ? ': ' + k.detail : ''}`).join('\n') +
+                `\nDelete the folder once nothing is using it.`
+              )
+            }
           }
         } catch {}
         if (cancelled) return
@@ -543,6 +555,7 @@ function AppInner() {
         const agentIds = (target.terminals ?? []).map(t => t.id)
         setTimeout(() => {
           window.electronAPI.worktree.closeAll({ repoDir: target.dir, agentIds })
+            .then(r => { if (r?.failures?.length) setLeftoverFolders(r.failures) })
             .catch(err => console.error('worktree.closeAll failed', err))
         }, agentIds.length * 80 + 100)
       }
@@ -772,6 +785,14 @@ function AppInner() {
     if (w.isolated) {
       // Fire-and-forget; main is single-writer and tolerates errors.
       window.electronAPI.worktree.close({ repoDir: w.dir, agentId: target.id })
+        .then(r => {
+          if (r && r.ok === false) {
+            const msg = `Couldn't remove this agent's folder: ${r.path ?? 'unknown path'}. Delete it after closing anything using it.`
+            // A new warning must be seen even if an earlier one was dismissed.
+            setDismissedNotices(prev => { const n = new Set(prev); n.delete(w.id); return n })
+            setWorkspaces(prev => prev.map(x => x.id === w.id ? { ...x, warnings: [...(x.warnings ?? []), msg] } : x))
+          }
+        })
         .catch(err => console.error('worktree.close failed', err))
     }
 
@@ -1303,6 +1324,24 @@ function AppInner() {
           destructive
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
+        />
+      )}
+
+      {leftoverFolders && leftoverFolders.length > 0 && (
+        <ConfirmDialog
+          title="Some agent folders were left behind"
+          message={
+            <>
+              These folders couldn't be removed. Delete them after closing anything using them:
+              {leftoverFolders.map(f => (
+                <span key={f.agentId} style={{ display: 'block' }}><code>{f.path ?? f.agentId}</code></span>
+              ))}
+            </>
+          }
+          confirmLabel="OK"
+          hideCancel
+          onConfirm={() => setLeftoverFolders(null)}
+          onCancel={() => setLeftoverFolders(null)}
         />
       )}
 

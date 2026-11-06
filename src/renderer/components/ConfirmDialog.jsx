@@ -9,6 +9,7 @@ export default function ConfirmDialog({
   cancelLabel = 'Cancel',
   extraLabel,
   destructive = false,
+  hideCancel = false,
   initialFocus = 'confirm',
   onConfirm,
   onCancel,
@@ -60,9 +61,11 @@ export default function ConfirmDialog({
         <p className="cd-message">{message}</p>
 
         <div className="cd-actions">
-          <button type="button" ref={cancelRef} className="cd-cancel" onClick={onCancel}>
-            {cancelLabel}
-          </button>
+          {!hideCancel && (
+            <button type="button" ref={cancelRef} className="cd-cancel" onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          )}
           {extraLabel && (
             <button type="button" ref={extraRef} className="cd-extra" onClick={onExtra}>
               {extraLabel}

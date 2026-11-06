@@ -204,7 +204,10 @@ export function registerHandlers(mainWindow) {
     if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir) || !Array.isArray(args.agentIds)) {
       return { error: 'invalid-args' }
     }
-    try { await worktree.closeAllForWorkspace(args); return { ok: true } }
+    try {
+      const r = await worktree.closeAllForWorkspace(args)
+      return { ok: true, failures: r?.failures ?? [] }
+    }
     catch (err) { return { error: err.code || 'unknown' } }
   })
 

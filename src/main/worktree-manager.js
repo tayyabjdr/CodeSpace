@@ -1,7 +1,7 @@
 import { execFileSync } from 'child_process'
 import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync, rmdirSync, lstatSync } from 'fs'
 import { join, dirname, basename, resolve } from 'path'
-import { setupWorktree, removeDepsLink } from './worktree-setup.js'
+import { setupWorktree, removeAllLinks } from './worktree-setup.js'
 
 let gitAvailable = null
 
@@ -253,15 +253,17 @@ async function _closeImpl({ repoDir, agentId }) {
     } catch {}
   }
 
-  // The worktree's node_modules is a link to the user's real one. Take the
-  // link off BEFORE anything deletes recursively, and if that fails touch
-  // nothing: a leftover folder is cheap, a deleted node_modules is not.
-  try { removeDepsLink(wtPath) }
+  // The worktree holds links (node_modules and any an agent made or renamed)
+  // into the user's real folders, and git deletes through them. Unlink every
+  // link BEFORE anything deletes, and if that fails touch nothing: a leftover
+  // folder is cheap, a deleted node_modules is not.
+  try { removeAllLinks(wtPath) }
   catch (e) {
     return {
       ok: false,
       error: 'deps-unlink-failed',
-      detail: `Couldn't detach node_modules from ${wtPath}: ${e?.message ?? e}`
+      path: wtPath,
+      detail: `Couldn't detach links from ${wtPath}: ${e?.message ?? e}`
     }
   }
 
@@ -271,6 +273,7 @@ async function _closeImpl({ repoDir, agentId }) {
   // git can leave an empty folder behind (locked files on Windows). Only a
   // real directory is deleted, never a link that could point elsewhere.
   try {
+    removeAllLinks(wtPath) // again: nothing may have appeared since the first pass
     if (lstatSync(wtPath).isDirectory()) rmSync(wtPath, { recursive: true, force: true })
   } catch {}
   pruneWorktreeRoots(wtPath)
@@ -293,14 +296,23 @@ export async function close(args) {
 
 export async function closeAllForWorkspace({ repoDir, agentIds }) {
   return withRepoLock(repoDir, async () => {
+    const failures = []
     for (const id of agentIds) {
-      try { await _closeImpl({ repoDir, agentId: id }) } catch {}
+      const entry = readMeta(repoDir).agents[id]
+      const path = entry ? entryWorktreePath(repoDir, id, entry) : null
+      try {
+        const res = await _closeImpl({ repoDir, agentId: id })
+        if (res && res.ok === false) failures.push({ agentId: id, path: res.path ?? path, detail: res.detail ?? res.error })
+      } catch (e) {
+        failures.push({ agentId: id, path, detail: String(e?.message ?? e) })
+      }
     }
     try {
       const dir = join(repoDir, '.codespace', 'worktrees')
       const entries = readdirSync(dir).filter(n => n !== '.cs-meta.json')
       if (entries.length === 0 && Object.keys(readMeta(repoDir).agents).length === 0) rmSync(dir, { recursive: true, force: true })
     } catch {}
+    return { failures }
   })
 }
 
@@ -345,14 +357,15 @@ export async function wipeAll({ repoDir, liveAgentIds = [] }) {
         kept.push({
           agentId: id,
           branch: entry.branch,
-          path: entryWorktreePath(repoDir, id, entry)
+          path: entryWorktreePath(repoDir, id, entry),
+          reason: 'uncommitted'
         })
         continue
       }
       let res = null
       try { res = await _closeImpl({ repoDir, agentId: id }) } catch {}
       if (res && res.ok === false) {
-        kept.push({ agentId: id, branch: entry.branch, path: entryWorktreePath(repoDir, id, entry) })
+        kept.push({ agentId: id, branch: entry.branch, path: entryWorktreePath(repoDir, id, entry), reason: 'cleanup-failed', detail: res.detail })
       }
     }
     try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}

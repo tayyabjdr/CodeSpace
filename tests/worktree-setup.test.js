@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, lstatSync, readdirSync } from 'fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, lstatSync, readdirSync, symlinkSync, appendFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
@@ -9,7 +9,7 @@ import {
   create, close, closeAllForWorkspace, wipeAll, repairOrphans, checkDirty,
   worktreePath, ensureLocalExcludes, readMeta
 } from '../src/main/worktree-manager.js'
-import { setupWorktree, removeDepsLink, isDepsLink } from '../src/main/worktree-setup.js'
+import { setupWorktree, removeDepsLink, removeAllLinks, isDepsLink } from '../src/main/worktree-setup.js'
 
 function git(cwd, ...args) {
   return execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' })
@@ -37,7 +37,7 @@ afterEach(() => {
   // Drop any junction first so the recursive cleanup can never reach the real folder.
   const wtRoot = join(root, '.codespace-worktrees', 'with space')
   try {
-    for (const id of readdirSync(wtRoot)) { try { removeDepsLink(join(wtRoot, id)) } catch {} }
+    for (const id of readdirSync(wtRoot)) { try { removeAllLinks(join(wtRoot, id)) } catch {} }
   } catch {}
   rmSync(root, { recursive: true, force: true })
 })
@@ -117,7 +117,8 @@ describe('worktree-manager / linked deps', () => {
   })
 
   it('does not treat the link as dirty', async () => {
-    await create({ repoDir, workspaceName: 'ws', agentId })
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    expect(isDepsLink(r.path)).toBe(true)
     expect(await checkDirty({ repoDir, agentId })).toEqual({ dirty: false })
   })
 
@@ -138,6 +139,15 @@ describe('worktree-manager / linked deps', () => {
       expect(existsSync(join(repoDir, 'node_modules'))).toBe(true)
       if (which !== 'repairOrphans') expect(existsSync(r.path)).toBe(false)
     })
+
+  it('repairOrphans leaves a worktree whose folder and link still exist alone', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    await repairOrphans({ repoDir })
+    expect(existsSync(r.path)).toBe(true)
+    expect(isDepsLink(r.path)).toBe(true)
+    expect(existsSync(SENTINEL())).toBe(true)
+    expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
+  })
 
   it('close does not delete the worktree when the link cannot be removed', async () => {
     const r = await create({ repoDir, workspaceName: 'ws', agentId })
@@ -162,21 +172,165 @@ describe('worktree-manager / linked deps', () => {
   })
 })
 
+// Links an agent can create anywhere in its worktree; each points outside the
+// repo at a folder with a sentinel that must survive every cleanup path.
+function plantExtraLinks(wtPath) {
+  const targets = []
+  const mk = (name) => {
+    const t = join(root, name)
+    mkdirSync(t)
+    writeFileSync(join(t, 'sentinel'), 'x')
+    targets.push(t)
+    return t
+  }
+  // renamed node_modules (the realistic one: mv node_modules node_modules.bak)
+  removeDepsLink(wtPath)
+  symlinkSync(join(repoDir, 'node_modules'), join(wtPath, 'node_modules.bak'), 'junction')
+  // nested, in a folder that also holds real files
+  mkdirSync(join(wtPath, 'packages', 'app'), { recursive: true })
+  writeFileSync(join(wtPath, 'packages', 'app', 'real.txt'), 'real')
+  symlinkSync(mk('ext-nested'), join(wtPath, 'packages', 'app', 'node_modules'), 'junction')
+  // an arbitrary-name junction at the top
+  symlinkSync(mk('ext-top'), join(wtPath, 'shared-cache'), 'junction')
+  return targets
+}
+
+describe('worktree-manager / links anywhere in the worktree', () => {
+  const agentId = 'bbbb2222-0000-0000-0000-000000000000'
+
+  it.each(['close', 'closeAllForWorkspace', 'wipeAll'])(
+    '%s unlinks renamed, nested and mixed-folder junctions without touching their targets', async (which) => {
+      const r = await create({ repoDir, workspaceName: 'ws', agentId })
+      if (which === 'wipeAll') {
+        // wipeAll keeps dirty worktrees, so hide the planted files from git status
+        // to let it reach the removal (and the link walk) at all.
+        const ex = join(repoDir, '.git', 'info', 'exclude')
+        appendFileSync(ex, ['/node_modules.bak', '/shared-cache', '/packages/', ''].join('\n'))
+      }
+      const targets = plantExtraLinks(r.path)
+      if (which === 'close') await close({ repoDir, agentId })
+      else if (which === 'closeAllForWorkspace') await closeAllForWorkspace({ repoDir, agentIds: [agentId] })
+      else await wipeAll({ repoDir, liveAgentIds: [] })
+      for (const t of targets) expect(existsSync(join(t, 'sentinel'))).toBe(true)
+      expect(existsSync(SENTINEL())).toBe(true)
+      expect(existsSync(r.path)).toBe(false)
+    })
+
+  it('removeAllLinks removes a dangling link', () => {
+    const wtPath = manualWorktree('c1')
+    const gone = join(root, 'gone')
+    mkdirSync(gone)
+    symlinkSync(gone, join(wtPath, 'node_modules'), 'junction')
+    rmSync(gone, { recursive: true })
+    expect(isDepsLink(wtPath)).toBe(true)
+    removeAllLinks(wtPath)
+    expect(isDepsLink(wtPath)).toBe(false)
+    // and the same through removeDepsLink
+    const gone2 = join(root, 'gone2')
+    mkdirSync(gone2)
+    symlinkSync(gone2, join(wtPath, 'node_modules'), 'junction')
+    rmSync(gone2, { recursive: true })
+    removeDepsLink(wtPath)
+    expect(isDepsLink(wtPath)).toBe(false)
+  })
+
+  it('removeAllLinks leaves real folders and files alone', () => {
+    const wtPath = manualWorktree('c2')
+    mkdirSync(join(wtPath, 'real', 'deep'), { recursive: true })
+    writeFileSync(join(wtPath, 'real', 'deep', 'f.txt'), 'f')
+    removeAllLinks(wtPath)
+    expect(existsSync(join(wtPath, 'real', 'deep', 'f.txt'))).toBe(true)
+    expect(existsSync(join(wtPath, '.git'))).toBe(true)
+  })
+
+  it('a lstat failure other than "missing" stops the removal', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    const eperm = () => { const e = new Error('EPERM simulated'); e.code = 'EPERM'; throw e }
+    const mgr = await loadManager({ lstatSync: (p, ...a) => (String(p).endsWith('node_modules') ? eperm() : undefined) })
+    const out = await mgr.close({ repoDir, agentId })
+    expect(out.ok).toBe(false)
+    expect(out.error).toBe('deps-unlink-failed')
+    expect(existsSync(r.path)).toBe(true)
+    expect(isDepsLink(r.path)).toBe(true)
+    expect(existsSync(SENTINEL())).toBe(true)
+    expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
+  })
+
+  it('lstat ENOENT and ENOTDIR still mean missing', () => {
+    expect(isDepsLink(join(root, 'does-not-exist'))).toBe(false)
+    expect(isDepsLink(join(repoDir, 'a.txt'))).toBe(false) // ENOTDIR: a.txt/node_modules
+  })
+})
+
+describe('worktree-setup / env copy safety', () => {
+  it('does not copy an .env that is ignored only by an uncommitted .gitignore', () => {
+    writeFileSync(join(repoDir, '.gitignore'), '.env.local\n.env.secret\n') // not committed
+    writeFileSync(join(repoDir, '.env.secret'), 'S=1')
+    const wtPath = manualWorktree('d1')
+    setupWorktree({ repoDir, wtPath })
+    expect(existsSync(join(wtPath, '.env.secret'))).toBe(false)
+    expect(existsSync(join(wtPath, '.env.local'))).toBe(true) // committed rule still copies
+  })
+})
+
+describe('worktree-manager / failed cleanup reporting', () => {
+  const agentId = 'cccc3333-0000-0000-0000-000000000000'
+
+  it('closeAllForWorkspace reports the folders it could not remove', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    const mgr = await loadManager({ unlinkSync: () => { throw new Error('EPERM simulated') } })
+    const out = await mgr.closeAllForWorkspace({ repoDir, agentIds: [agentId] })
+    expect(out.failures).toHaveLength(1)
+    expect(out.failures[0].agentId).toBe(agentId)
+    expect(out.failures[0].path).toBe(r.path)
+    expect(out.failures[0].detail).toMatch(/EPERM/)
+    expect(existsSync(r.path)).toBe(true)
+    expect(existsSync(SENTINEL())).toBe(true)
+  })
+
+  it('closeAllForWorkspace reports no failures on success', async () => {
+    await create({ repoDir, workspaceName: 'ws', agentId })
+    expect((await closeAllForWorkspace({ repoDir, agentIds: [agentId] })).failures).toEqual([])
+  })
+
+  it('wipeAll marks kept entries with a reason', async () => {
+    await create({ repoDir, workspaceName: 'ws', agentId })
+    const mgr = await loadManager({ unlinkSync: () => { throw new Error('EPERM simulated') } })
+    const out = await mgr.wipeAll({ repoDir, liveAgentIds: [] })
+    expect(out.kept.find(k => k.agentId === agentId).reason).toBe('cleanup-failed')
+
+    const other = 'dddd4444-0000-0000-0000-000000000000'
+    const r2 = await create({ repoDir, workspaceName: 'ws2', agentId: other })
+    writeFileSync(join(r2.path, 'dirty.txt'), 'x')
+    const out2 = await wipeAll({ repoDir, liveAgentIds: [] })
+    expect(out2.kept.find(k => k.agentId === other).reason).toBe('uncommitted')
+  })
+})
+
 // Run a manager call with unlinkSync made to fail (ESM fs bindings can't be
 // spied, so the manager is loaded fresh against a mocked fs).
 async function closeWithFailingUnlink(args) {
-  const mgr = await loadManagerWithFailingUnlink()
+  const mgr = await loadManager({ unlinkSync: () => { throw new Error('EPERM simulated') } })
   return mgr.close(args)
 }
 async function wipeWithFailingUnlink({ repoDir }) {
-  const mgr = await loadManagerWithFailingUnlink()
+  const mgr = await loadManager({ unlinkSync: () => { throw new Error('EPERM simulated') } })
   return mgr.wipeAll({ repoDir, liveAgentIds: [] })
 }
-async function loadManagerWithFailingUnlink() {
+// Loads a fresh manager against a fs whose named functions are overridden.
+// An override may return undefined to fall through to the real function.
+async function loadManager(overrides) {
   vi.resetModules()
   vi.doMock('fs', async (orig) => {
     const actual = await orig()
-    return { ...actual, unlinkSync: () => { throw new Error('EPERM simulated') } }
+    const wrapped = {}
+    for (const [k, fn] of Object.entries(overrides)) {
+      wrapped[k] = (...args) => {
+        const v = fn(...args)
+        return v === undefined ? actual[k](...args) : v
+      }
+    }
+    return { ...actual, ...wrapped }
   })
   const mgr = await import('../src/main/worktree-manager.js')
   vi.doUnmock('fs')
