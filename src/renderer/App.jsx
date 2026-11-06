@@ -4,6 +4,7 @@ import Toolbar from './components/Toolbar.jsx'
 import TerminalPane from './components/TerminalPane.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
+import LeftoverFoldersDialog from './components/LeftoverFoldersDialog.jsx'
 import CloseConfirm from './components/CloseConfirm.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
@@ -11,7 +12,7 @@ import SettingsPage from './components/SettingsPage.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
 import IsolationNotice from './components/IsolationNotice.jsx'
-import { isolationNotice, nextAgentCounter, mergeRetryFailures } from './isolation-notice.js'
+import { isolationNotice, nextAgentCounter, mergeRetryFailures, closeFailureMessage, leftoverFromCloseAll } from './isolation-notice.js'
 import SkillsPanel from './components/SkillsPanel.jsx'
 import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
 import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
@@ -555,7 +556,7 @@ function AppInner() {
         const agentIds = (target.terminals ?? []).map(t => t.id)
         setTimeout(() => {
           window.electronAPI.worktree.closeAll({ repoDir: target.dir, agentIds })
-            .then(r => { if (r?.failures?.length) setLeftoverFolders(r.failures) })
+            .then(r => { const left = leftoverFromCloseAll(r); if (left.length) setLeftoverFolders(left) })
             .catch(err => console.error('worktree.closeAll failed', err))
         }, agentIds.length * 80 + 100)
       }
@@ -786,8 +787,8 @@ function AppInner() {
       // Fire-and-forget; main is single-writer and tolerates errors.
       window.electronAPI.worktree.close({ repoDir: w.dir, agentId: target.id })
         .then(r => {
-          if (r && r.ok === false) {
-            const msg = `Couldn't remove this agent's folder: ${r.path ?? 'unknown path'}. Delete it after closing anything using it.`
+          const msg = closeFailureMessage(r)
+          if (msg) {
             // A new warning must be seen even if an earlier one was dismissed.
             setDismissedNotices(prev => { const n = new Set(prev); n.delete(w.id); return n })
             setWorkspaces(prev => prev.map(x => x.id === w.id ? { ...x, warnings: [...(x.warnings ?? []), msg] } : x))
@@ -1102,6 +1103,7 @@ function AppInner() {
             onConfirm={confirmClose}
           />
         )}
+        <LeftoverFoldersDialog folders={leftoverFolders} onClose={() => setLeftoverFolders(null)} />
       </>
     )
   }
@@ -1327,23 +1329,7 @@ function AppInner() {
         />
       )}
 
-      {leftoverFolders && leftoverFolders.length > 0 && (
-        <ConfirmDialog
-          title="Some agent folders were left behind"
-          message={
-            <>
-              These folders couldn't be removed. Delete them after closing anything using them:
-              {leftoverFolders.map(f => (
-                <span key={f.agentId} style={{ display: 'block' }}><code>{f.path ?? f.agentId}</code></span>
-              ))}
-            </>
-          }
-          confirmLabel="OK"
-          hideCancel
-          onConfirm={() => setLeftoverFolders(null)}
-          onCancel={() => setLeftoverFolders(null)}
-        />
-      )}
+      <LeftoverFoldersDialog folders={leftoverFolders} onClose={() => setLeftoverFolders(null)} />
 
       {pendingWorktreeClose && (
         <ConfirmDialog

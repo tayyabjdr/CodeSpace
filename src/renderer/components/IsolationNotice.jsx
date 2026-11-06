@@ -14,7 +14,9 @@ export default function IsolationNotice({
     const detail = failures.find(f => f?.detail)?.detail ?? failures[0]?.error ?? 'unknown error'
     text = `Couldn't create a folder for ${n} ${n === 1 ? 'agent' : 'agents'}: ${detail}`
   } else if (kind === 'setup-warning') {
-    text = `Some agent folders aren't fully set up: ${warnings[0]}`
+    const latest = warnings[warnings.length - 1]
+    const others = warnings.length - 1
+    text = `Some agent folders aren't fully set up: ${latest}${others > 0 ? ` (and ${others} more)` : ''}`
   } else if (kind === 'can-isolate') {
     text = 'Agents here share one folder, so their changes can collide.'
   } else {

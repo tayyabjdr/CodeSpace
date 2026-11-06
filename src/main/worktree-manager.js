@@ -239,6 +239,19 @@ export async function checkDirty({ repoDir, agentId }) {
   return { dirty: out.trim().length > 0 }
 }
 
+const REMOVE_ATTEMPTS = 3
+const REMOVE_RETRY_MS = 500
+const sleep = (ms) => new Promise(r => setTimeout(r, ms))
+
+// true: gone. false: still there. Error object: couldn't tell (treated as not gone).
+function folderGone(p) {
+  try { lstatSync(p); return false }
+  catch (e) {
+    if (e?.code === 'ENOENT' || e?.code === 'ENOTDIR') return true
+    return e instanceof Error ? e : new Error(String(e))
+  }
+}
+
 async function _closeImpl({ repoDir, agentId }) {
   const m = readMeta(repoDir)
   const entry = m.agents[agentId]
@@ -267,15 +280,42 @@ async function _closeImpl({ repoDir, agentId }) {
     }
   }
 
-  try { execGit(['-C', repoDir, 'worktree', 'remove', '--force', wtPath]) }
-  catch {}
+  // The agent's process was only just killed, so its files may still be held
+  // for a moment. Retry a few times, each attempt starting with a link walk.
+  // Only a real directory is deleted, never a link that could point elsewhere.
+  for (let attempt = 0; attempt < REMOVE_ATTEMPTS; attempt++) {
+    if (attempt > 0) await sleep(REMOVE_RETRY_MS)
+    try { removeAllLinks(wtPath) }
+    catch (e) {
+      return {
+        ok: false,
+        error: 'deps-unlink-failed',
+        path: wtPath,
+        detail: `Couldn't detach links from ${wtPath}: ${e?.message ?? e}`
+      }
+    }
+    try { execGit(['-C', repoDir, 'worktree', 'remove', '--force', wtPath]) }
+    catch {}
+    try {
+      removeAllLinks(wtPath) // again: a link may have appeared since the first walk
+      if (lstatSync(wtPath).isDirectory()) rmSync(wtPath, { recursive: true, force: true })
+    } catch {}
+    if (folderGone(wtPath) === true) break
+  }
 
-  // git can leave an empty folder behind (locked files on Windows). Only a
-  // real directory is deleted, never a link that could point elsewhere.
-  try {
-    removeAllLinks(wtPath) // again: nothing may have appeared since the first pass
-    if (lstatSync(wtPath).isDirectory()) rmSync(wtPath, { recursive: true, force: true })
-  } catch {}
+  // Never report success for a folder that is still there (or whose state we
+  // can't read). Keep the meta entry and the branch so wipeAll retries it.
+  const gone = folderGone(wtPath)
+  if (gone !== true) {
+    return {
+      ok: false,
+      error: 'folder-locked',
+      path: wtPath,
+      detail: gone === false
+        ? `Couldn't remove ${wtPath}; something is still using it.`
+        : `Couldn't check whether ${wtPath} was removed: ${gone.message ?? gone}`
+    }
+  }
   pruneWorktreeRoots(wtPath)
 
   try { execGit(['-C', repoDir, 'worktree', 'prune']) } catch {}

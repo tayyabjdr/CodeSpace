@@ -35,3 +35,17 @@ export function mergeRetryFailures(current, retried, newFailures) {
   const gone = new Set(retried)
   return [...(current ?? []).filter(f => !gone.has(f)), ...newFailures]
 }
+
+// A close that fails comes back as { ok:false, path } or, when main threw, { error }.
+// Returns the warning to show, or null when the close worked.
+export function closeFailureMessage(result) {
+  if (!result || (result.ok !== false && !result.error)) return null
+  return `Couldn't remove this agent's folder: ${result.path ?? 'unknown location'}. Delete it after closing anything using it.`
+}
+
+// Folders a workspace cleanup left behind, from a closeAll result.
+export function leftoverFromCloseAll(result) {
+  if (!result) return []
+  if (result.error) return [{ agentId: 'unknown', path: null, detail: result.error }]
+  return Array.isArray(result.failures) ? result.failures : []
+}

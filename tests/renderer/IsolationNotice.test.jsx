@@ -47,11 +47,15 @@ describe('IsolationNotice', () => {
     expect(onRetry).not.toHaveBeenCalled()
   })
 
-  it('setup-warning shows the first warning and can be dismissed', async () => {
+  it('setup-warning shows the most recent warning, with a count of the others, and can be dismissed', async () => {
     const onDismiss = vi.fn()
-    render(<IsolationNotice kind="setup-warning" warnings={["Couldn't link node_modules. Run an install in this agent's folder.", 'second']} onDismiss={onDismiss} />)
-    expect(screen.getByText("Some agent folders aren't fully set up: Couldn't link node_modules. Run an install in this agent's folder.")).toBeTruthy()
+    render(<IsolationNotice kind="setup-warning" warnings={['older one', "Couldn't remove this agent's folder: C:\wt\a. Delete it after closing anything using it."]} onDismiss={onDismiss} />)
+    expect(screen.getByText(/Some agent folders aren't fully set up: Couldn't remove this agent's folder: C:\wt\a\. Delete it after closing anything using it\. \(and 1 more\)/)).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: /dismiss/i }))
     expect(onDismiss).toHaveBeenCalledTimes(1)
+  })
+  it('a single warning has no count', () => {
+    render(<IsolationNotice kind="setup-warning" warnings={['only']} onDismiss={() => {}} />)
+    expect(screen.getByText("Some agent folders aren't fully set up: only")).toBeTruthy()
   })
 })

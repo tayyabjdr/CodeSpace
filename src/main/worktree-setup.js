@@ -5,9 +5,14 @@ import { join } from 'path'
 // node_modules is linked (junction) rather than copied: an install per agent
 // is slow and heavy. The link is local-excluded, so git never stages it.
 //
-// DANGER: the link points at the user's real node_modules. Anything that
-// deletes a worktree recursively must call removeDepsLink first and must stop
-// if that throws.
+// DANGER: links in a worktree (node_modules, or any an agent makes or renames)
+// point at the user's real folders, and git and recursive deletes walk
+// through them and delete the target's contents. Anything that removes a
+// worktree MUST call removeAllLinks(wtPath) first and stop if it throws.
+// removeDepsLink only handles the top-level node_modules and is not enough.
+// Calling removeAllLinks again just before a recursive delete narrows the
+// window in which a new link could appear, but cannot close it (a process can
+// still create one between the walk and the delete).
 
 // Only "it isn't there" counts as missing. Any other failure (EPERM, EACCES,
 // EBUSY...) must throw: treating it as "no link" would let a delete go ahead.
@@ -48,10 +53,15 @@ export function removeAllLinks(wtPath) {
   while (stack.length) {
     const dir = stack.pop()
     for (const name of readdirSync(dir)) {
-      if (dir === wtPath && name === '.git') continue
       const p = join(dir, name)
       const st = lstatOrNull(p)
       if (!st) continue
+      if (dir === wtPath && name.toLowerCase() === '.git') {
+        // A worktree's .git is a plain file. Anything else (a link, a real
+        // folder) is not something we understand, so refuse to remove.
+        if (!st.isFile()) throw new Error(`${p} is not a regular file, refusing to remove this worktree`)
+        continue
+      }
       if (st.isSymbolicLink()) {
         unlinkSync(p)
         if (lstatOrNull(p)) throw new Error(`link is still present after unlink: ${p}`)

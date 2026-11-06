@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isolationNotice, ISOLATION_NOTES } from '../../src/renderer/isolation-notice.js'
+import { isolationNotice, ISOLATION_NOTES, closeFailureMessage, leftoverFromCloseAll } from '../../src/renderer/isolation-notice.js'
 
 describe('isolationNotice', () => {
   it('offers isolation when the folder qualifies, enabled only with no live agents', () => {
@@ -60,5 +60,21 @@ describe('isolationNotice / setup warnings', () => {
     expect(isolationNotice({ isolated: false, canIso: { ok: true }, liveAgents: 0, failures: [], warnings: ['w'] }).kind).toBe('can-isolate')
     expect(isolationNotice({ isolated: true, liveAgents: 1, failures: [], warnings: [] }).kind).toBe(null)
     expect(isolationNotice({ isolated: true, liveAgents: 1, failures: [] }).kind).toBe(null)
+  })
+})
+
+describe('close failure helpers', () => {
+  it('closeFailureMessage covers ok:false and thrown { error } results, and is null on success', () => {
+    expect(closeFailureMessage({ ok: true })).toBeNull()
+    expect(closeFailureMessage(undefined)).toBeNull()
+    expect(closeFailureMessage({ ok: false, error: 'folder-locked', path: 'C:\wt\a' }))
+      .toBe("Couldn't remove this agent's folder: C:\wt\a. Delete it after closing anything using it.")
+    expect(closeFailureMessage({ error: 'unknown' })).toMatch(/unknown location/)
+  })
+  it('leftoverFromCloseAll passes failures through and turns { error } into one entry', () => {
+    expect(leftoverFromCloseAll({ ok: true, failures: [] })).toEqual([])
+    expect(leftoverFromCloseAll({ ok: true, failures: [{ agentId: 'a', path: 'p' }] })).toHaveLength(1)
+    expect(leftoverFromCloseAll({ error: 'x' })).toHaveLength(1)
+    expect(leftoverFromCloseAll(null)).toEqual([])
   })
 })

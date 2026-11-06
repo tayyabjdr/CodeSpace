@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, lstatSync, readdirSync, symlinkSync, appendFileSync } from 'fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, lstatSync, readdirSync, symlinkSync, appendFileSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { execFileSync } from 'child_process'
+import { execFileSync, spawn } from 'child_process'
 
 import {
   create, close, closeAllForWorkspace, wipeAll, repairOrphans, checkDirty,
@@ -304,6 +304,92 @@ describe('worktree-manager / failed cleanup reporting', () => {
     writeFileSync(join(r2.path, 'dirty.txt'), 'x')
     const out2 = await wipeAll({ repoDir, liveAgentIds: [] })
     expect(out2.kept.find(k => k.agentId === other).reason).toBe('uncommitted')
+  })
+})
+
+// A real process whose cwd is inside the folder, which keeps Windows from
+// deleting it. Always killed by the caller's finally.
+async function holdCwd(dir, ms) {
+  const child = spawn(process.execPath, ['-e', `setTimeout(() => {}, ${ms})`], { cwd: dir, stdio: 'ignore', windowsHide: true })
+  await new Promise((res, rej) => { child.once('spawn', res); child.once('error', rej) })
+  await new Promise(r => setTimeout(r, 150)) // let it chdir/boot before we start removing
+  return child
+}
+async function stop(child) {
+  if (child.exitCode !== null) return
+  await new Promise(r => { child.once('exit', r); child.kill() })
+}
+const branchExists = (b) => git(repoDir, 'branch', '--list', b).trim().length > 0
+
+describe('worktree-manager / locked folders', () => {
+  const agentId = 'eeee5555-0000-0000-0000-000000000000'
+
+  it('close reports folder-locked and keeps meta and branch while a process holds the folder', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    const child = await holdCwd(r.path, 60000)
+    try {
+      const out = await close({ repoDir, agentId })
+      expect(out.ok).toBe(false)
+      expect(out.error).toBe('folder-locked')
+      expect(out.path).toBe(r.path)
+      expect(existsSync(r.path)).toBe(true)
+      expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
+      expect(branchExists(r.branch)).toBe(true)
+      expect(existsSync(SENTINEL())).toBe(true)
+    } finally { await stop(child) }
+  }, 20000)
+
+  it('close succeeds when the process lets go within the retry window', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    const child = await holdCwd(r.path, 600)
+    try {
+      const out = await close({ repoDir, agentId })
+      expect(out.ok).toBe(true)
+      expect(existsSync(r.path)).toBe(false)
+      expect(readMeta(repoDir).agents[agentId]).toBeUndefined()
+      expect(existsSync(SENTINEL())).toBe(true)
+    } finally { await stop(child) }
+  }, 20000)
+
+  it('closeAllForWorkspace lists a locked folder in failures', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    const child = await holdCwd(r.path, 60000)
+    try {
+      const out = await closeAllForWorkspace({ repoDir, agentIds: [agentId] })
+      expect(out.failures).toHaveLength(1)
+      expect(out.failures[0].path).toBe(r.path)
+      expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
+    } finally { await stop(child) }
+  }, 20000)
+
+  it('a failed second link walk does not report success', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    let rootCalls = 0
+    const mgr = await loadManager({
+      lstatSync: (p) => {
+        if (String(p) === r.path && ++rootCalls > 1) { const e = new Error('EPERM simulated'); e.code = 'EPERM'; throw e }
+      }
+    })
+    const out = await mgr.close({ repoDir, agentId })
+    expect(out.ok).toBe(false)
+    expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
+    expect(existsSync(SENTINEL())).toBe(true)
+  }, 20000)
+})
+
+describe('worktree-setup / removeAllLinks and .git', () => {
+  it('refuses a top-level .git that is a junction, and leaves its target alone', () => {
+    const wt = join(root, 'fake-wt'); mkdirSync(wt)
+    const ext = join(root, 'ext-git'); mkdirSync(ext); writeFileSync(join(ext, 'sentinel'), 'x')
+    symlinkSync(ext, join(wt, '.git'), 'junction')
+    expect(() => removeAllLinks(wt)).toThrow(/\.git/)
+    expect(existsSync(join(ext, 'sentinel'))).toBe(true)
+    removeDepsLink(wt) // no-op, not node_modules
+    unlinkSync(join(wt, '.git'))
+  })
+  it('refuses a top-level .git that is a real folder, in any letter case', () => {
+    const wt = join(root, 'fake-wt2'); mkdirSync(join(wt, '.Git'), { recursive: true })
+    expect(() => removeAllLinks(wt)).toThrow(/\.git/i)
   })
 })
 
