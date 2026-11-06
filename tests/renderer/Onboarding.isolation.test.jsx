@@ -6,7 +6,7 @@ import Onboarding from '../../src/renderer/components/Onboarding.jsx'
 const OK = { ok: true, reason: null }
 let canIsolate
 
-function setup(dir = 'D:\repo') {
+function setup(dir = 'D:/repo') {
   const onLaunch = vi.fn()
   const utils = render(<Onboarding onLaunch={onLaunch} initialDir={dir} />)
   return { onLaunch, ...utils }
@@ -23,7 +23,7 @@ beforeEach(() => {
   canIsolate = vi.fn().mockResolvedValue(OK)
   window.electronAPI = {
     worktree: { canIsolate },
-    getDesktopPath: vi.fn().mockResolvedValue('D:\desk'),
+    getDesktopPath: vi.fn().mockResolvedValue('D:/desk'),
     recents: { get: vi.fn().mockResolvedValue([]), add: vi.fn().mockResolvedValue([]), remove: vi.fn() },
     agents: { getAvailability: vi.fn().mockResolvedValue({ claude: true, codex: true }) },
     selectDirectory: vi.fn()
@@ -75,13 +75,13 @@ describe('Onboarding isolation default', () => {
   })
 
   it("keeps the user's choice when they turned it off, across folder changes", async () => {
-    window.electronAPI.recents.get.mockResolvedValue(['D:\other'])
+    window.electronAPI.recents.get.mockResolvedValue(['D:/other'])
     setup()
     await waitFor(() => expect(toggle().checked).toBe(true))
     await userEvent.click(screen.getByText('Isolated agents'))
     expect(toggle().checked).toBe(false)
-    await userEvent.click(await screen.findByTitle('D:\\other'))
-    await waitFor(() => expect(canIsolate).toHaveBeenCalledWith('D:\other'))
+    await userEvent.click(await screen.findByTitle('D:/other'))
+    await waitFor(() => expect(canIsolate).toHaveBeenCalledWith('D:/other'))
     await act(async () => {})
     expect(toggle().checked).toBe(false)
     expect(toggle().disabled).toBe(false)
