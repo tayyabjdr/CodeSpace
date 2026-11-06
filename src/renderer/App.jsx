@@ -11,7 +11,7 @@ import SettingsPage from './components/SettingsPage.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
 import IsolationNotice from './components/IsolationNotice.jsx'
-import { isolationNotice } from './isolation-notice.js'
+import { isolationNotice, nextAgentCounter, mergeRetryFailures } from './isolation-notice.js'
 import SkillsPanel from './components/SkillsPanel.jsx'
 import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
 import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
@@ -615,7 +615,7 @@ function AppInner() {
     if (newAgents.length === 0 && failures.length === 0) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
-      agentCounter: Math.max(x.agentCounter, startNum + newAgents.length - 1),
+      agentCounter: nextAgentCounter(x.agentCounter, startNum, items.length),
       terminals: [...x.terminals, ...newAgents],
       failures: [...(x.failures ?? []), ...failures]
     } : x))
@@ -632,21 +632,32 @@ function AppInner() {
     }))
   }, [])
 
+  const retryingRef = useRef(new Set())
+  const [retryingId, setRetryingId] = useState(null)
   // Retry only the failed items; successes join the same workspace.
   const retryFailures = useCallback(async () => {
     if (!activeId) return
     const w = workspaces.find(x => x.id === activeId)
     const failed = w?.failures ?? []
     if (!w || failed.length === 0) return
-    const startNum = w.agentCounter + 1
-    const { agents, failures } = await materializeAgents(w, failed.map(f => f.item), startNum)
-    setWorkspaces(prev => prev.map(x => x.id === activeId ? {
-      ...x,
-      agentCounter: Math.max(x.agentCounter, startNum + agents.length - 1),
-      terminals: [...x.terminals, ...agents],
-      failures,
-      focusedTerminalId: x.focusedTerminalId ?? agents[0]?.id ?? null
-    } : x))
+    if (retryingRef.current.has(activeId)) return
+    retryingRef.current.add(activeId)
+    setRetryingId(activeId)
+    const wsId = activeId
+    try {
+      const startNum = w.agentCounter + 1
+      const { agents, failures } = await materializeAgents(w, failed.map(f => f.item), startNum)
+      setWorkspaces(prev => prev.map(x => x.id === wsId ? {
+        ...x,
+        agentCounter: nextAgentCounter(x.agentCounter, startNum, failed.length),
+        terminals: [...x.terminals, ...agents],
+        failures: mergeRetryFailures(x.failures, failed, failures),
+        focusedTerminalId: x.focusedTerminalId ?? agents[0]?.id ?? null
+      } : x))
+    } finally {
+      retryingRef.current.delete(wsId)
+      setRetryingId(prev => (prev === wsId ? null : prev))
+    }
   }, [activeId, workspaces, materializeAgents])
 
   // Eligibility of the active workspace's folder, checked when its id/dir
@@ -1145,6 +1156,7 @@ function AppInner() {
                 reason={canIso?.reason}
                 failures={activeWorkspace?.failures ?? []}
                 onSwitch={() => setWorkspaceIsolated(activeId, true)}
+                retrying={retryingId === activeId}
                 onRetry={retryFailures}
                 onDismiss={dismissNotice}
               />

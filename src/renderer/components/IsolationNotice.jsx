@@ -4,7 +4,7 @@ import './IsolationNotice.css'
 const SWITCH_BLOCKED = "Close this workspace's agents to switch."
 
 export default function IsolationNotice({
-  kind, actionEnabled, reason, failures = [], onSwitch, onRetry, onDismiss
+  kind, actionEnabled, reason, failures = [], retrying = false, onSwitch, onRetry, onDismiss
 }) {
   if (!kind) return null
 
@@ -23,7 +23,7 @@ export default function IsolationNotice({
     <div className={`iso-notice iso-notice-${kind}`} role={kind === 'spawn-failed' ? 'alert' : 'status'}>
       <span className="iso-notice-text">{text}</span>
       {kind === 'spawn-failed' && (
-        <button type="button" className="iso-notice-btn" onClick={onRetry}>Retry</button>
+        <button type="button" className="iso-notice-btn" disabled={retrying} onClick={onRetry}>Retry</button>
       )}
       {kind === 'can-isolate' && (
         <button

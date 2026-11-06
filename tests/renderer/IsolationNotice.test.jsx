@@ -37,4 +37,13 @@ describe('IsolationNotice', () => {
     await userEvent.click(screen.getByRole('button', { name: /dismiss/i }))
     expect(onDismiss).toHaveBeenCalled()
   })
+
+  it('disables Retry while a retry is in flight', async () => {
+    const onRetry = vi.fn()
+    render(<IsolationNotice kind="spawn-failed" actionEnabled retrying failures={[{ item: {}, detail: 'd' }]} onRetry={onRetry} />)
+    const btn = screen.getByRole('button', { name: 'Retry' })
+    expect(btn.disabled).toBe(true)
+    await userEvent.click(btn)
+    expect(onRetry).not.toHaveBeenCalled()
+  })
 })

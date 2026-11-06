@@ -24,3 +24,28 @@ describe('isolationNotice', () => {
     expect(Object.keys(ISOLATION_NOTES).sort()).toEqual(['git-missing', 'no-commits', 'not-a-repo'])
   })
 })
+
+import { nextAgentCounter, mergeRetryFailures } from '../../src/renderer/isolation-notice.js'
+
+describe('nextAgentCounter', () => {
+  it('advances by the batch size even when only some agents succeeded', () => {
+    // 3 retried from startNum 5; only the middle one (number 6) succeeded
+    expect(nextAgentCounter(4, 5, 3)).toBe(7)
+  })
+  it('never moves backwards', () => {
+    expect(nextAgentCounter(9, 5, 2)).toBe(9)
+  })
+})
+
+describe('mergeRetryFailures', () => {
+  it('removes retried items by identity, keeps concurrent ones, appends new', () => {
+    const a = { item: { shell: 'claude' } }, b = { item: { shell: 'claude' } }, c = { item: { shell: 'codex' } }
+    const again = { item: a.item, error: 'x' }
+    const out = mergeRetryFailures([a, b, c], [a, b], [again])
+    expect(out).toEqual([c, again])
+    expect(out[0]).toBe(c)
+  })
+  it('tolerates a missing current list', () => {
+    expect(mergeRetryFailures(undefined, [], [])).toEqual([])
+  })
+})
