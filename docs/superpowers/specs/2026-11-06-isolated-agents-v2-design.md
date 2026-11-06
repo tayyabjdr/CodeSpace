@@ -132,6 +132,11 @@ Check these before building Part 3, since each could change Part 2:
 
 1. **Junctions and bundlers.** Vite, webpack or Turbopack may resolve the link to its real path or reject it for sitting outside the project root. Try a Next.js 16 project and a Vite project. If it fails, fall back to a real install per worktree, which is slower and uses more disk.
 2. **Nested folders in the main repo.** Test runners, file watchers and Tailwind content globs running in the main folder may pick up `.codespace/worktrees/**`, for example running every agent's tests. Check this repo's vitest first. If it happens, move worktrees outside the repo, keyed by repo, and update the paths in `worktree-manager.js`.
+**Results (checked 2026-11-06, Task 1, on scratch clones):**
+
+- Risk 1, junctions and bundlers: passed. A worktree at `.codespace/worktrees/x` with `node_modules` joined by `mklink /J` built and served cleanly in both stacks. Next.js 16.2.7 (Turbopack, Portfolio clone): `npm run build` exit 0, `npm run dev` answered `GET / 200`. Vite 8.0.13 (Finance clone): `npm run build` exit 0, dev server answered 200 for `/`, `/src/main.tsx` and the pre-bundled deps. No symlink or "outside root" error. One cosmetic note: Next printed a "multiple lockfiles" warning and picked the main repo as workspace root, so Next projects may log that warning in a worktree. Decision: `depsMode = 'link'`.
+- Risk 2, nested folders: fired for test runners. CodeSpace's own `npx vitest run` reported 36 test files from the main folder and 72 with a worktree present, with every test running a second time from `.codespace/worktrees/x/tests`. The Next.js build with a nested worktree still passed, and a deliberate type error planted in the worktree was not picked up. Decision: worktrees go outside the repo, at `<parent-of-repo>/.codespace-worktrees/<repo-folder-name>/<agentId>`, and `worktreePath` in Task 2 uses that. The meta file stays in the repo.
+
 3. **Agents installing packages.** `npm install` inside a worktree writes through the junction into the shared `node_modules`, affecting everyone. There is no full fix in this version. Step 4 keeps the test run accurate.
 4. **Long paths.** Worktree paths add about 60 characters, and deep `node_modules` paths may hit Windows limits.
 
