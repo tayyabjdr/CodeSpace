@@ -60,7 +60,7 @@ export function worktreePath(repoDir, agentId) {
 }
 
 // Where an existing agent's worktree really is. v1 entries have no `path`.
-function entryWorktreePath(repoDir, agentId, entry) {
+export function entryWorktreePath(repoDir, agentId, entry) {
   return entry?.path || legacyWorktreePath(repoDir, agentId)
 }
 
