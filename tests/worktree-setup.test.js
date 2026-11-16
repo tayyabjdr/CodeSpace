@@ -362,17 +362,55 @@ describe('worktree-manager / locked folders', () => {
     } finally { await stop(child) }
   }, 20000)
 
-  it('a failed second link walk does not report success', async () => {
+  it('a failed second link walk stops the close before anything is deleted', async () => {
     const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    // Root lstat calls in one attempt: 1 first walk, 2 folderGone after git,
+    // 3 the second walk (only reached because the held folder survives git).
     let rootCalls = 0
+    const rmCalls = []
     const mgr = await loadManager({
       lstatSync: (p) => {
-        if (String(p) === r.path && ++rootCalls > 1) { const e = new Error('EPERM simulated'); e.code = 'EPERM'; throw e }
-      }
+        if (String(p) === r.path && ++rootCalls === 3) { const e = new Error('EPERM simulated'); e.code = 'EPERM'; throw e }
+      },
+      rmSync: (p) => { rmCalls.push(String(p)) }
     })
-    const out = await mgr.close({ repoDir, agentId })
-    expect(out.ok).toBe(false)
-    expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
+    const child = await holdCwd(r.path, 60000)
+    try {
+      const out = await mgr.close({ repoDir, agentId })
+      expect(rootCalls).toBe(3)
+      expect(out.ok).toBe(false)
+      expect(out.error).toBe('deps-unlink-failed')
+      expect(out.detail).toMatch(/EPERM simulated/)
+      expect(rmCalls).not.toContain(r.path)
+      expect(existsSync(r.path)).toBe(true)
+      expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
+      expect(branchExists(r.branch)).toBe(true)
+      expect(existsSync(SENTINEL())).toBe(true)
+    } finally { await stop(child) }
+  }, 20000)
+
+  it('keeps a branch with commits after its locked folder is deleted by hand', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    writeFileSync(join(r.path, 'work.txt'), 'agent work')
+    git(r.path, 'add', 'work.txt')
+    git(r.path, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'agent work')
+
+    // Close fails while something holds the folder; meta and branch are kept.
+    const child = await holdCwd(r.path, 60000)
+    try {
+      expect((await close({ repoDir, agentId })).error).toBe('folder-locked')
+    } finally { await stop(child) }
+
+    // The user deletes the folder, as the failure message tells them to.
+    removeAllLinks(r.path)
+    rmSync(r.path, { recursive: true, force: true })
+    expect(existsSync(r.path)).toBe(false)
+
+    // The next wipe clears the entry but must not delete the only copy of the work.
+    const out = await wipeAll({ repoDir, liveAgentIds: [] })
+    expect(readMeta(repoDir).agents[agentId]).toBeUndefined()
+    expect(branchExists(r.branch)).toBe(true)
+    expect(out.stranded.map(s => s.branch)).toContain(r.branch)
     expect(existsSync(SENTINEL())).toBe(true)
   }, 20000)
 })

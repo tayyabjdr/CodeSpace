@@ -258,46 +258,42 @@ async function _closeImpl({ repoDir, agentId }) {
   if (!entry) return { ok: true, missing: true }
   const wtPath = entryWorktreePath(repoDir, agentId, entry)
 
-  let aheadCount = 0
-  if (existsSync(wtPath)) {
-    try {
-      const out = execGit(['-C', repoDir, 'rev-list', '--count', `${entry.baseSha}..${entry.branch}`])
-      aheadCount = parseInt(out.trim(), 10) || 0
-    } catch {}
-  }
+  // Commits the agent made on its branch. Counted whether or not the folder
+  // still exists: a folder the user deleted by hand (after a locked close told
+  // them to) leaves the branch as the only copy of that work. null means the
+  // count failed, and an uncounted branch is kept, never deleted.
+  let aheadCount = null
+  try {
+    const out = execGit(['-C', repoDir, 'rev-list', '--count', `${entry.baseSha}..${entry.branch}`])
+    const n = parseInt(out.trim(), 10)
+    if (Number.isFinite(n)) aheadCount = n
+  } catch {}
 
   // The worktree holds links (node_modules and any an agent made or renamed)
-  // into the user's real folders, and git deletes through them. Unlink every
-  // link BEFORE anything deletes, and if that fails touch nothing: a leftover
-  // folder is cheap, a deleted node_modules is not.
-  try { removeAllLinks(wtPath) }
-  catch (e) {
-    return {
-      ok: false,
-      error: 'deps-unlink-failed',
-      path: wtPath,
-      detail: `Couldn't detach links from ${wtPath}: ${e?.message ?? e}`
-    }
-  }
+  // into the user's real folders, and git deletes through them. Every delete
+  // below is preceded by a link walk, and a walk that fails stops the close
+  // with nothing further deleted: a leftover folder is cheap, a deleted
+  // node_modules is not.
+  const unlinkFailed = (e) => ({
+    ok: false,
+    error: 'deps-unlink-failed',
+    path: wtPath,
+    detail: `Couldn't detach links from ${wtPath}: ${e?.message ?? e}`
+  })
 
   // The agent's process was only just killed, so its files may still be held
-  // for a moment. Retry a few times, each attempt starting with a link walk.
-  // Only a real directory is deleted, never a link that could point elsewhere.
+  // for a moment. Retry a few times. Only a real directory is ever deleted,
+  // never a link that could point elsewhere.
   for (let attempt = 0; attempt < REMOVE_ATTEMPTS; attempt++) {
     if (attempt > 0) await sleep(REMOVE_RETRY_MS)
-    try { removeAllLinks(wtPath) }
-    catch (e) {
-      return {
-        ok: false,
-        error: 'deps-unlink-failed',
-        path: wtPath,
-        detail: `Couldn't detach links from ${wtPath}: ${e?.message ?? e}`
-      }
-    }
+    try { removeAllLinks(wtPath) } catch (e) { return unlinkFailed(e) }
     try { execGit(['-C', repoDir, 'worktree', 'remove', '--force', wtPath]) }
     catch {}
+    if (folderGone(wtPath) === true) break
+    // git left the folder behind. Walk again before deleting it ourselves: a
+    // link may have appeared since the walk above.
+    try { removeAllLinks(wtPath) } catch (e) { return unlinkFailed(e) }
     try {
-      removeAllLinks(wtPath) // again: a link may have appeared since the first walk
       if (lstatSync(wtPath).isDirectory()) rmSync(wtPath, { recursive: true, force: true })
     } catch {}
     if (folderGone(wtPath) === true) break
@@ -327,7 +323,7 @@ async function _closeImpl({ repoDir, agentId }) {
   delete m.agents[agentId]
   writeMeta(repoDir, m)
 
-  return { ok: true, branchKept: aheadCount > 0 }
+  return { ok: true, branchKept: aheadCount !== 0 }
 }
 
 export async function close(args) {
