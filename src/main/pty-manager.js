@@ -52,13 +52,17 @@ function shellSpec(shell) {
 
 const sessions = new Map()
 
-export function createSession(shell = 'powershell', cwd, cols, rows) {
+// extraEnv: variables added on top of the inherited environment, e.g. the
+// PORT an isolated pane gets. Callers validate it; this only merges.
+export function createSession(shell = 'powershell', cwd, cols, rows, extraEnv = {}) {
   const { file, args } = shellSpec(shell)
   const id = randomUUID()
   const skip = shell === 'claude' && getCached().agents.dangerouslySkipPermissions
-  const env = skip
-    ? { ...process.env, CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS: '1' }
-    : process.env
+  const env = {
+    ...process.env,
+    ...(skip ? { CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS: '1' } : {}),
+    ...extraEnv
+  }
   const resolvedCwd = cwd || process.env.USERPROFILE || process.cwd()
   const safeCols = Number.isFinite(cols) && cols > 0 ? Math.floor(cols) : 80
   const safeRows = Number.isFinite(rows) && rows > 0 ? Math.floor(rows) : 24

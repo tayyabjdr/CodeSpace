@@ -79,9 +79,25 @@ describe('ipc-handlers', () => {
     const handler = getHandler('handle', 'pty:create')
     const result = await handler({}, { shell: 'powershell' })
 
-    expect(createSession).toHaveBeenCalledWith('powershell', undefined, undefined, undefined)
+    expect(createSession).toHaveBeenCalledWith('powershell', undefined, undefined, undefined, {})
     expect(result).toEqual({ ptyId: 'abc-123' })
   })
+
+  it('pty:create passes a valid port through as PORT', async () => {
+    createSession.mockReturnValue({ id: 'abc-123', proc: { onData: vi.fn(), onExit: vi.fn() } })
+    registerHandlers(mockWindow)
+    await getHandler('handle', 'pty:create')({}, { shell: 'powershell', port: 4101 })
+    expect(createSession).toHaveBeenLastCalledWith('powershell', undefined, undefined, undefined, { PORT: '4101' })
+  })
+
+  it.each(['x', 80, 4099, 5000, 4100.5, '4101', null, { toString: () => '4101' }])(
+    'pty:create ignores an invalid port (%s)', async (port) => {
+      createSession.mockReturnValue({ id: 'abc-123', proc: { onData: vi.fn(), onExit: vi.fn() } })
+      registerHandlers(mockWindow)
+      await getHandler('handle', 'pty:create')({}, { shell: 'powershell', port })
+      expect(createSession).toHaveBeenLastCalledWith('powershell', undefined, undefined, undefined, {})
+    }
+  )
 
   it('pty:create forwards proc data to renderer via pty:data:<id>', async () => {
     const mockProc = { onData: vi.fn(), onExit: vi.fn() }

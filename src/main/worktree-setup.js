@@ -1,6 +1,52 @@
 import { execFileSync } from 'child_process'
 import { existsSync, lstatSync, symlinkSync, unlinkSync, readdirSync, copyFileSync, constants } from 'fs'
 import { join } from 'path'
+import { createServer } from 'net'
+
+// ── Ports ─────────────────────────────────────────────────────────────────
+// Each isolated agent gets its own PORT so two agents running the same dev
+// server don't fight over one. Reservations live in memory for the session:
+// a port is held from create until its agent's worktree is removed.
+
+export const PORT_MIN = 4100
+export const PORT_MAX = 4999
+const reserved = new Set()
+
+// Free only if both the loopback and the wildcard address can be bound: on
+// Windows a server on 0.0.0.0 does not stop a 127.0.0.1 bind, so probing
+// loopback alone would hand out a port a dev server already holds.
+function canListen(port, host) {
+  return new Promise(resolve => {
+    const s = createServer()
+    s.unref()
+    s.once('error', () => resolve(false))
+    s.listen({ port, host, exclusive: true }, () => s.close(() => resolve(true)))
+  })
+}
+
+async function isFree(port) {
+  return (await canListen(port, '127.0.0.1')) && (await canListen(port, undefined))
+}
+
+// Resolves to a free, now-reserved port, or null if none is left.
+export async function pickPort() {
+  for (let port = PORT_MIN; port <= PORT_MAX; port++) {
+    if (reserved.has(port)) continue
+    reserved.add(port) // claim before the async probe so concurrent picks can't share it
+    if (await isFree(port)) return port
+    reserved.delete(port)
+  }
+  return null
+}
+
+export function releasePort(port) {
+  reserved.delete(port)
+}
+
+// Read-only view for tests and diagnostics.
+export function reservedPorts() {
+  return new Set(reserved)
+}
 
 // node_modules is linked (junction) rather than copied: an install per agent
 // is slow and heavy. The link is local-excluded, so git never stages it.

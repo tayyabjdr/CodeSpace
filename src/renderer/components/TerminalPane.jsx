@@ -5,7 +5,7 @@ import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
 import './TerminalPane.css'
 
-export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, branch, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused, isFullscreen, isHiddenForFullscreen, onToggleFullscreen, themeId }) {
+export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agentNum, name, autoName, branch, port, fontSize, onClose, onFocus, onRename, onPtyReady, onFontSizeChange, onAddAgent, onSwap, onOpenFile, isFocused, isFullscreen, isHiddenForFullscreen, onToggleFullscreen, themeId }) {
   const containerRef = useRef(null)
   const done = useSyncExternalStore(
     doneTracker.subscribe,
@@ -70,7 +70,8 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
     undefined, handleUserInput, handlePtyReady,
     fontSize, onFontSizeChange,
     { cwdRef, workspaceDirRef, onOpenFile },
-    themeId
+    themeId,
+    port
   )
 
   const handleFocus = () => {
@@ -305,6 +306,11 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
             </span>
             <span className="tp-branch-text">{branch}</span>
           </button>
+          {port && (
+            // The PORT this agent's dev servers should use, so isolated
+            // agents running the same app don't fight over one port.
+            <span className="tp-port" title={`This agent's PORT is ${port}`}>port {port}</span>
+          )}
         </div>
       )}
       {error ? (

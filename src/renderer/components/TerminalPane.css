@@ -372,6 +372,14 @@
 .tp-branch-text {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
+.tp-port {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-family: var(--cs-font-mono);
+  font-size: 10px;
+  color: var(--cs-text-muted);
+  font-variant-numeric: tabular-nums;
+}
 
 /* Breadcrumb row directly below the title bar — a general breadcrumb band
    (agent type, cwd) that the branch chip shares, not a branch-only row.

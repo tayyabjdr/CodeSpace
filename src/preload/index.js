@@ -11,8 +11,8 @@ const api = {
   platform:  ptyHost.platform,
   osRelease: ptyHost.osRelease,
 
-  createPty: (shell, cwd, cols, rows) =>
-    ipcRenderer.invoke('pty:create', { shell, cwd, cols, rows }),
+  createPty: (shell, cwd, cols, rows, port) =>
+    ipcRenderer.invoke('pty:create', { shell, cwd, cols, rows, port }),
 
   writePty: (ptyId, data) =>
     ipcRenderer.send('pty:write', { ptyId, data }),

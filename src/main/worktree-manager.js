@@ -1,7 +1,7 @@
 import { execFileSync } from 'child_process'
 import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync, rmdirSync, lstatSync } from 'fs'
 import { join, dirname, basename, resolve } from 'path'
-import { setupWorktree, removeAllLinks } from './worktree-setup.js'
+import { setupWorktree, removeAllLinks, pickPort, releasePort } from './worktree-setup.js'
 
 let gitAvailable = null
 
@@ -166,6 +166,17 @@ function pickBranchName(repoDir, base) {
   throw err
 }
 
+// agentId -> reserved port, for this session. Released when the agent's
+// worktree is actually removed; a close that fails keeps it, so the retry
+// (wipeAll) is what frees it.
+const agentPorts = new Map()
+function freeAgentPort(agentId) {
+  const port = agentPorts.get(agentId)
+  if (port === undefined) return
+  agentPorts.delete(agentId)
+  releasePort(port)
+}
+
 const repoLocks = new Map()
 export async function withRepoLock(repoDir, fn) {
   const prev = repoLocks.get(repoDir) ?? Promise.resolve()
@@ -216,7 +227,13 @@ async function _createImpl({ repoDir, workspaceName, agentId }) {
   try { warnings = setupWorktree({ repoDir, wtPath }).warnings }
   catch { warnings = ["Couldn't finish setting up this agent's folder. Run an install there."] }
 
-  return { path: wtPath, branch, baseSha, warnings }
+  // A port of its own; without one the agent still starts, on the shared default.
+  let port = null
+  try { port = await pickPort() } catch {}
+  if (port === null) warnings = [...warnings, "Couldn't find a free port for this agent, so it uses the default one."]
+  else agentPorts.set(agentId, port)
+
+  return { path: wtPath, branch, baseSha, warnings, port }
 }
 
 export async function create(args) {
@@ -255,7 +272,7 @@ function folderGone(p) {
 async function _closeImpl({ repoDir, agentId }) {
   const m = readMeta(repoDir)
   const entry = m.agents[agentId]
-  if (!entry) return { ok: true, missing: true }
+  if (!entry) { freeAgentPort(agentId); return { ok: true, missing: true } }
   const wtPath = entryWorktreePath(repoDir, agentId, entry)
 
   // Commits the agent made on its branch. Counted whether or not the folder
@@ -322,6 +339,7 @@ async function _closeImpl({ repoDir, agentId }) {
 
   delete m.agents[agentId]
   writeMeta(repoDir, m)
+  freeAgentPort(agentId)
 
   return { ok: true, branchKept: aheadCount !== 0 }
 }

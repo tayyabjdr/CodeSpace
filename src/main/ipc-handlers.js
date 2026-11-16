@@ -7,6 +7,10 @@ import * as autoNamer from './auto-namer.js'
 import * as worktree from './worktree-manager.js'
 import * as skillsFs from './skills-fs.js'
 
+import { PORT_MIN, PORT_MAX } from './worktree-setup.js'
+
+const isPanePort = (p) => Number.isInteger(p) && p >= PORT_MIN && p <= PORT_MAX
+
 function isValidCwd(cwd) {
   if (typeof cwd !== 'string' || cwd.length === 0) return false
   if (!isAbsolute(cwd)) return false
@@ -36,7 +40,7 @@ export function registerHandlers(mainWindow) {
     ptyDisposables.delete(ptyId)
   }
 
-  ipcMain.handle('pty:create', async (_event, { shell, cwd, cols, rows }) => {
+  ipcMain.handle('pty:create', async (_event, { shell, cwd, cols, rows, port }) => {
     if (shell === 'claude' && !isClaudeAvailable()) {
       return { error: 'claude-missing' }
     }
@@ -48,7 +52,10 @@ export function registerHandlers(mainWindow) {
       return { error: 'cwd-missing', cwd }
     }
     const safeCwd = cwdValid ? cwd : undefined
-    const { id, proc } = createSession(shell, safeCwd, cols, rows)
+    // Only a port from the isolated-pane range becomes PORT; the renderer
+    // can't pass arbitrary environment through here.
+    const extraEnv = isPanePort(port) ? { PORT: String(port) } : {}
+    const { id, proc } = createSession(shell, safeCwd, cols, rows, extraEnv)
 
     const dataDisposable = proc.onData(data => {
       if (mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return

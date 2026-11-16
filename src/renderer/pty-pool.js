@@ -64,7 +64,7 @@ function ensureSubscription(ptyId) {
   cleanups.set(ptyId, () => { offData(); offExit() })
 }
 
-export async function createPty(shell, cwd, token, cols, rows) {
+export async function createPty(shell, cwd, token, cols, rows, port) {
   // Reserve our slot in the spawn queue synchronously so concurrent callers
   // each get their own delayed start time.
   const now = Date.now()
@@ -79,9 +79,9 @@ export async function createPty(shell, cwd, token, cols, rows) {
           err.cancelled = true
           throw err
         }
-        return window.electronAPI.createPty(shell, cwd, cols, rows)
+        return window.electronAPI.createPty(shell, cwd, cols, rows, port)
       })
-    : window.electronAPI.createPty(shell, cwd, cols, rows)
+    : window.electronAPI.createPty(shell, cwd, cols, rows, port)
   ).then((res) => {
     // Main may decline to spawn (Claude not installed, cwd missing, etc.).
     if (res?.error) {

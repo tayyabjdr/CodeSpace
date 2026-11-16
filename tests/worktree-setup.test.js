@@ -9,7 +9,8 @@ import {
   create, close, closeAllForWorkspace, wipeAll, repairOrphans, checkDirty,
   worktreePath, ensureLocalExcludes, readMeta
 } from '../src/main/worktree-manager.js'
-import { setupWorktree, removeDepsLink, removeAllLinks, isDepsLink } from '../src/main/worktree-setup.js'
+import { setupWorktree, removeDepsLink, removeAllLinks, isDepsLink, pickPort, releasePort, reservedPorts } from '../src/main/worktree-setup.js'
+import { createServer } from 'net'
 
 function git(cwd, ...args) {
   return execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' })
@@ -460,3 +461,56 @@ async function loadManager(overrides) {
   vi.doUnmock('fs')
   return mgr
 }
+
+describe('worktree-setup / ports', () => {
+  const listenOn = (port) => new Promise((res, rej) => {
+    const s = createServer()
+    s.once('error', rej)
+    s.listen(port, '127.0.0.1', () => res(s))
+  })
+  const closeServer = (s) => new Promise(r => s.close(r))
+
+  it('pickPort skips a port in use and never repeats a reserved one', async () => {
+    let blocker = null
+    try { blocker = await listenOn(4100) } catch { /* already in use by something else: still must be skipped */ }
+    const a = await pickPort()
+    const b = await pickPort()
+    try {
+      expect(a).toBeGreaterThanOrEqual(4100)
+      expect(b).toBeLessThanOrEqual(4999)
+      expect(a).not.toBe(4100)
+      expect(b).not.toBe(4100)
+      expect(a).not.toBe(b)
+    } finally {
+      releasePort(a); releasePort(b)
+      if (blocker) await closeServer(blocker)
+    }
+  })
+
+  it('pickPort skips a port another process holds on the wildcard address', async () => {
+    const first = await pickPort()
+    releasePort(first)
+    const s = await new Promise((res, rej) => { const x = createServer(); x.once('error', rej); x.listen(first, () => res(x)) })
+    try {
+      const p = await pickPort()
+      expect(p).not.toBe(first)
+      releasePort(p)
+    } finally { await closeServer(s) }
+  })
+
+  it('create returns a port and close releases it', async () => {
+    const agentId = 'ffff6666-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    expect(Number.isInteger(r.port)).toBe(true)
+    expect(reservedPorts().has(r.port)).toBe(true)
+    expect((await close({ repoDir, agentId })).ok).toBe(true)
+    expect(reservedPorts().has(r.port)).toBe(false)
+  })
+
+  it('wipeAll releases the ports of the agents it removes', async () => {
+    const agentId = 'ffff7777-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    await wipeAll({ repoDir, liveAgentIds: [] })
+    expect(reservedPorts().has(r.port)).toBe(false)
+  })
+})

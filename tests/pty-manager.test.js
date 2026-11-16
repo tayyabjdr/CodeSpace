@@ -45,6 +45,22 @@ describe('pty-manager', () => {
     expect(pty.spawn).toHaveBeenCalledWith('powershell.exe', [], expect.any(Object))
   })
 
+  it('createSession merges extraEnv', () => {
+    createSession('powershell', undefined, 80, 24, { PORT: '4101' })
+    const opts = pty.spawn.mock.calls.at(-1)[2]
+    expect(opts.env.PORT).toBe('4101')
+    expect(opts.env.PATH ?? opts.env.Path).toBeDefined() // still the inherited env
+  })
+
+  it('createSession without extraEnv adds no PORT', () => {
+    const before = process.env.PORT
+    delete process.env.PORT
+    try {
+      createSession('powershell')
+      expect(pty.spawn.mock.calls.at(-1)[2].env.PORT).toBeUndefined()
+    } finally { if (before !== undefined) process.env.PORT = before }
+  })
+
   it('writeSession writes data to the proc', () => {
     const { id } = createSession('powershell')
     writeSession(id, 'ls\n')

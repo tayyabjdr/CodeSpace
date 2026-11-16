@@ -147,6 +147,7 @@ function AppInner() {
       const id = makeId()
       let cwd = workspace.dir
       let branch = null
+      let port = null
       if (workspace.isolated) {
         let r
         try {
@@ -166,13 +167,14 @@ function AppInner() {
         }
         cwd = r.path
         branch = r.branch
+        port = Number.isInteger(r.port) ? r.port : null
         if (Array.isArray(r.warnings)) warnings.push(...r.warnings)
       }
       agents.push({
         id,
         shell: item.shell,
         agentNum: startNum + i,
-        cwd, ptyId: null, autoName: null, branch
+        cwd, ptyId: null, autoName: null, branch, port
       })
     }
     return { agents, failures, warnings }
@@ -1224,6 +1226,7 @@ function AppInner() {
                   name={t.name}
                   autoName={t.autoName}
                   branch={t.branch}
+                  port={t.port}
                   fontSize={activeWorkspace?.fontSize ?? 13}
                   onClose={removeTerminal}
                   onFocus={setFocusedId}
