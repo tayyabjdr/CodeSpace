@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback, useSyncExternalStore } from 'react'
 import AgentLogo, { hasAgentLogo } from './AgentLogo.jsx'
+import FinishControl from './FinishControl.jsx'
 import useTerminal from '../hooks/useTerminal.js'
 import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
@@ -306,6 +307,14 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
             </span>
             <span className="tp-branch-text">{branch}</span>
           </button>
+          {/* Counts, merge status and Finish. Renders nothing when the
+              bridge has no merge API. */}
+          <FinishControl
+            agentId={id}
+            ptyId={ptyId}
+            repoDir={workspaceDir}
+            agentName={displayName}
+          />
           {port && (
             // The PORT this agent's dev servers should use, so isolated
             // agents running the same app don't fight over one port.

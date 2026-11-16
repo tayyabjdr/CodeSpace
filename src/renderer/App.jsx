@@ -21,6 +21,9 @@ import { applyTheme, DEFAULT_THEME } from './theme.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
+import * as ptyActivity from './pty-activity.js'
+import { startMergeStatus, onMergeEvent, forgetStatus } from './merge-status.js'
+import { startHandoffs } from './merge-handoff.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
 import { checkOpenable } from './open-file.js'
 import { basename } from './path-resolver.js'
@@ -291,7 +294,31 @@ function AppInner() {
     }
     doneTracker.syncTracked(map)
     autoNamer.syncTracked(map, pinned)
+    ptyActivity.syncTracked([...map.values()])
   }, [workspaces, loaded])
+
+  // agentId -> { ptyId, shell } for the failure handoff, across every
+  // workspace, so a hidden pane still hears about its failed Finish.
+  const agentsByIdRef = useRef(new Map())
+  useEffect(() => {
+    const next = new Map()
+    for (const w of workspaces) {
+      for (const t of (w.terminals ?? [])) next.set(t.id, { ptyId: t.ptyId, shell: t.shell })
+    }
+    for (const id of agentsByIdRef.current.keys()) if (!next.has(id)) forgetStatus(id)
+    agentsByIdRef.current = next
+  }, [workspaces])
+
+  // One merge-status subscription for the whole app; panes read from the store.
+  useEffect(() => {
+    const offStatus = startMergeStatus(window.electronAPI?.merge)
+    const offHandoffs = startHandoffs({
+      onMergeEvent,
+      resolveAgent: (agentId) => agentsByIdRef.current.get(agentId) ?? null,
+      lastOutputAt: ptyActivity.lastOutputAt
+    })
+    return () => { offHandoffs(); offStatus() }
+  }, [])
 
   useEffect(() => {
     return autoNamer.subscribe((termId, name) => {
