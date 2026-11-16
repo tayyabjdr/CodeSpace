@@ -2,6 +2,7 @@ import { execFileSync } from 'child_process'
 import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync, rmdirSync, lstatSync, realpathSync } from 'fs'
 import { join, dirname, basename, resolve } from 'path'
 import { setupWorktree, removeAllLinks, pickPort, releasePort } from './worktree-setup.js'
+import { trustFolder, forgetFolder } from './claude-trust.js'
 
 let gitAvailable = null
 
@@ -284,6 +285,9 @@ async function _createImpl({ repoDir, workspaceName, agentId }) {
   if (port === null) warnings = [...warnings, "Couldn't find a free port for this agent, so it uses the default one."]
   else agentPorts.set(agentId, port)
 
+  // So Claude doesn't ask "Do you trust this folder?" for every agent.
+  try { trustFolder(wtPath) } catch {}
+
   return { path: wtPath, branch, baseSha, warnings, port }
 }
 
@@ -404,6 +408,7 @@ async function _closeImpl({ repoDir, agentId }) {
   delete m.agents[agentId]
   writeMeta(repoDir, m)
   freeAgentPort(agentId)
+  try { forgetFolder(wtPath) } catch {}
 
   return { ok: true, branchKept: aheadCount !== 0 }
 }

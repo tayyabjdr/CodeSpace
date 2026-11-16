@@ -5,7 +5,9 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
 
-import { canIsolate, create, checkDirty, wipeAll, closeAllForWorkspace, readMeta } from '../src/main/worktree-manager.js'
+import { canIsolate, create, close, checkDirty, wipeAll, closeAllForWorkspace, readMeta } from '../src/main/worktree-manager.js'
+import { readFileSync } from 'fs'
+import { claudeConfigPath, projectKey } from '../src/main/claude-trust.js'
 import { removeAllLinks } from '../src/main/worktree-setup.js'
 
 vi.setConfig({ testTimeout: 30000 })
@@ -141,5 +143,30 @@ describe('closeAllForWorkspace keeps uncommitted work', () => {
     ])
     expect(typeof res.failures[0].detail).toBe('string')
     expect(existsSync(join(r.path, 'precious.txt'))).toBe(true)
+  })
+})
+
+describe('worktree / Claude folder trust', () => {
+  const trusted = (p) => {
+    try { return JSON.parse(readFileSync(claudeConfigPath(), 'utf8')).projects?.[projectKey(p)]?.hasTrustDialogAccepted === true }
+    catch { return false }
+  }
+
+  it('marks a new agent folder trusted, and forgets it when the folder is removed', async () => {
+    const agentId = newId()
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    expect(trusted(r.path)).toBe(true)
+    expect(trusted(repoDir)).toBe(false) // the user's own repo is never touched
+    expect((await close({ repoDir, agentId })).ok).toBe(true)
+    expect(trusted(r.path)).toBe(false)
+  })
+
+  it('keeps the trust when the folder could not be removed', async () => {
+    const agentId = newId()
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    writeFileSync(join(r.path, 'work.txt'), 'uncommitted')
+    const res = await closeAllForWorkspace({ repoDir, agentIds: [agentId] })
+    expect(res.failures.length).toBe(1)
+    expect(trusted(r.path)).toBe(true)
   })
 })
