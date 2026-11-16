@@ -6,6 +6,8 @@ import * as editorFs from './editor-fs.js'
 import * as autoNamer from './auto-namer.js'
 import * as worktree from './worktree-manager.js'
 import * as skillsFs from './skills-fs.js'
+import { createMergeQueue } from './merge-queue.js'
+import { runCheck, runInstall } from './check-runner.js'
 
 import { PORT_MIN, PORT_MAX } from './worktree-setup.js'
 
@@ -30,6 +32,18 @@ function assertAbsPath(p) {
 export function registerHandlers(mainWindow) {
   // ptyId -> [data-disposable, exit-disposable]
   const ptyDisposables = new Map()
+
+  const windowAlive = () => !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()
+
+  // One Finish queue for the app. Its status events go to the renderer as
+  // they happen; there is no polling.
+  const mergeQueue = createMergeQueue({
+    runCheck,
+    runInstall,
+    onStatus: (status) => {
+      if (windowAlive()) mainWindow.webContents.send('merge:status', status)
+    }
+  })
 
   function disposeFor(ptyId) {
     const disposables = ptyDisposables.get(ptyId)
@@ -203,6 +217,9 @@ export function registerHandlers(mainWindow) {
     if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir) || typeof args.agentId !== 'string') {
       return { error: 'invalid-args' }
     }
+    // A Finish in flight for this agent stops first, so nothing lands from a
+    // pane that is going away.
+    try { mergeQueue.cancel(args.agentId) } catch {}
     try { return await worktree.close(args) }
     catch (err) { return { error: err.code || 'unknown' } }
   })
@@ -211,11 +228,37 @@ export function registerHandlers(mainWindow) {
     if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir) || !Array.isArray(args.agentIds)) {
       return { error: 'invalid-args' }
     }
+    for (const id of args.agentIds) {
+      if (typeof id === 'string') { try { mergeQueue.cancel(id) } catch {} }
+    }
     try {
       const r = await worktree.closeAllForWorkspace(args)
       return { ok: true, failures: r?.failures ?? [] }
     }
     catch (err) { return { error: err.code || 'unknown' } }
+  })
+
+  // ── Finish (merge queue) ─────────────────────────────────────────────────
+  const isAgentArgs = (a) => !!a && typeof a.repoDir === 'string' && isAbsolute(a.repoDir)
+    && typeof a.agentId === 'string' && a.agentId.length > 0
+
+  ipcMain.handle('merge:finish', (_e, args) => {
+    if (!isAgentArgs(args)) return { error: 'invalid-args' }
+    const agentName = typeof args.agentName === 'string' ? args.agentName : ''
+    try { return mergeQueue.finish({ repoDir: args.repoDir, agentId: args.agentId, agentName }) }
+    catch (err) { return { error: err?.code || 'unknown' } }
+  })
+
+  ipcMain.handle('merge:cancel', (_e, agentId) => {
+    if (typeof agentId !== 'string' || !agentId) return { error: 'invalid-args' }
+    try { mergeQueue.cancel(agentId); return { ok: true } }
+    catch (err) { return { error: err?.code || 'unknown' } }
+  })
+
+  ipcMain.handle('merge:info', (_e, args) => {
+    if (!isAgentArgs(args)) return { error: 'invalid-args' }
+    try { return mergeQueue.info({ repoDir: args.repoDir, agentId: args.agentId }) }
+    catch (err) { return { error: err?.code || 'unknown' } }
   })
 
   ipcMain.handle('worktree:checkDirty', async (_e, args) => {

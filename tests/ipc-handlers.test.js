@@ -34,6 +34,19 @@ vi.mock('../src/main/worktree-manager.js', () => ({
   wipeAll:        vi.fn(async () => ({ kept: [], stranded: [{ branch: 'cs/x/1', ahead: 2 }] }))
 }))
 
+// The queue itself is tested in merge-queue.test.js; here only the wiring.
+const queueStub = vi.hoisted(() => ({ finish: null, cancel: null, info: null, onStatus: null }))
+vi.mock('../src/main/merge-queue.js', () => ({
+  createMergeQueue: vi.fn(({ onStatus }) => {
+    queueStub.onStatus = onStatus
+    queueStub.finish = vi.fn(() => ({ accepted: true }))
+    queueStub.cancel = vi.fn()
+    queueStub.info = vi.fn(() => ({ ahead: 3, files: 5, dirty: false, target: 'master' }))
+    return { finish: queueStub.finish, cancel: queueStub.cancel, info: queueStub.info, drain: vi.fn() }
+  })
+}))
+vi.mock('../src/main/check-runner.js', () => ({ runCheck: vi.fn(), runInstall: vi.fn() }))
+
 import { ipcMain } from 'electron'
 import { createSession, writeSession, resizeSession, killSession } from '../src/main/pty-manager.js'
 import { registerHandlers } from '../src/main/ipc-handlers.js'
@@ -283,5 +296,77 @@ describe('ipc-handlers / worktree', () => {
     const fn = getHandler('handle', 'worktree:create')
     const r = await fn({}, { repoDir: 'C:/repo', workspaceName: 'X', agentId: 'aid' })
     expect(r).toEqual({ error: 'no-commits' })
+  })
+})
+
+describe('ipc-handlers / merge', () => {
+  let win
+  beforeEach(() => { vi.clearAllMocks(); win = makeMockWindow() })
+  const handler = (ch) => ipcMain.handle.mock.calls.find(c => c[0] === ch)?.[1]
+  const onHandler = (ch) => ipcMain.on.mock.calls.find(c => c[0] === ch)?.[1]
+  const good = { repoDir: 'C:/repo', agentId: 'a1', agentName: 'Agent 01' }
+
+  it('registers the merge channels', () => {
+    registerHandlers(win)
+    for (const ch of ['merge:finish', 'merge:cancel', 'merge:info']) {
+      expect(ipcMain.handle).toHaveBeenCalledWith(ch, expect.any(Function))
+    }
+  })
+
+  it.each([
+    ['relative repoDir', { ...good, repoDir: 'repo' }],
+    ['missing agentId', { repoDir: 'C:/repo' }],
+    ['non-string agentId', { ...good, agentId: 5 }],
+    ['no args', undefined]
+  ])('merge:finish rejects %s', async (_label, args) => {
+    registerHandlers(win)
+    expect(await handler('merge:finish')({}, args)).toEqual({ error: 'invalid-args' })
+    expect(queueStub.finish).not.toHaveBeenCalled()
+  })
+
+  it('merge:finish passes only the expected fields to the queue', async () => {
+    registerHandlers(win)
+    expect(await handler('merge:finish')({}, { ...good, extra: 'x' })).toEqual({ accepted: true })
+    expect(queueStub.finish).toHaveBeenCalledWith({ repoDir: 'C:/repo', agentId: 'a1', agentName: 'Agent 01' })
+  })
+
+  it('merge:info validates and delegates', async () => {
+    registerHandlers(win)
+    expect(await handler('merge:info')({}, { repoDir: 'repo', agentId: 'a1' })).toEqual({ error: 'invalid-args' })
+    expect(await handler('merge:info')({}, { repoDir: 'C:/repo', agentId: 'a1' })).toEqual({ ahead: 3, files: 5, dirty: false, target: 'master' })
+  })
+
+  it('merge:cancel validates and delegates', async () => {
+    registerHandlers(win)
+    expect(await handler('merge:cancel')({}, 7)).toEqual({ error: 'invalid-args' })
+    expect(await handler('merge:cancel')({}, 'a1')).toEqual({ ok: true })
+    expect(queueStub.cancel).toHaveBeenCalledWith('a1')
+  })
+
+  it('status events reach the renderer on merge:status', () => {
+    registerHandlers(win)
+    queueStub.onStatus({ agentId: 'a1', state: 'testing', target: 'master' })
+    expect(win.webContents.send).toHaveBeenCalledWith('merge:status', { agentId: 'a1', state: 'testing', target: 'master' })
+  })
+
+  it('status events are skipped when the window is gone', () => {
+    registerHandlers(win)
+    win.isDestroyed.mockReturnValue(true)
+    queueStub.onStatus({ agentId: 'a1', state: 'merged' })
+    expect(win.webContents.send).not.toHaveBeenCalledWith('merge:status', expect.anything())
+  })
+
+  it('worktree:close cancels the agent Finish before closing', async () => {
+    registerHandlers(win)
+    await handler('worktree:close')({}, { repoDir: 'C:/repo', agentId: 'a1' })
+    expect(queueStub.cancel).toHaveBeenCalledWith('a1')
+    expect(queueStub.cancel.mock.invocationCallOrder[0]).toBeLessThan(wt.close.mock.invocationCallOrder[0])
+  })
+
+  it('worktree:closeAll cancels every agent Finish before closing', async () => {
+    registerHandlers(win)
+    await handler('worktree:closeAll')({}, { repoDir: 'C:/repo', agentIds: ['a1', 'a2'] })
+    expect(queueStub.cancel.mock.calls.map(c => c[0])).toEqual(['a1', 'a2'])
+    expect(queueStub.cancel.mock.invocationCallOrder[1]).toBeLessThan(wt.closeAllForWorkspace.mock.invocationCallOrder[0])
   })
 })

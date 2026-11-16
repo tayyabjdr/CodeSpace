@@ -115,6 +115,17 @@ const api = {
     repairOrphans:  (args) => ipcRenderer.invoke('worktree:repairOrphans', args),
   },
 
+  merge: {
+    finish: (args)    => ipcRenderer.invoke('merge:finish', args),
+    cancel: (agentId) => ipcRenderer.invoke('merge:cancel', agentId),
+    info:   (args)    => ipcRenderer.invoke('merge:info', args),
+    onStatus: (callback) => {
+      const handler = (_event, status) => callback(status)
+      ipcRenderer.on('merge:status', handler)
+      return () => ipcRenderer.removeListener('merge:status', handler)
+    },
+  },
+
   onUpdateReady: (callback) => {
     const handler = (_event, info) => callback(info)
     ipcRenderer.on('update:ready', handler)
