@@ -5,12 +5,12 @@ import App from '../../src/renderer/App.jsx'
 
 afterEach(() => { delete window.electronAPI })
 
-function api(closeAllResult) {
+function api(closeAllResult, wipeResult = { ok: true, kept: [], stranded: [] }) {
   const worktree = {
     isGitAvailable: vi.fn(async () => true),
     isGitRepo: vi.fn(async () => true),
     canIsolate: vi.fn(async () => ({ ok: true, reason: null })),
-    wipeAll: vi.fn(async () => ({ ok: true, kept: [], stranded: [] })),
+    wipeAll: vi.fn(async () => wipeResult),
     closeAll: vi.fn(async () => closeAllResult),
     close: vi.fn(async () => ({ ok: true })),
     create: vi.fn(),
@@ -61,5 +61,29 @@ describe('App / leftover folders dialog', () => {
     await userEvent.click(await screen.findByTitle('Delete workspace'))
     await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     expect(await screen.findByText(/Unknown folder \(unknown\)/, {}, { timeout: 3000 })).toBeTruthy()
+  })
+})
+
+describe('App / work left from an earlier session', () => {
+  it('shows what the start-of-session wipe kept and stranded, and dismisses', async () => {
+    window.electronAPI = api({ ok: true, failures: [] }, {
+      ok: true,
+      kept: [{ agentId: 'old1', branch: 'cs/repo/old11111', path: 'D:/wt/old1', reason: 'uncommitted' }],
+      stranded: [{ branch: 'cs/repo/old22222', ahead: 2 }]
+    })
+    render(<App />)
+    expect(await screen.findByText('Work left from an earlier session', {}, { timeout: 3000 })).toBeTruthy()
+    expect(screen.getByText('cs/repo/old11111')).toBeTruthy()
+    expect(screen.getByText('2 commits not merged')).toBeTruthy()
+    await userEvent.click(screen.getByLabelText('Dismiss'))
+    await waitFor(() => expect(screen.queryByText('Work left from an earlier session')).toBeNull())
+  })
+
+  it('shows nothing when the wipe left nothing', async () => {
+    window.electronAPI = api({ ok: true, failures: [] })
+    render(<App />)
+    await screen.findByTitle('Delete workspace')
+    await new Promise(r => setTimeout(r, 300))
+    expect(screen.queryByText('Work left from an earlier session')).toBeNull()
   })
 })

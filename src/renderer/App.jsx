@@ -12,6 +12,7 @@ import SettingsPage from './components/SettingsPage.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
 import IsolationNotice from './components/IsolationNotice.jsx'
+import LeftoverWorkNotice from './components/LeftoverWorkNotice.jsx'
 import { isolationNotice, nextAgentCounter, mergeRetryFailures, closeFailureMessage, leftoverFromCloseAll } from './isolation-notice.js'
 import SkillsPanel from './components/SkillsPanel.jsx'
 import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
@@ -390,23 +391,10 @@ function AppInner() {
           .flatMap(x => (x.terminals ?? []).map(t => t.id))
         try {
           const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir, liveAgentIds })
-          if (r?.kept?.length) {
-            const dirty = r.kept.filter(k => k.reason !== 'cleanup-failed')
-            const stuck = r.kept.filter(k => k.reason === 'cleanup-failed')
-            if (dirty.length) {
-              console.warn(
-                `[worktree] ${dirty.length} worktree(s) from previous session had uncommitted changes and were preserved at:\n` +
-                dirty.map(k => `  ${k.path}  (${k.branch})`).join('\n') +
-                `\nReview the changes there and either commit them on the branch or discard the directory.`
-              )
-            }
-            if (stuck.length) {
-              console.warn(
-                `[worktree] ${stuck.length} worktree(s) from previous session could not be cleaned up and were left at:\n` +
-                stuck.map(k => `  ${k.path}  (${k.branch})${k.detail ? ': ' + k.detail : ''}`).join('\n') +
-                `\nDelete the folder once nothing is using it.`
-              )
-            }
+          const kept = Array.isArray(r?.kept) ? r.kept : []
+          const stranded = Array.isArray(r?.stranded) ? r.stranded : []
+          if (kept.length || stranded.length) {
+            setLeftovers(prev => ({ ...prev, [w0.dir]: { kept, stranded } }))
           }
         } catch {}
         if (cancelled) return
@@ -721,6 +709,8 @@ function AppInner() {
   // changes and only while it is not isolated. Never polled.
   const [canIsoState, setCanIsoState] = useState(null) // { key, result }
   const [dismissedNotices, setDismissedNotices] = useState(() => new Set())
+  // repoDir -> { kept, stranded } from the start-of-session wipe; session-only.
+  const [leftovers, setLeftovers] = useState({})
   const isoProbe = (() => {
     const w = workspaces.find(x => x.id === activeId)
     return w && !w.unconfigured && !w.isolated && w.dir ? { id: w.id, dir: w.dir } : null
@@ -1169,6 +1159,12 @@ function AppInner() {
   const noticeShown = notice.kind && !anyFullscreen
     && (notice.kind === 'spawn-failed' || !dismissedNotices.has(activeId))
   const dismissNotice = () => setDismissedNotices(prev => new Set(prev).add(activeId))
+  const leftover = activeWorkspace && !anyFullscreen ? leftovers[activeWorkspace.dir] : null
+  const dismissLeftover = () => {
+    const dir = activeWorkspace?.dir
+    if (!dir) return
+    setLeftovers(prev => { const next = { ...prev }; delete next[dir]; return next })
+  }
   const cols = anyFullscreen ? 1 : (
     n <= 1 ? 1 :
     n === 2 ? 2 :
@@ -1219,6 +1215,13 @@ function AppInner() {
               />
             ) : (
             <div className="grid-col">
+            {leftover && (
+              <LeftoverWorkNotice
+                kept={leftover.kept}
+                stranded={leftover.stranded}
+                onDismiss={dismissLeftover}
+              />
+            )}
             {noticeShown && (
               <IsolationNotice
                 kind={notice.kind}
