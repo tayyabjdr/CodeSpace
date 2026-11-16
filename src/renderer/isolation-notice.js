@@ -3,7 +3,9 @@
 export const ISOLATION_NOTES = {
   'not-a-repo': "This folder isn't a git repo, so agents will share it.",
   'no-commits': 'This repo has no commits yet, so agents will share the folder. Make a first commit to separate them.',
-  'git-missing': "Git wasn't found, so agents will share this folder."
+  'git-missing': "Git wasn't found, so agents will share this folder.",
+  'not-repo-root': 'This is a folder inside a git repo, so agents will share it. Open the repo root to separate them.',
+  'drive-root': 'This repo sits at the root of a drive, so agents will share the folder. Move it into a folder to separate them.'
 }
 
 // Decides which notice, if any, a workspace should show above its grid.

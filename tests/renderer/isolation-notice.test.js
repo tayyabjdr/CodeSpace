@@ -21,7 +21,7 @@ describe('isolationNotice', () => {
       .toEqual({ kind: 'spawn-failed', actionEnabled: true })
   })
   it('exports the shared reason notes', () => {
-    expect(Object.keys(ISOLATION_NOTES).sort()).toEqual(['git-missing', 'no-commits', 'not-a-repo'])
+    expect(Object.keys(ISOLATION_NOTES).sort()).toEqual(['drive-root', 'git-missing', 'no-commits', 'not-a-repo', 'not-repo-root'])
   })
 })
 
@@ -76,5 +76,15 @@ describe('close failure helpers', () => {
     expect(leftoverFromCloseAll({ ok: true, failures: [{ agentId: 'a', path: 'p' }] })).toHaveLength(1)
     expect(leftoverFromCloseAll({ error: 'x' })).toHaveLength(1)
     expect(leftoverFromCloseAll(null)).toEqual([])
+  })
+})
+
+describe('ISOLATION_NOTES / refusal reasons from canIsolate', () => {
+  it('words every reason main can return, with no em-dashes', async () => {
+    const { ISOLATION_NOTES } = await import('../../src/renderer/isolation-notice.js')
+    for (const r of ['not-a-repo', 'no-commits', 'git-missing', 'not-repo-root', 'drive-root']) {
+      expect(typeof ISOLATION_NOTES[r]).toBe('string')
+      expect(ISOLATION_NOTES[r]).not.toContain('—')
+    }
   })
 })
