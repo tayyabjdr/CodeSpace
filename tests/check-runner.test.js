@@ -78,7 +78,8 @@ describe('check-runner / runCheck', () => {
 
   it('timeout kills the process tree', async () => {
     const cwd = pkg({ test: 'node -e "require(\'fs\').writeFileSync(\'pid.txt\', String(process.pid)); setTimeout(() => {}, 60000)"' })
-    const r = await runCheck({ cwd, logPath: logFor(cwd), timeoutMs: 3000 })
+    // Long enough for a cold npm start to write pid.txt on a slow machine.
+    const r = await runCheck({ cwd, logPath: logFor(cwd), timeoutMs: 10000 })
     expect(r.result).toBe('timeout')
     const pid = Number(readFileSync(join(cwd, 'pid.txt'), 'utf8'))
     expect(await waitFor(() => !alive(pid))).toBe(true)
@@ -94,6 +95,47 @@ describe('check-runner / runCheck', () => {
     expect(r.result).toBe('cancelled')
     const pid = Number(readFileSync(join(cwd, 'pid.txt'), 'utf8'))
     expect(await waitFor(() => !alive(pid))).toBe(true)
+  }, 60000)
+
+  it('a planted npm.cmd in the project cannot fake a pass', async () => {
+    // The Electron app does not set this, so emulate it: without it, cmd.exe
+    // would run npm.cmd from the current folder ahead of the real npm.
+    const saved = process.env.NoDefaultCurrentDirectoryInExePath
+    delete process.env.NoDefaultCurrentDirectoryInExePath
+    try {
+      const cwd = pkg({ test: 'node -e "process.exit(1)"' }, { 'npm.cmd': '@exit /b 0\r\n' })
+      expect((await runCheck({ cwd, logPath: logFor(cwd) })).result).toBe('failed')
+    } finally {
+      if (saved !== undefined) process.env.NoDefaultCurrentDirectoryInExePath = saved
+    }
+  }, 60000)
+
+  it('a process the check leaves running does not hold up or change the result', async () => {
+    // The script starts a detached child that keeps the output pipes open for
+    // 30s, then exits 0 itself.
+    const cwd = pkg({ test: 'node orphan.js' }, {
+      'orphan.js': [
+        "const { spawn } = require('child_process')",
+        "const c = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)'], { detached: true, stdio: 'inherit' })",
+        "require('fs').writeFileSync('orphan.pid', String(c.pid))",
+        'c.unref()',
+        'process.exit(0)'
+      ].join('\n')
+    })
+    const started = Date.now()
+    const r = await runCheck({ cwd, logPath: logFor(cwd), timeoutMs: 20000 })
+    try {
+      expect(r.result).toBe('passed')
+      expect(Date.now() - started).toBeLessThan(15000)
+    } finally {
+      try { process.kill(Number(readFileSync(join(cwd, 'orphan.pid'), 'utf8'))) } catch {}
+    }
+  }, 60000)
+
+  it('a log path it cannot write does not throw or change the result', async () => {
+    const cwd = pkg({ test: 'node -e "process.exit(0)"' })
+    const dirAsLog = join(cwd, 'a folder'); mkdirSync(dirAsLog)
+    expect((await runCheck({ cwd, logPath: dirAsLog })).result).toBe('passed')
   }, 60000)
 
   it('an already-aborted signal runs nothing', async () => {
