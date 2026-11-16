@@ -18,6 +18,18 @@ const REASON_COPY = {
   'unknown':    { title: "Couldn't read this file", body: 'Unknown error.', cta: 'retry' },
 }
 
+// How many parent folders the header shows ahead of the filename.
+const PATH_DEPTH = 5
+
+// Splits a path into the trailing folders worth showing and the filename.
+// `clipped` is true when folders above the shown ones were dropped.
+function pathParts(p) {
+  const segs = (p ?? '').split(/[\\/]+/).filter(Boolean)
+  const name = segs.pop() ?? ''
+  const dirs = segs.slice(-PATH_DEPTH)
+  return { dirs, name, clipped: segs.length > dirs.length }
+}
+
 function basename(p) {
   if (!p) return ''
   const m = p.match(/[^\\/]+$/)
@@ -106,30 +118,55 @@ export default function EditorPane({
             if (e.target === e.currentTarget) onToggleFullscreen?.()
           }}
         >
+          <span className="editor-path" title={file}>
+            {(() => {
+              const { dirs, name, clipped } = pathParts(file)
+              return (
+                <>
+                  {(clipped || dirs.length > 0) && (
+                    <span className="editor-path-dirs">
+                      <bdi dir="ltr">
+                        {(clipped ? '…\\' : '') + dirs.map(d => d + '\\').join('')}
+                      </bdi>
+                    </span>
+                  )}
+                  <span className="editor-filename">{name}</span>
+                </>
+              )
+            })()}
+          </span>
+          {/* After the name, and takes no room at all while clean, so the
+              header never has an empty gap and the name never shifts. */}
           <span
             data-testid="dirty-dot"
             className={`editor-dirty-dot ${dirty ? 'is-dirty' : ''}`}
+            title={dirty ? 'Unsaved changes' : undefined}
             aria-hidden="true"
           />
-          <span className="editor-filename" title={file}>{basename(file)}</span>
-          {isExternal && <span className="editor-chip">EXTERNAL</span>}
+          {isExternal &&<span className="editor-chip">EXTERNAL</span>}
           {isPlain && <span className="editor-chip">PLAIN</span>}
           <div className="editor-pane-actions">
-            <button className="editor-icon-btn" title="Reveal in folder" onClick={handleReveal}>↗</button>
+            <button className="editor-icon-btn" title="Reveal in folder" onClick={handleReveal}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M14 5h5v5" />
+                <line x1="19" y1="5" x2="11" y2="13" />
+                <path d="M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4" />
+              </svg>
+            </button>
             <button
               className={`editor-icon-btn editor-fs-btn${isFullscreen ? ' is-active' : ''}`}
               title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
               onClick={onToggleFullscreen}
             >
               {isFullscreen ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <polyline points="9 4 9 9 4 9" />
                   <polyline points="20 9 15 9 15 4" />
                   <polyline points="15 20 15 15 20 15" />
                   <polyline points="4 15 9 15 9 20" />
                 </svg>
               ) : (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <polyline points="4 9 4 4 9 4" />
                   <polyline points="15 4 20 4 20 9" />
                   <polyline points="20 15 20 20 15 20" />
@@ -137,17 +174,64 @@ export default function EditorPane({
                 </svg>
               )}
             </button>
-            <button className="editor-icon-btn editor-close-btn" title="Close editor" onClick={onClose}>×</button>
+            <button className="editor-icon-btn editor-close-btn" title="Close editor" onClick={onClose}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!file && (
+        <div className="editor-pane-header">
+          <span className="editor-filename is-placeholder">Editor</span>
+          <div className="editor-pane-actions">
+            {onClose && (
+              <button className="editor-icon-btn editor-close-btn" title="Close editor" onClick={onClose}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+            )}
           </div>
         </div>
       )}
 
       {!file && (
         <div className="editor-empty" onDoubleClick={handleBrowse}>
-          <span className="editor-empty-mark">✦</span>
-          <p className="editor-empty-title">Drop a file here</p>
-          <p className="editor-empty-hint">or double-click to browse</p>
-          <p className="editor-empty-alt">Ctrl+click a path in your terminal</p>
+          <div className="editor-empty-inner">
+            <span className="editor-empty-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 3 14 8 19 8" />
+                <polyline points="10 13 8.5 14.5 10 16" />
+                <polyline points="14 13 15.5 14.5 14 16" />
+              </svg>
+            </span>
+            <p className="editor-empty-title">No file open</p>
+            <p className="editor-empty-sub">Open a file to read or edit it next to your agents.</p>
+            <button
+              type="button"
+              className="editor-empty-btn"
+              onClick={handleBrowse}
+              onDoubleClick={(e) => e.stopPropagation()}
+            >
+              Browse files
+            </button>
+            <ul className="editor-empty-ways">
+              <li>
+                <span className="editor-empty-way-label">Drop a file here</span>
+                <span className="editor-empty-keys"><kbd>Drag</kbd></span>
+              </li>
+              <li>
+                <span className="editor-empty-way-label">Open a path from a terminal</span>
+                <span className="editor-empty-keys"><kbd>Ctrl</kbd><kbd>Click</kbd></span>
+              </li>
+            </ul>
+          </div>
         </div>
       )}
 

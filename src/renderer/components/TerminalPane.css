@@ -160,7 +160,7 @@
 
 .pane-label {
   font-family: var(--cs-font-ui);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--cs-text-muted);
@@ -177,7 +177,7 @@
 
 .pane-label-input {
   font-family: var(--cs-font-ui);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--cs-text-primary);
@@ -409,6 +409,15 @@
   vertical-align: middle;
   user-select: none;
 }
+.tp-agent-logo {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--cs-text-primary);
+  transition: color var(--cs-transition);
+}
+.tp-agent-logo.is-error { color: var(--cs-term-yellow); }
+
 .tp-badge-claude {
   color: var(--cs-text-secondary);
   border-color: rgba(255, 255, 255, 0.22);

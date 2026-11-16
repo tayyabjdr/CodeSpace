@@ -63,6 +63,18 @@ export default function Sidebar({
     return out
   }, [workspaces, expandedIds])
 
+  // The same nodes bunched per workspace, each keeping its index into `flat`
+  // for roving navigation. A workspace and its agents render inside one
+  // container, so the active workspace highlights as a single block.
+  const groups = useMemo(() => {
+    const out = []
+    flat.forEach((node, i) => {
+      if (node.kind === 'workspace') out.push({ ws: node.ws, nodes: [] })
+      out[out.length - 1].nodes.push({ node, i })
+    })
+    return out
+  }, [flat])
+
   const handleKeyDown = (e, index) => {
     // A focused nickname input owns its keys; bail before touching anything.
     if (e.target.tagName === 'INPUT') return
@@ -136,7 +148,12 @@ export default function Sidebar({
       </nav>
 
       <div className="sb-list" role="tree" aria-label="Workspaces" ref={listRef}>
-        {flat.map((node, i) => (
+        {groups.map(group => (
+          <div
+            key={'group' + group.ws.id}
+            className={`sb-group${group.ws.id === activeId ? ' active' : ''}`}
+          >
+          {group.nodes.map(({ node, i }) => (
           <div key={node.kind + node.id} onKeyDown={(e) => handleKeyDown(e, i)}>
             {node.kind === 'workspace' ? (
               <WorkspaceRow
@@ -161,6 +178,8 @@ export default function Sidebar({
                 />
               </div>
             )}
+          </div>
+          ))}
           </div>
         ))}
       </div>

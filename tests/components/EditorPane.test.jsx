@@ -183,3 +183,20 @@ describe('EditorPane browse', () => {
     expect(onBrowse).not.toHaveBeenCalled()
   })
 })
+
+describe('EditorPane header path', () => {
+  it('shows up to five parent folders before the filename', () => {
+    const { container } = render(
+      <EditorPane {...baseProps} file="D:/a/b/c/d/e/f/g/File.jsx" loadState="content" content="" />
+    )
+    expect(container.querySelector('.editor-path-dirs').textContent).toBe('…/c/d/e/f/g/'.replaceAll('/', String.fromCharCode(92)))
+    expect(container.querySelector('.editor-path .editor-filename').textContent).toBe('File.jsx')
+  })
+
+  it('shows every folder without an ellipsis when the path is short', () => {
+    const { container } = render(
+      <EditorPane {...baseProps} file="D:/proj/main.js" loadState="content" content="" />
+    )
+    expect(container.querySelector('.editor-path-dirs').textContent).toBe(['D:', 'proj', ''].join(String.fromCharCode(92)))
+  })
+})

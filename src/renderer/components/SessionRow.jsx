@@ -2,7 +2,7 @@
 // Purely presentational — status is resolved by the parent, which is the
 // only place that can see the done and exit stores together.
 
-const GLYPHS = { claude: '✳', codex: '◆' }
+import AgentLogo, { hasAgentLogo } from './AgentLogo.jsx'
 
 export default function SessionRow({ term, status, isFocused, onSelect }) {
   const label =
@@ -23,8 +23,15 @@ export default function SessionRow({ term, status, isFocused, onSelect }) {
       onClick={() => onSelect(term.id)}
       title={label}
     >
-      <span className={`sb-session-dot ${status}`} aria-hidden />
-      <span className="sb-session-glyph" aria-hidden>{GLYPHS[term.shell] ?? '·'}</span>
+      {/* The agent's mark doubles as the status: white running, cyan done,
+          yellow stopped. Unknown shells fall back to a plain dot. */}
+      {hasAgentLogo(term.shell) ? (
+        <span className={`sb-session-logo ${status}`} aria-hidden>
+          <AgentLogo shell={term.shell} size={12} />
+        </span>
+      ) : (
+        <span className={`sb-session-dot ${status}`} aria-hidden />
+      )}
       <span className="sb-session-name">{label}</span>
     </div>
   )
