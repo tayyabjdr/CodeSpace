@@ -375,9 +375,10 @@ export function createMergeQueue({ runCheck, runInstall, onStatus = () => {}, ti
   const chains = new Map() // repoKey -> tail promise of that repo's Finishes
   const active = new Map() // agentId -> job (queued or running)
 
-  function emit(job, state, extra = {}) {
-    // After a cancel, only the cancel's own 'idle' gets out.
-    if (job.cancelled && state !== 'idle') return
+  function emit(job, state, extra = {}, { truth = false } = {}) {
+    // After a cancel, only the cancel's own 'idle' gets out, except the
+    // truth: work that really landed is always reported as landed.
+    if (job.cancelled && state !== 'idle' && !truth) return
     const payload = { agentId: job.agentId, state, target: job.target }
     for (const [k, v] of Object.entries(extra)) if (v !== undefined) payload[k] = v
     try { onStatus(payload) } catch {}
@@ -480,6 +481,8 @@ export function createMergeQueue({ runCheck, runInstall, onStatus = () => {}, ti
     if (now !== onto) return { moved: true, now }
 
     const cleanBefore = snapshotBeforeMerge(repoDir, onto, sha)
+    // Last chance to stop: nothing has touched the main folder yet.
+    if (job.cancelled) return { cancelled: true }
     // Hooks off (no post-merge surprises, no unbounded output); never
     // overwrite ignored files; never autostash the user's edits.
     const r = await runGit(repoDir, [
@@ -653,9 +656,11 @@ export function createMergeQueue({ runCheck, runInstall, onStatus = () => {}, ti
       }
 
       // 8. After landing
-      throw new Stop(untested ? 'merged-untested' : 'merged', {
+      const done = new Stop(untested ? 'merged-untested' : 'merged', {
         lockfileChanged: job.lockfileChanged || undefined
       })
+      done.landed = true // reported even if a cancel arrived while git was landing it
+      throw done
     }
   }
 
@@ -674,7 +679,7 @@ export function createMergeQueue({ runCheck, runInstall, onStatus = () => {}, ti
         if (stop.state === 'blocked' && stop.extra.detail) log(job, `Blocked: ${stop.extra.detail}`)
       }
       if (stop.state === 'blocked' && stop.extra.detail && !stop.extra.logPath) stop.extra.logPath = job.logPath
-      emit(job, stop.state, stop.extra)
+      emit(job, stop.state, stop.extra, { truth: !!stop.landed })
     } finally {
       if (active.get(job.agentId) === job) active.delete(job.agentId)
     }

@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process'
-import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync, rmdirSync, lstatSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdirSync, rmSync, rmdirSync, lstatSync, realpathSync } from 'fs'
 import { join, dirname, basename, resolve } from 'path'
 import { setupWorktree, removeAllLinks, pickPort, releasePort } from './worktree-setup.js'
 
@@ -30,9 +30,39 @@ export function isGitRepo(dir) {
   }
 }
 
+// Same folder, compared the way Windows does: through junctions/subst
+// (realpath), any drive-letter case, trailing separator or letter case.
+function canonical(p) {
+  let r = p
+  try { r = realpathSync.native(p) } catch {}
+  return repoKey(r).toLowerCase()
+}
+
+// Why `dir` can't hold isolated agents even though it is inside a repo, or null.
+// - not-repo-root: a worktree is a checkout of the WHOLE repo, so a workspace
+//   on a subfolder would run its agents (and Finish's check) in the wrong place.
+// - drive-root: worktrees go beside the repo; a repo at a drive root has no
+//   "beside", and nesting them inside it makes test runners see them twice.
+function rootProblem(dir) {
+  let top
+  try {
+    top = execFileSync('git', ['-C', dir, 'rev-parse', '--show-toplevel'], {
+      stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true, encoding: 'utf8'
+    }).trim()
+  } catch {
+    return 'not-repo-root'
+  }
+  if (!top || canonical(top) !== canonical(dir)) return 'not-repo-root'
+  const abs = resolve(dir)
+  if (dirname(abs) === abs) return 'drive-root'
+  return null
+}
+
 export function canIsolate(dir) {
   if (!isGitAvailable()) return { ok: false, reason: 'git-missing' }
   if (!isGitRepo(dir)) return { ok: false, reason: 'not-a-repo' }
+  const problem = rootProblem(dir)
+  if (problem) return { ok: false, reason: problem }
   try {
     execFileSync('git', ['-C', dir, 'rev-parse', '--verify', '--quiet', 'HEAD'], {
       stdio: 'ignore',
@@ -210,6 +240,13 @@ async function _createImpl({ repoDir, workspaceName, agentId }) {
   if (!isGitRepo(repoDir)) {
     const err = new Error('source is not a git repo'); err.code = 'not-a-repo'; throw err
   }
+  const problem = rootProblem(repoDir)
+  if (problem === 'not-repo-root') {
+    const err = new Error('source is a folder inside a repo, not the repo root'); err.code = 'not-repo-root'; throw err
+  }
+  if (problem === 'drive-root') {
+    const err = new Error('source repo is at a drive root'); err.code = 'drive-root'; throw err
+  }
   let baseSha
   try { baseSha = execGit(['-C', repoDir, 'rev-parse', 'HEAD']).trim() }
   catch {
@@ -259,15 +296,28 @@ function metaEntry(repoDir, agentId) {
   return { meta: m, entry: m.agents[agentId] }
 }
 
+// Whether a worktree holds uncommitted work. Fails CLOSED: if git can't read
+// it (the repo was renamed or moved, the folder is damaged...), it counts as
+// dirty, because every caller uses "clean" as permission to delete.
+function dirtyState(repoDir, agentId, entry) {
+  const wtPath = entryWorktreePath(repoDir, agentId, entry)
+  if (!existsSync(wtPath)) return { missing: true }
+  try {
+    const out = execGit(['-C', wtPath, 'status', '--porcelain'])
+    return { dirty: out.trim().length > 0 }
+  } catch (e) {
+    return {
+      dirty: true,
+      unreadable: true,
+      detail: `git couldn't read ${wtPath}: ${String(e?.stderr || e?.message || e).trim().slice(0, 300)}`
+    }
+  }
+}
+
 export async function checkDirty({ repoDir, agentId }) {
   const { entry } = metaEntry(repoDir, agentId)
   if (!entry) return { missing: true }
-  const wtPath = entryWorktreePath(repoDir, agentId, entry)
-  if (!existsSync(wtPath)) return { missing: true }
-  let out
-  try { out = execGit(['-C', wtPath, 'status', '--porcelain']) }
-  catch { return { dirty: false } }
-  return { dirty: out.trim().length > 0 }
+  return dirtyState(repoDir, agentId, entry)
 }
 
 const REMOVE_ATTEMPTS = 3
@@ -368,11 +418,29 @@ export async function closeAllForWorkspace({ repoDir, agentIds }) {
     for (const id of agentIds) {
       const entry = readMeta(repoDir).agents[id]
       const path = entry ? entryWorktreePath(repoDir, id, entry) : null
+      // Never force-remove work: a worktree with uncommitted changes (or one
+      // git can't read) stays, folder and branch, and is reported instead.
+      if (entry) {
+        const st = dirtyState(repoDir, id, entry)
+        const reason = keepReason(st)
+        if (reason) {
+          failures.push({
+            agentId: id,
+            path,
+            branch: entry.branch,
+            reason,
+            detail: st.detail ?? `${path} has uncommitted changes`
+          })
+          continue
+        }
+      }
       try {
         const res = await _closeImpl({ repoDir, agentId: id })
-        if (res && res.ok === false) failures.push({ agentId: id, path: res.path ?? path, detail: res.detail ?? res.error })
+        if (res && res.ok === false) {
+          failures.push({ agentId: id, path: res.path ?? path, branch: entry?.branch, reason: res.error ?? 'cleanup-failed', detail: res.detail ?? res.error })
+        }
       } catch (e) {
-        failures.push({ agentId: id, path, detail: String(e?.message ?? e) })
+        failures.push({ agentId: id, path, branch: entry?.branch, reason: e?.code ?? 'cleanup-failed', detail: String(e?.message ?? e) })
       }
     }
     try {
@@ -384,17 +452,11 @@ export async function closeAllForWorkspace({ repoDir, agentIds }) {
   })
 }
 
-// Synchronous dirty check (no lock — caller already holds it).
-// Returns false on any error so cleanup isn't blocked by an unrelated git fault.
-function _isDirty(repoDir, agentId, entry) {
-  const wtPath = entryWorktreePath(repoDir, agentId, entry)
-  if (!existsSync(wtPath)) return false
-  try {
-    const out = execGit(['-C', wtPath, 'status', '--porcelain'])
-    return out.trim().length > 0
-  } catch {
-    return false
-  }
+// Why a worktree must be kept rather than removed, or null if it may go.
+function keepReason(state) {
+  if (state.unreadable) return 'unreadable'
+  if (state.dirty) return 'uncommitted'
+  return null
 }
 
 function listStranded(repoDir, protectedBranches) {
@@ -421,12 +483,15 @@ export async function wipeAll({ repoDir, liveAgentIds = [] }) {
     for (const id of ids) {
       if (live.has(id)) continue
       const entry = m.agents[id]
-      if (_isDirty(repoDir, id, entry)) {
+      const st = dirtyState(repoDir, id, entry)
+      const reason = keepReason(st)
+      if (reason) {
         kept.push({
           agentId: id,
           branch: entry.branch,
           path: entryWorktreePath(repoDir, id, entry),
-          reason: 'uncommitted'
+          reason,
+          ...(st.detail ? { detail: st.detail } : {})
         })
         continue
       }

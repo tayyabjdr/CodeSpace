@@ -171,6 +171,17 @@ describe('worktree-manager / linked deps', () => {
     expect(existsSync(SENTINEL())).toBe(true)
     expect(readMeta(repoDir).agents[agentId]).toBeTruthy()
   })
+
+  it('closeAllForWorkspace reports the failure code as reason, keeping detail', async () => {
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    const mgr = await loadManager({ unlinkSync: () => { throw new Error('EPERM simulated') } })
+    const out = await mgr.closeAllForWorkspace({ repoDir, agentIds: [agentId] })
+    expect(out.failures).toHaveLength(1)
+    expect(out.failures[0]).toMatchObject({ agentId, path: r.path, reason: 'deps-unlink-failed' })
+    expect(out.failures[0].detail).toMatch(/EPERM simulated/)
+    expect(existsSync(r.path)).toBe(true)
+    expect(existsSync(SENTINEL())).toBe(true)
+  })
 })
 
 // Links an agent can create anywhere in its worktree; each points outside the
@@ -202,9 +213,10 @@ describe('worktree-manager / links anywhere in the worktree', () => {
   it.each(['close', 'closeAllForWorkspace', 'wipeAll'])(
     '%s unlinks renamed, nested and mixed-folder junctions without touching their targets', async (which) => {
       const r = await create({ repoDir, workspaceName: 'ws', agentId })
-      if (which === 'wipeAll') {
-        // wipeAll keeps dirty worktrees, so hide the planted files from git status
-        // to let it reach the removal (and the link walk) at all.
+      if (which === 'wipeAll' || which === 'closeAllForWorkspace') {
+        // wipeAll and closeAllForWorkspace keep dirty worktrees, so hide the
+        // planted files from git status to let them reach the removal (and the
+        // link walk) at all.
         const ex = join(repoDir, '.git', 'info', 'exclude')
         appendFileSync(ex, ['/node_modules.bak', '/shared-cache', '/packages/', ''].join('\n'))
       }

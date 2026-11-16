@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync, openSync, closeSync } from 'fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync, openSync, closeSync, watch } from 'fs'
 import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 import { execFileSync, spawn } from 'child_process'
@@ -951,6 +951,28 @@ describe('merge-queue / fix round 1', () => {
     expect(last(a.agentId).state).toBe('blocked')
     const logPath = join(repoDir, '.codespace', 'merge-logs', `${a.agentId}.log`)
     expect(readFileSync(logPath, 'utf8')).toContain('Blocked: nothing to merge')
+  })
+})
+
+describe('merge-queue / final review', () => {
+  it('reports merged when a cancel arrives while the landing is already writing', async () => {
+    const a = await agent()
+    mkdirSync(join(a.wt, 'gen'))
+    for (let i = 0; i < 300; i++) writeFileSync(join(a.wt, 'gen', `f${i}.txt`), `file ${i}`)
+    commitAll(a.wt, 'agent adds many files')
+    const { q, last } = setup()
+    let cancelled = false
+    const w = watch(repoDir, { recursive: true }, (_ev, name) => {
+      if (!cancelled && name && String(name).startsWith('gen')) { cancelled = true; q.cancel(a.agentId) }
+    })
+    try {
+      q.finish({ repoDir, agentId: a.agentId, agentName: 'A' })
+      await q.drain()
+    } finally { w.close() }
+    expect(cancelled).toBe(true)
+    // The work landed, so the status must say so, cancel or not.
+    expect(head(repoDir, 'master')).toBe(head(a.wt))
+    expect(last(a.agentId).state).toBe('merged')
   })
 })
 
