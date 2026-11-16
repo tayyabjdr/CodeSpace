@@ -145,8 +145,22 @@ export function killPty(ptyId) {
   notifyExitStore()
 }
 
+// Every write into a PTY is input the user (or the app on their behalf)
+// put there: keystrokes, pastes, Shift+Enter, dropped files and skills.
+// The failure handoff must never type over any of it, so it listens here,
+// the one place all of them pass through.
+const writeListeners = new Set() // (ptyId, data) => void
+
+export function onWrite(cb) {
+  writeListeners.add(cb)
+  return () => writeListeners.delete(cb)
+}
+
 export function writePty(ptyId, data) {
   window.electronAPI.writePty(ptyId, data)
+  for (const cb of writeListeners) {
+    try { cb(ptyId, data) } catch {}
+  }
 }
 
 export function resizePty(ptyId, cols, rows) {

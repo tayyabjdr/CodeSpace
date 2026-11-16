@@ -12,6 +12,7 @@ import { DONE_SILENCE_MS } from './constants.js'
 
 const tracked = new Map() // ptyId -> { lastOutputAt, quiet, timer, detach, ms }
 const listeners = new Set()
+const inputAt = new Map() // ptyId -> last time the user typed or dropped into it
 
 function notify() {
   for (const cb of listeners) cb()
@@ -57,6 +58,7 @@ export function untrack(ptyId) {
   clearTimeout(state.timer)
   state.detach?.()
   tracked.delete(ptyId)
+  inputAt.delete(ptyId)
   notify()
 }
 
@@ -65,6 +67,16 @@ export function syncTracked(ptyIds) {
   const want = new Set(ptyIds)
   for (const id of want) track(id)
   for (const id of [...tracked.keys()]) if (!want.has(id)) untrack(id)
+}
+
+// Every keystroke, paste or drop into a pane. Kept apart from `tracked` so
+// input counts even before output tracking has started.
+export function noteInput(ptyId) {
+  if (ptyId) inputAt.set(ptyId, Date.now())
+}
+
+export function lastInputAt(ptyId) {
+  return inputAt.get(ptyId) ?? null
 }
 
 export function lastOutputAt(ptyId) {
@@ -83,5 +95,6 @@ export function useQuiet(ptyId, ms = DONE_SILENCE_MS) {
 
 export function _resetForTests() {
   for (const id of [...tracked.keys()]) untrack(id)
+  inputAt.clear()
   listeners.clear()
 }

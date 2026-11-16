@@ -36,11 +36,32 @@ export function mergeRetryFailures(current, retried, newFailures) {
   return [...(current ?? []).filter(f => !gone.has(f)), ...newFailures]
 }
 
+// Why an agent folder is still on disk, in words. `f` is a close result or a
+// closeAll failure; the reason lives in `reason` or, for older shapes, `error`.
+export function leftoverReasonText(f) {
+  const code = f?.reason ?? f?.error
+  if (code === 'uncommitted') {
+    return f?.branch ? `Kept: it has uncommitted changes on ${f.branch}` : 'Kept: it has uncommitted changes'
+  }
+  if (code === 'unreadable') return "Kept: git couldn't read it, so it was left alone"
+  // Never "delete it" here: Remove-Item -Recurse in PowerShell 5.1 follows the
+  // junction into the user's real node_modules.
+  if (code === 'deps-unlink-failed') {
+    return 'A link to your node_modules is still inside. Remove that link first, then delete the folder.'
+  }
+  return "Couldn't remove it. Delete it after closing anything using it."
+}
+
 // A close that fails comes back as { ok:false, path } or, when main threw, { error }.
 // Returns the warning to show, or null when the close worked.
 export function closeFailureMessage(result) {
   if (!result || (result.ok !== false && !result.error)) return null
-  return `Couldn't remove this agent's folder: ${result.path ?? 'unknown location'}. Delete it after closing anything using it.`
+  const code = result.reason ?? result.error
+  const where = result.path ?? 'unknown location'
+  if (code === 'uncommitted' || code === 'unreadable' || code === 'deps-unlink-failed') {
+    return `This agent's folder is still at ${where}. ${leftoverReasonText(result)}${code === 'deps-unlink-failed' ? '' : '.'}`
+  }
+  return `Couldn't remove this agent's folder: ${where}. Delete it after closing anything using it.`
 }
 
 // Folders a workspace cleanup left behind, from a closeAll result.

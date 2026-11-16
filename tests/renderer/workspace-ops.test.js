@@ -50,3 +50,37 @@ describe('withExpanded', () => {
     expect(set.size).toBe(0)
   })
 })
+
+import { sameDir, liveAgentIdsFor } from '../../src/renderer/workspace-ops.js'
+
+describe('sameDir', () => {
+  it('treats drive-letter case, slash style and trailing separators as the same folder', () => {
+    expect(sameDir('D:/PC Backup/x', 'd:/PC Backup/x/')).toBe(true)
+    expect(sameDir('D:/PC Backup/x', 'D:/PC Backup/x//')).toBe(true)
+    expect(sameDir('C:/', 'c:')).toBe(true)
+    expect(sameDir('D:/PC Backup/x', 'D:/PC Backup/y')).toBe(false)
+    expect(sameDir('D:/PC Backup/x', 'D:/PC Backup/xy')).toBe(false)
+    expect(sameDir('D:/PC Backup/Repo', 'd:/pc backup/repo')).toBe(true)
+    expect(sameDir(null, 'D:/x')).toBe(false)
+  })
+
+  it('unifies backslashes with forward slashes', () => {
+    const bs = String.fromCharCode(92)
+    expect(sameDir(['D:', 'PC Backup', 'x'].join(bs), 'd:/PC Backup/x/')).toBe(true)
+    expect(sameDir(['D:', 'x', ''].join(bs), 'D:/x')).toBe(true)
+  })
+})
+
+describe('liveAgentIdsFor', () => {
+  it('collects live agents from every workspace on the same folder, however the path is spelled', () => {
+    // A missed match here lets wipeAll remove another workspace's live worktrees.
+    const bs = String.fromCharCode(92)
+    const ws = [
+      { id: 'w1', dir: ['D:', 'repo'].join(bs), terminals: [{ id: 'a1' }] },
+      { id: 'w2', dir: 'd:/repo/', terminals: [{ id: 'a2' }, { id: 'a3' }] },
+      { id: 'w3', dir: 'D:/other', terminals: [{ id: 'b1' }] },
+      { id: 'w4', dir: 'D:/repo' }
+    ]
+    expect(liveAgentIdsFor(ws, 'D:/repo').sort()).toEqual(['a1', 'a2', 'a3'])
+  })
+})

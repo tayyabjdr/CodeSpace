@@ -57,6 +57,13 @@ describe('App / leftover folders dialog', () => {
     await waitFor(() => expect(screen.queryByText('C:\wt\a1')).toBeNull())
   })
 
+  it('the delete confirm says agent folders with uncommitted changes are kept', async () => {
+    window.electronAPI = api({ ok: true, failures: [] })
+    render(<App />)
+    await userEvent.click(await screen.findByTitle('Delete workspace'))
+    expect(await screen.findByText('Agent folders with uncommitted changes are kept.')).toBeTruthy()
+  })
+
   it('treats a thrown cleanup ({ error }) as a failure too', async () => {
     window.electronAPI = api({ error: 'unknown' })
     render(<App />)

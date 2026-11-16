@@ -5,6 +5,7 @@ import { render, act, fireEvent } from '@testing-library/react'
 const dataListeners = new Map()
 vi.mock('../../src/renderer/pty-pool.js', () => ({
   writePty: vi.fn(),
+  onWrite: vi.fn(() => () => {}),
   attach: vi.fn((ptyId, { onData }) => {
     if (onData) {
       onData('old ring buffer') // replay must not count as fresh output
@@ -218,11 +219,15 @@ describe('FinishControl', () => {
     const stop = startHandoffs({
       onMergeEvent: mergeStatus.onMergeEvent,
       resolveAgent: (id) => (id === 'a1' ? { ptyId: 'p1', shell: 'claude' } : null),
-      lastOutputAt: activity.lastOutputAt
+      lastOutputAt: activity.lastOutputAt,
+      lastInputAt: activity.lastInputAt
     })
     const { container, rerender } = await renderQuiet()
     const texts = () => ptyPool.writePty.mock.calls.filter(c => c[1] !== '\r')
 
+    emit({ state: 'queued' })
+    emit({ state: 'testing' })
+    act(() => { vi.advanceTimersByTime(30000) })
     emit({ state: 'tests-failed', logPath: 'L' })
     await flush()
     for (let i = 0; i < 5; i++) {
@@ -234,10 +239,32 @@ describe('FinishControl', () => {
     expect(texts()[0][1]).toContain('into master: tests failed. Details are in L.')
     expect(container.querySelector('.fc-status').textContent).toBe('Tests failed')
 
-    // A second failure event is a new handoff.
+    // A second Finish that fails is a new handoff.
+    emit({ state: 'queued' })
+    act(() => { vi.advanceTimersByTime(1000) })
     emit({ state: 'conflict', logPath: 'L' })
     await flush()
     expect(texts()).toHaveLength(2)
+    stop()
+  })
+
+  it('writes nothing when the user typed into the quiet pane after Finish', async () => {
+    const stop = startHandoffs({
+      onMergeEvent: mergeStatus.onMergeEvent,
+      resolveAgent: () => ({ ptyId: 'p1', shell: 'claude' }),
+      lastOutputAt: activity.lastOutputAt,
+      lastInputAt: activity.lastInputAt
+    })
+    const { container } = await renderQuiet()
+    emit({ state: 'queued' })
+    act(() => { vi.advanceTimersByTime(10) })
+    activity.noteInput('p1')
+    act(() => { vi.advanceTimersByTime(60000) })
+    emit({ state: 'tests-failed', logPath: 'L' })
+    await flush()
+    act(() => { vi.advanceTimersByTime(200) })
+    expect(ptyPool.writePty).not.toHaveBeenCalled()
+    expect(container.querySelector('.fc-status').textContent).toBe('Tests failed')
     stop()
   })
 
@@ -245,9 +272,11 @@ describe('FinishControl', () => {
     const stop = startHandoffs({
       onMergeEvent: mergeStatus.onMergeEvent,
       resolveAgent: () => ({ ptyId: 'p1', shell: 'claude' }),
-      lastOutputAt: activity.lastOutputAt
+      lastOutputAt: activity.lastOutputAt,
+      lastInputAt: activity.lastInputAt
     })
     const { container } = await renderQuiet()
+    emit({ state: 'queued' })
     act(() => { dataListeners.get('p1')('user typing') })
     emit({ state: 'tests-failed', logPath: 'L' })
     await flush()

@@ -28,7 +28,7 @@ import { startHandoffs } from './merge-handoff.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
 import { checkOpenable } from './open-file.js'
 import { basename } from './path-resolver.js'
-import { focusSessionIn, withExpanded } from './workspace-ops.js'
+import { focusSessionIn, withExpanded, liveAgentIdsFor } from './workspace-ops.js'
 import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
 import useCloseGuard from './hooks/useCloseGuard.js'
 import './design-tokens.css'
@@ -318,9 +318,11 @@ function AppInner() {
     const offHandoffs = startHandoffs({
       onMergeEvent,
       resolveAgent: (agentId) => agentsByIdRef.current.get(agentId) ?? null,
-      lastOutputAt: ptyActivity.lastOutputAt
+      lastOutputAt: ptyActivity.lastOutputAt,
+      lastInputAt: ptyActivity.lastInputAt
     })
-    return () => { offHandoffs(); offStatus() }
+    const offWrites = ptyPool.onWrite((ptyId) => ptyActivity.noteInput(ptyId))
+    return () => { offWrites(); offHandoffs(); offStatus() }
   }, [])
 
   useEffect(() => {
@@ -388,9 +390,8 @@ function AppInner() {
         // work, e.g. the user lost power last session) are preserved on disk
         // and surfaced here so the work isn't silently destroyed.
         // Every workspace on this repo may already have live agents; never wipe those.
-        const liveAgentIds = workspaces
-          .filter(x => x.dir === w0.dir)
-          .flatMap(x => (x.terminals ?? []).map(t => t.id))
+        // Paths are compared normalised: D:/x and d:/x/ are one folder.
+        const liveAgentIds = liveAgentIdsFor(workspaces, w0.dir)
         try {
           const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir, liveAgentIds })
           const kept = Array.isArray(r?.kept) ? r.kept : []
@@ -1363,6 +1364,11 @@ function AppInner() {
                 <> and discard your unsaved edits to <strong className="cd-emphasis">{basename(pendingDeleteWorkspace.editor.file)}</strong></>
               )}
               . You can't bring it back.
+              {pendingDeleteWorkspace.isolated && (
+                <span className="cd-note" style={{ display: 'block', marginTop: 8 }}>
+                  Agent folders with uncommitted changes are kept.
+                </span>
+              )}
             </>
           }
           confirmLabel="Delete"

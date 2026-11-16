@@ -8,7 +8,8 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
 
 const KEPT_LABEL = {
   'uncommitted': 'Uncommitted changes',
-  'cleanup-failed': "Couldn't be removed"
+  'cleanup-failed': "Couldn't be removed",
+  'unreadable': "Couldn't read, left alone"
 }
 
 function CopyButton({ branch }) {

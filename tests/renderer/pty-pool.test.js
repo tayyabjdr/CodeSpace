@@ -94,3 +94,19 @@ describe('pty-pool exit store', () => {
     expect(onExit).toHaveBeenCalledWith(3)
   })
 })
+
+describe('pty-pool write listeners', () => {
+  it('tells write listeners about every write, so the handoff can see user input', async () => {
+    vi.resetModules()
+    window.electronAPI = { writePty: vi.fn(), onPtyData: () => () => {}, onPtyExit: () => () => {} }
+    const ptyPool = await import('../../src/renderer/pty-pool.js')
+    const seen = vi.fn()
+    const off = ptyPool.onWrite(seen)
+    ptyPool.writePty('p1', 'half a prompt')
+    expect(window.electronAPI.writePty).toHaveBeenCalledWith('p1', 'half a prompt')
+    expect(seen).toHaveBeenCalledWith('p1', 'half a prompt')
+    off()
+    ptyPool.writePty('p1', 'x')
+    expect(seen).toHaveBeenCalledTimes(1)
+  })
+})

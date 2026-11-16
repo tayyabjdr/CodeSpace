@@ -34,25 +34,46 @@ export function deliverHandoff({ ptyId, shell, text, lastOutputAt, now = Date.no
 
 // One merge-status event in, at most one handoff out. `resolveAgent` maps an
 // agentId to its { ptyId, shell }, or null when the pane is gone.
-export function handoffForStatus(status, { resolveAgent, lastOutputAt, now = Date.now() }) {
+//
+// Silence alone isn't enough: a half-typed prompt or an open permission menu
+// is silent too, and our \r would submit or confirm it. So the handoff also
+// needs `armedAt`, when this Finish was queued, and skips the write if the
+// pane saw any user input or printed anything since then. The status still
+// shows in the band either way.
+export function handoffForStatus(status, { resolveAgent, lastOutputAt, lastInputAt = () => null, armedAt, now = Date.now() }) {
   const kind = handoffKind(status?.state)
   if (!kind || !status.target) return false
+  if (typeof armedAt !== 'number') return false
   const agent = resolveAgent(status.agentId)
   if (!agent?.ptyId) return false
+  const output = lastOutputAt(agent.ptyId)
+  const input = lastInputAt(agent.ptyId)
+  if (typeof output === 'number' && output >= armedAt) return false
+  if (typeof input === 'number' && input >= armedAt) return false
   return deliverHandoff({
     ptyId: agent.ptyId,
     shell: agent.shell,
     text: handoffText({ target: status.target, kind, logPath: status.logPath }),
-    lastOutputAt: lastOutputAt(agent.ptyId),
+    lastOutputAt: output,
     now
   })
 }
 
-// App wiring: one handoff attempt per merge-status event. Returns an
-// unsubscribe. Re-renders never reach here, only new events do.
-export function startHandoffs({ onMergeEvent, resolveAgent, lastOutputAt }) {
+const FINAL_STATES = new Set(['merged', 'merged-untested', 'tests-failed', 'conflict', 'blocked', 'idle'])
+
+// App wiring: one handoff attempt per merge-status event, and at most one per
+// Finish. Returns an unsubscribe. Re-renders never reach here, only new events.
+export function startHandoffs({ onMergeEvent, resolveAgent, lastOutputAt, lastInputAt, now = () => Date.now() }) {
+  const armed = new Map() // agentId -> time its Finish was queued
   return onMergeEvent((status) => {
-    try { handoffForStatus(status, { resolveAgent, lastOutputAt }) }
-    catch (err) { console.warn('[merge-handoff] failed:', err) }
+    const { agentId, state } = status ?? {}
+    if (state === 'queued') { armed.set(agentId, now()); return }
+    try {
+      handoffForStatus(status, { resolveAgent, lastOutputAt, lastInputAt, armedAt: armed.get(agentId), now: now() })
+    } catch (err) {
+      console.warn('[merge-handoff] failed:', err)
+    } finally {
+      if (FINAL_STATES.has(state)) armed.delete(agentId)
+    }
   })
 }
