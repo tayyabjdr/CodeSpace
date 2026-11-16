@@ -71,6 +71,12 @@ describe('check-runner / runCheck', () => {
     expect(await runCheck({ cwd, logPath: logFor(cwd) })).toEqual({ result: 'none', script: null })
   })
 
+  it('fails, rather than skipping, when package.json is broken', async () => {
+    const cwd = join(root, 'broken manifest'); mkdirSync(cwd)
+    writeFileSync(join(cwd, 'package.json'), '{ "scripts": { "test": ')
+    expect(await runCheck({ cwd, logPath: logFor(cwd) })).toEqual({ result: 'failed', script: null })
+  })
+
   it('sets CI=1', async () => {
     const cwd = pkg({ test: 'node -e "process.exit(process.env.CI === \'1\' ? 0 : 1)"' })
     expect((await runCheck({ cwd, logPath: logFor(cwd) })).result).toBe('passed')

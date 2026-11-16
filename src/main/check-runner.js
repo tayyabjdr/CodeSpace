@@ -143,8 +143,18 @@ function runLogged({ cwd, logPath, commandLine, timeoutMs, signal, env }) {
   })
 }
 
+// A package.json that exists but can't be read as JSON. Not "no check": a
+// project whose manifest an agent broke must not land as merely untested.
+function hasBrokenManifest(cwd) {
+  const p = join(cwd, 'package.json')
+  if (!existsSync(p)) return false
+  try { JSON.parse(readFileSync(p, 'utf8')); return false }
+  catch { return true }
+}
+
 export async function runCheck({ cwd, logPath, timeoutMs = CHECK_TIMEOUT_MS, signal }) {
   if (signal?.aborted) return { result: 'cancelled', script: detectCheck(cwd) }
+  if (hasBrokenManifest(cwd)) return { result: 'failed', script: null }
   const script = detectCheck(cwd)
   if (!script) return { result: 'none', script: null }
   const pm = detectPackageManager(cwd)
