@@ -1,7 +1,16 @@
 .editor-pane {
   display: flex;
   flex-direction: column;
-  background: var(--cs-bg-surface);
+  background: var(--cs-bg-elevated);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: var(--cs-radius);
+  box-shadow:
+    0 2px 14px -4px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  /* Sits beside the terminal grid as one more card: 6px top/right/bottom
+     matches the grid's own padding, and the 4px left plus the grid's 6px
+     gives the same 10px gutter the cards have between each other. */
+  margin: 6px 6px 6px 4px;
   min-width: var(--cs-editor-min);
   min-height: 0;
   overflow: hidden;
@@ -13,22 +22,22 @@
   height: var(--cs-header-h);
   display: flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 0 0 10px;   /* buttons run flush to the right edge, as on .pane-header */
   gap: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--cs-bg-elevated);   /* same as .pane-header */
   flex-shrink: 0;
 }
 
 .editor-dirty-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--cs-text-secondary);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.14);
-  visibility: hidden;
+  background: var(--cs-term-yellow);   /* unsaved changes */
+  box-shadow: 0 0 6px rgba(252, 211, 77, 0.35);
+  display: none;
   flex-shrink: 0;
 }
-.editor-dirty-dot.is-dirty { visibility: visible; }
+.editor-dirty-dot.is-dirty { display: block; }
 .editor-dirty-dot.flash-saved {
   animation: flash-saved 0.2s ease forwards;
 }
@@ -40,7 +49,7 @@
 
 .editor-filename {
   font-family: var(--cs-font-ui);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--cs-text-secondary);
@@ -49,6 +58,33 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Folders then filename. The folders give way first when the header is
+   narrow: they shrink and ellipsize, the filename keeps its full width. */
+.editor-path {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.editor-path-dirs {
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--cs-text-muted);
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Clip from the left so the folders nearest the file stay visible. The
+     rtl box puts the ellipsis on the left; the <bdi dir="ltr"> inside keeps
+     the path itself reading left to right. */
+  direction: rtl;
+  text-align: left;
+}
+.editor-path .editor-filename { flex: 0 0 auto; max-width: 100%; }
 
 .editor-chip {
   flex-shrink: 0;
@@ -68,47 +104,45 @@
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   flex-shrink: 0;
 }
 
+/* Mirrors .pane-add-btn / .pane-fs-btn / .close-btn in TerminalPane.css:
+   full-header-height squares, 14px line icons, 45% opacity at rest. */
 .editor-icon-btn {
   background: none;
   border: none;
   cursor: pointer;
-  width: 26px;
-  height: 22px;
+  width: var(--cs-header-h);
+  height: var(--cs-header-h);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
-  color: var(--cs-text-dim);
-  font-family: var(--cs-font-ui);
-  font-size: 14px;
-  line-height: 1;
+  border-radius: 0;
+  color: var(--cs-text-primary);
+  opacity: 0.45;
   transition: color var(--cs-transition), background var(--cs-transition);
   padding: 0;
 }
 .editor-icon-btn:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: var(--cs-text-primary);
+  opacity: 1;
 }
-.editor-close-btn { font-size: 18px; }
 .editor-close-btn:hover {
   background: var(--cs-red-hover-bg);
   color: var(--cs-red-hover-fg);
+  opacity: 1;
 }
 
 .editor-fs-btn.is-active {
   color: var(--cs-text-secondary);
-}
-.editor-fs-btn.is-active:hover {
-  color: var(--cs-text-secondary);
-  background: rgba(255, 255, 255, 0.05);
+  opacity: 1;
 }
 
 .editor-body {
   flex: 1;
+  background: var(--cs-bg-surface);   /* same as .xterm-container */
   min-height: 0;
   padding: 4px;
   position: relative;
@@ -129,35 +163,6 @@
   height: 100%;
 }
 
-.editor-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 40px;
-  border: 1px dashed var(--cs-border);
-  border-radius: var(--cs-radius);
-  margin: 8px;
-  background: var(--cs-bg-surface);
-}
-.editor-empty-mark {
-  font-size: 18px;
-  color: var(--cs-text-dim);
-}
-.editor-empty-title {
-  font-family: var(--cs-font-ui);
-  font-size: 13px;
-  color: var(--cs-text-secondary);
-}
-.editor-empty-hint {
-  font-family: var(--cs-font-ui);
-  font-size: 10.5px;
-  color: var(--cs-text-muted);
-  letter-spacing: 0.06em;
-}
-
 .editor-loading-bar {
   position: absolute;
   top: 0; left: 0; right: 0;
@@ -173,22 +178,111 @@
   pointer-events: none;
 }
 
-.editor-empty-alt {
-  font-family: var(--cs-font-ui);
-  font-size: 10.5px;
-  color: var(--cs-text-dim);
-  letter-spacing: 0.06em;
-}
+.editor-filename.is-placeholder { color: var(--cs-text-muted); }
 
-/* The empty state is the drop zone and the browse target, so it reads as
-   interactive rather than as a status message. */
+/* Empty state. The whole body is the drop zone and a double-click target,
+   with an explicit button so browsing doesn't depend on knowing that. */
 .editor-empty {
-  cursor: pointer;
-  transition: border-color var(--cs-transition), background var(--cs-transition);
+  flex: 1;
+  min-height: 0;
+  background: var(--cs-bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  overflow: auto;
+  transition: background var(--cs-transition);
 }
-.editor-empty:hover {
-  border-color: var(--cs-border-hover);
-  background: rgba(255, 255, 255, 0.015);
+.editor-empty-inner {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.editor-empty-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid var(--cs-border-mid);
+  background: var(--cs-bg-elevated);
+  color: var(--cs-text-tertiary);
+  margin-bottom: 18px;
+  transition: color var(--cs-transition), border-color var(--cs-transition);
+}
+.editor-empty-title {
+  font-family: var(--cs-font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--cs-text-primary);
+}
+.editor-empty-sub {
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cs-text-tertiary);
+  margin-top: 6px;
+}
+.editor-empty-btn {
+  margin-top: 20px;
+  height: 30px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: none;
+  background: var(--cs-text-primary);
+  color: var(--cs-bg-base);
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--cs-transition), transform var(--cs-transition);
+}
+.editor-empty-btn:hover { background: #fff; }
+.editor-empty-btn:active { transform: scale(0.97); }
+.editor-empty-btn:focus-visible {
+  outline: 2px solid var(--cs-border-focus);
+  outline-offset: 2px;
+}
+.editor-empty-ways {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  width: 100%;
+  border-top: 1px solid var(--cs-border-mid);
+}
+.editor-empty-ways li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--cs-border);
+}
+.editor-empty-way-label {
+  font-family: var(--cs-font-ui);
+  font-size: 11.5px;
+  color: var(--cs-text-tertiary);
+  text-align: left;
+}
+.editor-empty-keys {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.editor-empty-keys kbd {
+  font-family: var(--cs-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--cs-text-secondary);
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--cs-border-hover);
+  border-bottom-width: 2px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* Drag-over: an inset ring rather than a border, since the pane is docked
@@ -198,14 +292,18 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  border-radius: inherit;
   box-shadow:
     inset 0 0 0 1px var(--cs-border-focus),
     inset 0 0 28px rgba(255, 255, 255, 0.05);
   z-index: 2;
 }
 .editor-pane.drag-over .editor-empty {
+  background: #181818;
+}
+.editor-pane.drag-over .editor-empty-icon {
+  color: var(--cs-text-primary);
   border-color: var(--cs-border-focus);
-  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Refusal notice — the pane keeps showing the file it already had, so the

@@ -80,6 +80,12 @@ function BridgeMissing() {
   )
 }
 
+function closedEditorPatch(clearFile) {
+  return clearFile
+    ? { open: false, file: null, line: null, dirty: false, scroll: 0 }
+    : { open: false }
+}
+
 export default function App() {
   if (typeof window === 'undefined' || !window.electronAPI) {
     return <BridgeMissing />
@@ -798,12 +804,15 @@ function AppInner() {
     openFileImmediate({ path, line })
   }, [activeWorkspace, openFileImmediate])
 
-  const closeEditor = useCallback(() => {
+  // Two ways to put the editor away. The toolbar icon and Ctrl+E only hide
+  // it, so toggling it back shows the same file. The pane's own × closes the
+  // file too (`clearFile`), so reopening starts on the empty state.
+  const closeEditor = useCallback(({ clearFile = false } = {}) => {
     if (activeWorkspace?.editor?.dirty) {
-      setPendingDirtyAction({ kind: 'close-pane' })
+      setPendingDirtyAction({ kind: 'close-pane', payload: { clearFile } })
       return
     }
-    setEditorPatch({ open: false })
+    setEditorPatch(closedEditorPatch(clearFile))
     if (activeWorkspace?.fullscreenPaneId === 'editor') {
       updateActive(w => ({ ...w, fullscreenPaneId: null }))
     }
@@ -893,7 +902,7 @@ function AppInner() {
 
   const proceedDirtyAction = useCallback((action) => {
     if (action.kind === 'open-file') openFileImmediate(action.payload)
-    else if (action.kind === 'close-pane') setEditorPatch({ open: false })
+    else if (action.kind === 'close-pane') setEditorPatch(closedEditorPatch(action.payload?.clearFile))
     else if (action.kind === 'switch-workspace') {
       const { wsId, termId } = action.payload
       if (termId) {
@@ -944,7 +953,7 @@ function AppInner() {
       }
       if (e.ctrlKey && e.key === 'e') {
         e.preventDefault()
-        if (activeWorkspace.editor?.open) closeEditor()
+        if (activeWorkspace.editor?.open) closeEditor({ clearFile: false })
         else setEditorPatch({ open: true })
       }
     }
@@ -1020,7 +1029,7 @@ function AppInner() {
         agentCount={terminals.length}
         editorOpen={!!activeWorkspace?.editor?.open}
         onToggleEditor={() => {
-          if (activeWorkspace?.editor?.open) closeEditor()
+          if (activeWorkspace?.editor?.open) closeEditor({ clearFile: false })
           else setEditorPatch({ open: true })
         }}
       />
@@ -1116,7 +1125,7 @@ function AppInner() {
                   isFullscreen={fsEditor}
                   onToggleFullscreen={() => toggleFullscreen('editor')}
                   onSave={handleEditorSave}
-                  onClose={closeEditor}
+                  onClose={() => closeEditor({ clearFile: true })}
                   onRevealInFolder={(p) => window.electronAPI.editor.revealInFolder(p)}
                   onDirtyChange={setEditorDirty}
                   onChange={handleEditorChange}

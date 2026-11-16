@@ -107,9 +107,29 @@
 
 .sb-item-text { flex: 1; min-width: 0; }
 
-.sb-item.active {
+/* The active workspace highlights as one block: its row and its agent rows
+   share a single container, and the rows inside it carry no fill of their
+   own. The focused agent is marked by brighter text, not a second box. */
+.sb-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition:
+    background var(--cs-transition),
+    border-color var(--cs-transition);
+}
+.sb-group.active {
   background: var(--cs-bg-active);
   border-color: rgba(255, 255, 255, 0.07);
+  padding-bottom: 3px;
+}
+
+.sb-item.active { background: transparent; }
+.sb-group.active .sb-item:hover,
+.sb-group.active .sb-session:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* Name */
@@ -359,7 +379,6 @@
 }
 
 .sb-session.focused {
-  background: var(--cs-bg-active);
   color: var(--cs-text-primary);
 }
 
@@ -378,11 +397,15 @@
    where it is the only exit signal. Do not "fix" this to match the border. */
 .sb-session-dot.exited  { background: var(--cs-text-dim); }
 
-.sb-session-glyph {
-  font-size: 10px;
+.sb-session-logo {
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
-  color: var(--cs-text-muted);
+  color: var(--cs-text-primary);
+  transition: color var(--cs-transition);
 }
+.sb-session-logo.done   { color: var(--cs-state-done); }
+.sb-session-logo.exited { color: var(--cs-term-yellow); }
 
 .sb-session-name {
   flex: 1;

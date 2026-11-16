@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useSyncExternalStore } from 'react'
+import AgentLogo, { hasAgentLogo } from './AgentLogo.jsx'
 import useTerminal from '../hooks/useTerminal.js'
 import * as ptyPool from '../pty-pool.js'
 import * as doneTracker from '../done-tracker.js'
@@ -166,7 +167,18 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
           if (e.target === e.currentTarget) onToggleFullscreen?.()
         }}
       >
-        <span className={`status-dot ${exitCode !== null ? 'status-exited' : 'status-running'}`} />
+        {hasAgentLogo(shell) ? (
+          // The agent's mark stands in for the status dot: white while it
+          // runs, yellow once it has errored or exited.
+          <span
+            className={`tp-agent-logo${error || exitCode !== null ? ' is-error' : ''}`}
+            title={error || exitCode !== null ? `${shell} stopped` : shell}
+          >
+            <AgentLogo shell={shell} size={14} />
+          </span>
+        ) : (
+          <span className={`status-dot ${exitCode !== null ? 'status-exited' : 'status-running'}`} />
+        )}
         {editing ? (
           <input
             ref={inputRef}
@@ -195,7 +207,9 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
           </span>
         )}
         {!editing && shell && (
-          <span className={`tp-agent-badge tp-badge-${shell}`} title={shell}>{shell}</span>
+          !hasAgentLogo(shell) && (
+            <span className={`tp-agent-badge tp-badge-${shell}`} title={shell}>{shell}</span>
+          )
         )}
         {done && (
           <svg

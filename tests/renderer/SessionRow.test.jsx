@@ -25,29 +25,37 @@ describe('SessionRow', () => {
     expect(screen.getByText('Agent 01')).toBeTruthy()
   })
 
-  it('marks the dot running, done, or exited from status', () => {
+  it('marks the logo running, done, or exited from status', () => {
     const { rerender, container } = render(
       <SessionRow term={TERM} status="running" isFocused={false} onSelect={() => {}} />
     )
-    expect(container.querySelector('.sb-session-dot.running')).toBeTruthy()
+    expect(container.querySelector('.sb-session-logo.running')).toBeTruthy()
 
     rerender(<SessionRow term={TERM} status="done" isFocused={false} onSelect={() => {}} />)
-    expect(container.querySelector('.sb-session-dot.done')).toBeTruthy()
+    expect(container.querySelector('.sb-session-logo.done')).toBeTruthy()
 
     rerender(<SessionRow term={TERM} status="exited" isFocused={false} onSelect={() => {}} />)
-    expect(container.querySelector('.sb-session-dot.exited')).toBeTruthy()
+    expect(container.querySelector('.sb-session-logo.exited')).toBeTruthy()
+    expect(container.querySelector('.sb-session-dot')).toBeNull()
   })
 
-  it('shows the agent glyph for the shell', () => {
+  it('shows the agent logo for the shell', () => {
     const { container } = render(
       <SessionRow term={TERM} status="running" isFocused={false} onSelect={() => {}} />
     )
-    expect(container.querySelector('.sb-session-glyph').textContent).toBe('✳')
+    expect(container.querySelector('.sb-session-logo svg').getAttribute('aria-label')).toBe('Claude')
 
     const { container: c2 } = render(
       <SessionRow term={{ ...TERM, shell: 'codex' }} status="running" isFocused={false} onSelect={() => {}} />
     )
-    expect(c2.querySelector('.sb-session-glyph').textContent).toBe('◆')
+    expect(c2.querySelector('.sb-session-logo svg').getAttribute('aria-label')).toBe('Codex')
+  })
+
+  it('falls back to a dot for a shell without a logo', () => {
+    const { container } = render(
+      <SessionRow term={{ ...TERM, shell: 'other' }} status="running" isFocused={false} onSelect={() => {}} />
+    )
+    expect(container.querySelector('.sb-session-dot.running')).toBeTruthy()
   })
 
   it('fires onSelect with the term id when clicked', async () => {

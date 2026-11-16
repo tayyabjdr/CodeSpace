@@ -54,8 +54,8 @@ describe('Sidebar tree', () => {
       <Sidebar {...base} expandedIds={new Set(['w1'])} exitedPtyIds={new Set(['p2'])} />
     )
     const rows = container.querySelectorAll('.sb-session')
-    expect(rows[0].querySelector('.sb-session-dot').className).toContain('running')
-    expect(rows[1].querySelector('.sb-session-dot').className).toContain('exited')
+    expect(rows[0].querySelector('.sb-session-logo').className).toContain('running')
+    expect(rows[1].querySelector('.sb-session-logo').className).toContain('exited')
   })
 
   it('prefers exited over done when both apply', () => {
@@ -65,7 +65,7 @@ describe('Sidebar tree', () => {
         doneTermIds={new Set(['t1'])}
         exitedPtyIds={new Set(['p1'])} />
     )
-    const dot = container.querySelector('.sb-session .sb-session-dot')
+    const dot = container.querySelector('.sb-session .sb-session-logo')
     expect(dot.className).toContain('exited')
   })
 
