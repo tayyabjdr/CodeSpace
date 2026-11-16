@@ -62,6 +62,11 @@
   flex-direction: column;
   min-height: 0;
   min-width: 0;
+  /* The 6px side inset lives here rather than on .grid and the notice
+     separately, so both share one left and one right edge. Two separate
+     6px insets rounded to different device pixels under display scaling,
+     leaving the notice a pixel narrower than the cards. */
+  padding: 0 6px;
 }
 
 /* gap and padding are deliberately different numbers. `gap` is the space
@@ -73,7 +78,7 @@
   flex: 1;
   display: grid;
   gap: 10px;
-  padding: 6px;
+  padding: 6px 0;   /* sides come from .grid-col */
   min-height: 0;
   min-width: 0;
   background: var(--cs-bg-base);

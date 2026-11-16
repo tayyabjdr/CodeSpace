@@ -4,8 +4,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 6px 6px 0;
-  padding: 7px 8px 7px 14px;
+  /* 4px below + the grid's 6px top padding = the grid's 10px gap between
+     cards, so the notice sits the same distance from the cards as they do
+     from each other. */
+  margin: 6px 0 4px;   /* sides come from .grid-col */
+  /* Built like a pane header: header height, and the dismiss button runs
+     flush to the right edge as a full-height square. */
+  min-height: var(--cs-header-h);
+  padding: 0 0 0 14px;
+  overflow: hidden;
   background: var(--cs-bg-surface);
   border: 1px solid var(--cs-border);
   border-radius: 8px;
@@ -27,7 +34,8 @@
 
 .iso-notice-btn {
   flex-shrink: 0;
-  padding: 4px 10px;
+  height: 28px;
+  padding: 0 12px;
   background: transparent;
   border: 1px solid var(--cs-border-mid);
   border-radius: 6px;
@@ -44,23 +52,35 @@
   color: var(--cs-text-muted);
   cursor: not-allowed;
 }
+.iso-notice-btn:last-child { margin-right: 6px; }
+
+/* Mirrors .close-btn in TerminalPane.css. The negative left margin cancels
+   the row gap so the square meets the action button's breathing room. */
 .iso-notice-x {
   flex-shrink: 0;
+  align-self: stretch;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: var(--cs-header-h);
+  min-height: var(--cs-header-h);
+  margin-left: -6px;
+  padding: 0;
   background: transparent;
   border: none;
-  border-radius: 5px;
-  color: var(--cs-text-muted);
+  border-radius: 0;
+  color: var(--cs-text-primary);
+  opacity: 0.45;
   cursor: pointer;
-  transition: color var(--cs-transition), background var(--cs-transition);
+  transition: color var(--cs-transition), background var(--cs-transition), opacity var(--cs-transition);
 }
-.iso-notice-x:hover { color: var(--cs-text-primary); background: var(--cs-bg-hover); }
+.iso-notice-x:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
+  opacity: 1;
+}
 .iso-notice-btn:focus-visible,
-.iso-notice-x:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: 1px; }
+.iso-notice-x:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: -2px; }
 
 @keyframes isoNoticeIn {
   from { opacity: 0; transform: translateY(-4px); }
