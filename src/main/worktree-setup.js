@@ -1,7 +1,7 @@
 import { execFileSync } from 'child_process'
 import { existsSync, lstatSync, symlinkSync, unlinkSync, readdirSync, copyFileSync, constants } from 'fs'
 import { join } from 'path'
-import { createServer } from 'net'
+import { createServer, connect } from 'net'
 
 // ── Ports ─────────────────────────────────────────────────────────────────
 // Each isolated agent gets its own PORT so two agents running the same dev
@@ -13,15 +13,19 @@ export const PORT_MAX = 4999
 const reserved = new Set()
 
 // On Windows a bind only fails when the address matches exactly: a dev
-// server on 0.0.0.0 or ::1 (Node's `localhost`, Vite's default) does not stop
-// a 127.0.0.1 bind. So a port counts as free only if every address a dev
-// server is likely to use can be bound. An IPv6 address the machine doesn't
-// have is skipped rather than counted as busy.
-const PROBE_HOSTS = ['127.0.0.1', '0.0.0.0', '::1', '::']
+// server on 0.0.0.0 or :: does not stop a 127.0.0.1 bind. Binding 0.0.0.0 or
+// :: ourselves would catch those, but listening on all networks makes Windows
+// Firewall ask the user to allow CodeSpace. So everything here stays on
+// loopback: try to listen on 127.0.0.1 and ::1 (catches exact holders), and
+// try to connect to both (a server on 0.0.0.0 answers on 127.0.0.1, one on ::
+// answers on both). A refused connect on loopback is immediate on Windows.
+// An IPv6 address the machine doesn't have is skipped, not counted as busy.
+const LOOPBACK = ['127.0.0.1', '::1']
 const NOT_HERE = new Set(['EADDRNOTAVAIL', 'EAFNOSUPPORT'])
+const CONNECT_TIMEOUT_MS = 500
 
 // 'free' | 'busy' | 'absent'
-function probe(port, host) {
+function probeListen(port, host) {
   return new Promise(resolve => {
     // Destroy any connection that lands in the short listen window, so the
     // close below can't wait on a client (a browser retrying a dead server).
@@ -32,9 +36,26 @@ function probe(port, host) {
   })
 }
 
+// 'busy' if something accepts a connection; anything else means nobody is
+// listening there. A timeout counts as busy: something is holding the port.
+function probeConnect(port, host) {
+  return new Promise(resolve => {
+    const sock = connect({ port, host })
+    sock.unref()
+    const done = (r) => { clearTimeout(t); sock.destroy(); resolve(r) }
+    const t = setTimeout(() => done('busy'), CONNECT_TIMEOUT_MS)
+    sock.once('connect', () => done('busy'))
+    sock.once('error', () => done('free'))
+  })
+}
+
+// Connect first, then listen: run together, a connect could reach our own
+// short-lived probe listener and call the port busy.
 async function isFree(port) {
-  for (const host of PROBE_HOSTS) {
-    if ((await probe(port, host)) === 'busy') return false
+  const connects = await Promise.all(LOOPBACK.map(h => probeConnect(port, h)))
+  if (connects.includes('busy')) return false
+  for (const h of LOOPBACK) {
+    if ((await probeListen(port, h)) === 'busy') return false
   }
   return true
 }

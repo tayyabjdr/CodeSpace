@@ -525,6 +525,25 @@ describe('worktree-setup / ports', () => {
     }, 20000
   )
 
+  // Listening on 0.0.0.0 or :: makes Windows Firewall ask the user whether
+  // CodeSpace may use public and private networks, every time a new build
+  // runs. Finding a port must only ever listen on loopback.
+  it('pickPort never listens on anything but loopback', async () => {
+    const net = await import('net')
+    const hosts = []
+    const orig = net.Server.prototype.listen
+    const spy = vi.spyOn(net.Server.prototype, 'listen').mockImplementation(function (...args) {
+      const opts = args[0]
+      hosts.push(typeof opts === 'object' && opts ? opts.host : args[1])
+      return orig.apply(this, args)
+    })
+    let p
+    try { p = await pickPort() } finally { spy.mockRestore() }
+    releasePort(p)
+    expect(p).not.toBeNull()
+    for (const h of hosts) expect(['127.0.0.1', '::1']).toContain(h)
+  })
+
   it('create returns a port and close releases it', async () => {
     const agentId = 'ffff6666-0000-0000-0000-000000000000'
     const r = await create({ repoDir, workspaceName: 'ws', agentId })
