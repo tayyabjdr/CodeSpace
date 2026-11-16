@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../../src/renderer/App.jsx'
 
-afterEach(() => { delete window.electronAPI })
+// Unmount first: the app's effects and timers read window.electronAPI, so
+// deleting it while the tree is still mounted throws after the test ends.
+afterEach(() => { cleanup(); delete window.electronAPI })
 
 function api(closeAllResult, wipeResult = { ok: true, kept: [], stranded: [] }) {
   const worktree = {

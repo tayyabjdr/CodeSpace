@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Onboarding from '../../src/renderer/components/Onboarding.jsx'
 
@@ -29,7 +29,9 @@ beforeEach(() => {
     selectDirectory: vi.fn()
   }
 })
-afterEach(() => { delete window.electronAPI })
+// Unmount first: the app's effects and timers read window.electronAPI, so
+// deleting it while the tree is still mounted throws after the test ends.
+afterEach(() => { cleanup(); delete window.electronAPI })
 
 describe('Onboarding isolation default', () => {
   it('turns on for an eligible repo', async () => {

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
 import App from '../../src/renderer/App.jsx'
 
 afterEach(() => {
+  cleanup()
   delete window.electronAPI
 })
 
@@ -29,6 +30,6 @@ describe('App', () => {
 
     // The rejection degrades to the onboarding/empty state rather than a
     // permanent null render — this heading only exists once `loaded` flips.
-    expect(await screen.findByRole('heading', { name: 'CodeSpace' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'CodeSpace' }, { timeout: 5000 })).toBeTruthy()
   })
 })

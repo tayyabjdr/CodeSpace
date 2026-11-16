@@ -140,6 +140,8 @@ function AppInner() {
   const [skillsPanelWidth, setSkillsPanelWidth] = useState(() => loadPanelWidth())
 
   const persistTimerRef = useRef(null)
+  // No save may fire after the app has unmounted.
+  useEffect(() => () => clearTimeout(persistTimerRef.current), [])
   const desktopPathRef = useRef('')
 
   const materializeAgents = useCallback(async (workspace, items, startNum) => {

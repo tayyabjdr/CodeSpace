@@ -598,9 +598,16 @@ async function holdFile(path) {
   const ps = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
     `$f=[System.IO.File]::Open('${path.replace(/'/g, "''")}','Open','Read','Read'); Start-Sleep -Seconds 60; $f.Close()`],
     { stdio: 'ignore', windowsHide: true })
-  await waitFor(() => {
-    try { closeSync(openSync(path, 'r+')); return false } catch { return true }
-  }, 20000)
+  // A cold PowerShell start can be slow when the whole suite is running; if
+  // the lock never takes, say so rather than let the test run unlocked.
+  try {
+    await waitFor(() => {
+      try { closeSync(openSync(path, 'r+')); return false } catch { return true }
+    }, 45000)
+  } catch {
+    ps.kill()
+    throw new Error(`holdFile: could not lock ${path}`)
+  }
   return ps
 }
 
