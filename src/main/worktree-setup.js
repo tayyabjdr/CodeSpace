@@ -12,20 +12,31 @@ export const PORT_MIN = 4100
 export const PORT_MAX = 4999
 const reserved = new Set()
 
-// Free only if both the loopback and the wildcard address can be bound: on
-// Windows a server on 0.0.0.0 does not stop a 127.0.0.1 bind, so probing
-// loopback alone would hand out a port a dev server already holds.
-function canListen(port, host) {
+// On Windows a bind only fails when the address matches exactly: a dev
+// server on 0.0.0.0 or ::1 (Node's `localhost`, Vite's default) does not stop
+// a 127.0.0.1 bind. So a port counts as free only if every address a dev
+// server is likely to use can be bound. An IPv6 address the machine doesn't
+// have is skipped rather than counted as busy.
+const PROBE_HOSTS = ['127.0.0.1', '0.0.0.0', '::1', '::']
+const NOT_HERE = new Set(['EADDRNOTAVAIL', 'EAFNOSUPPORT'])
+
+// 'free' | 'busy' | 'absent'
+function probe(port, host) {
   return new Promise(resolve => {
-    const s = createServer()
+    // Destroy any connection that lands in the short listen window, so the
+    // close below can't wait on a client (a browser retrying a dead server).
+    const s = createServer(sock => sock.destroy())
     s.unref()
-    s.once('error', () => resolve(false))
-    s.listen({ port, host, exclusive: true }, () => s.close(() => resolve(true)))
+    s.once('error', (e) => resolve(NOT_HERE.has(e?.code) ? 'absent' : 'busy'))
+    s.listen({ port, host }, () => s.close(() => resolve('free')))
   })
 }
 
 async function isFree(port) {
-  return (await canListen(port, '127.0.0.1')) && (await canListen(port, undefined))
+  for (const host of PROBE_HOSTS) {
+    if ((await probe(port, host)) === 'busy') return false
+  }
+  return true
 }
 
 // Resolves to a free, now-reserved port, or null if none is left.

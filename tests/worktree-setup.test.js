@@ -487,16 +487,31 @@ describe('worktree-setup / ports', () => {
     }
   })
 
-  it('pickPort skips a port another process holds on the wildcard address', async () => {
-    const first = await pickPort()
-    releasePort(first)
-    const s = await new Promise((res, rej) => { const x = createServer(); x.once('error', rej); x.listen(first, () => res(x)) })
-    try {
-      const p = await pickPort()
-      expect(p).not.toBe(first)
-      releasePort(p)
-    } finally { await closeServer(s) }
+  // A separate process, like a real dev server: an in-process listener can
+  // behave differently from another process's on Windows.
+  const listenInChild = (port, host) => new Promise((res, rej) => {
+    const child = spawn(process.execPath, ['-e',
+      `require('net').createServer().listen(${port}, ${JSON.stringify(host)}, () => console.log('up'))`
+    ], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true })
+    child.stdout.once('data', () => res(child))
+    child.once('error', rej)
+    child.once('exit', (code) => rej(new Error(`listener exited ${code}`)))
   })
+
+  it.each(['0.0.0.0', '::1', '::', '127.0.0.1'])(
+    'pickPort skips a port another process holds on %s', async (host) => {
+      const first = await pickPort()
+      releasePort(first)
+      let child
+      try { child = await listenInChild(first, host) }
+      catch { return } // this machine has no such address (e.g. IPv6 off): nothing to test
+      try {
+        const p = await pickPort()
+        expect(p).not.toBe(first)
+        releasePort(p)
+      } finally { child.kill() }
+    }, 20000
+  )
 
   it('create returns a port and close releases it', async () => {
     const agentId = 'ffff6666-0000-0000-0000-000000000000'
@@ -506,6 +521,26 @@ describe('worktree-setup / ports', () => {
     expect((await close({ repoDir, agentId })).ok).toBe(true)
     expect(reservedPorts().has(r.port)).toBe(false)
   })
+
+  it('a failed close keeps the port until the worktree is really gone', async () => {
+    const agentId = 'ffff8888-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'ws', agentId })
+    const child = await holdCwd(r.path, 60000)
+    try {
+      expect((await close({ repoDir, agentId })).ok).toBe(false)
+      expect(reservedPorts().has(r.port)).toBe(true)
+    } finally { await stop(child) }
+    expect((await close({ repoDir, agentId })).ok).toBe(true)
+    expect(reservedPorts().has(r.port)).toBe(false)
+  }, 30000)
+
+  it('closeAllForWorkspace releases every agent port', async () => {
+    const ids = ['ffff9999-0000-0000-0000-000000000000', 'ffffaaaa-0000-0000-0000-000000000000']
+    const ports = []
+    for (const agentId of ids) ports.push((await create({ repoDir, workspaceName: 'ws', agentId })).port)
+    expect((await closeAllForWorkspace({ repoDir, agentIds: ids })).failures).toEqual([])
+    for (const p of ports) expect(reservedPorts().has(p)).toBe(false)
+  }, 30000)
 
   it('wipeAll releases the ports of the agents it removes', async () => {
     const agentId = 'ffff7777-0000-0000-0000-000000000000'
