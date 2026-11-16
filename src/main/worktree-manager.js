@@ -136,6 +136,9 @@ export function execGit(args, opts = {}) {
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
     encoding: 'utf8',
+    // Hooks and big diffs can print a lot; the 1MB default throws after git
+    // has already succeeded, which reads as a failure.
+    maxBuffer: 64 * 1024 * 1024,
     ...opts
   })
 }
@@ -177,16 +180,27 @@ function freeAgentPort(agentId) {
   releasePort(port)
 }
 
+// One key per folder however it is spelled: `D:\x`, `d:\x` and `D:\x\` are
+// the same repo and must share a lock. Only the key is normalised; callers
+// keep using the path they were given.
+export function repoKey(repoDir) {
+  let p = resolve(String(repoDir))
+  if (/^[A-Za-z]:/.test(p)) p = p[0].toLowerCase() + p.slice(1)
+  while (p.length > 3 && /[\\/]$/.test(p)) p = p.slice(0, -1)
+  return p
+}
+
 const repoLocks = new Map()
 export async function withRepoLock(repoDir, fn) {
-  const prev = repoLocks.get(repoDir) ?? Promise.resolve()
+  const key = repoKey(repoDir)
+  const prev = repoLocks.get(key) ?? Promise.resolve()
   let release
   const next = new Promise(r => { release = r })
   const chained = prev.then(() => next)
-  repoLocks.set(repoDir, chained)
+  repoLocks.set(key, chained)
   await prev
   try { return await fn() }
-  finally { release(); if (repoLocks.get(repoDir) === chained) repoLocks.delete(repoDir) }
+  finally { release(); if (repoLocks.get(key) === chained) repoLocks.delete(key) }
 }
 
 async function _createImpl({ repoDir, workspaceName, agentId }) {
