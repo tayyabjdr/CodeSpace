@@ -1,6 +1,6 @@
 {
   "name": "codespace",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Vibecoding terminal workspace",
   "main": "out/main/index.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "package": "electron-builder",
-    "release": "electron-vite build && electron-builder --publish always",
+    "release": "node scripts/release.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "build:icon": "node scripts/build-icon.js",
