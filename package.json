@@ -71,6 +71,7 @@
       "node_modules/node-pty/**/*"
     ],
     "asar": true,
+    "npmRebuild": false,
     "asarUnpack": [
       "**/node_modules/node-pty/**/*"
     ],
