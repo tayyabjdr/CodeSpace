@@ -37,6 +37,8 @@ import './App.css'
 
 const EditorPane = lazy(() => import('./components/EditorPane.jsx'))
 
+const SIDEBAR_COLLAPSED_KEY = 'cs.sidebarCollapsed'
+
 function isExternalToWorkspace(file, dir) {
   if (!file || !dir) return false
   return !file.toLowerCase().startsWith(dir.toLowerCase())
@@ -76,7 +78,7 @@ function BridgeMissing() {
       <button
         onClick={() => window.location.reload()}
         style={{
-          marginTop: 8, padding: '8px 16px', borderRadius: 6,
+          marginTop: 8, padding: '8px 16px', borderRadius: 9,
           background: '#11151b', border: '1px solid #2b3038',
           color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
           fontFamily: 'inherit', fontSize: 13
@@ -113,6 +115,18 @@ function AppInner() {
   // Session-only. Deliberately not persisted: terminals[] is lazily spawned,
   // so a restored "expanded" flag would open a chevron above an empty list.
   const [expandedIds, setExpandedIds] = useState(() => new Set())
+  // A per-machine view preference, so browser storage is enough; it can be
+  // unavailable, in which case the sidebar just starts open.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1' } catch { return false }
+  })
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => {
+      const next = !prev
+      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0') } catch {}
+      return next
+    })
+  }, [])
 
   const toggleExpand = useCallback((wsId) => {
     setExpandedIds(prev => {
@@ -630,7 +644,9 @@ function AppInner() {
   const addAgent = useCallback(async (shell = 'claude') => {
     if (!activeId) return
     const w = workspaces.find(x => x.id === activeId)
-    if (!w || w.unconfigured) return
+    // Not before the restored agents spawn: the spawn would then replace the
+    // terminal list, and until it does the sidebar and saved counts ignore it.
+    if (!w || w.unconfigured || !w.spawned) return
     if (!AGENT_TYPES.includes(shell)) return
     if (!availability[shell]) return
     const nextNum = w.agentCounter + 1
@@ -648,7 +664,7 @@ function AppInner() {
   const addAgents = useCallback(async (counts) => {
     if (!activeId) return
     const w = workspaces.find(x => x.id === activeId)
-    if (!w || w.unconfigured) return
+    if (!w || w.unconfigured || !w.spawned) return
     const items = []
     for (const shell of AGENT_TYPES) {
       const n = Math.max(0, Number(counts?.[shell]) || 0)
@@ -1098,6 +1114,22 @@ function AppInner() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [openPicker, removeTerminal, activeWorkspace, closeEditor, setEditorPatch])
 
+  // Ctrl+B toggles the sidebar. Like the shortcuts above it stays out of
+  // terminals and text fields, so Claude's own Ctrl+B still reaches the agent.
+  useEffect(() => {
+    const onKey = (e) => {
+      const el = e.target
+      const tag = el?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        toggleSidebar()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [toggleSidebar])
+
   // Block window-level file drops. Panes consume their own drops; anything
   // that misses (sidebar, gaps) would otherwise navigate the BrowserWindow
   // to a file:// URL and replace the app. Skip if a pane already handled it
@@ -1229,6 +1261,8 @@ function AppInner() {
       <Toolbar
         onAdd={() => openPicker(null)}
         agentCount={terminals.length}
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={toggleSidebar}
         editorOpen={!!activeWorkspace?.editor?.open}
         onToggleEditor={() => {
           if (activeWorkspace?.editor?.open) closeEditor({ clearFile: false })
@@ -1237,6 +1271,7 @@ function AppInner() {
       />
       <div className={`app-body${anyFullscreen ? ' is-fullscreen' : ''}`} ref={appBodyRef}>
         <Sidebar
+          collapsed={sidebarCollapsed}
           workspaces={workspaces}
           activeId={activeId}
           expandedIds={expandedIds}
@@ -1295,7 +1330,12 @@ function AppInner() {
               }}
             >
               {terminals.length === 0 ? (
-                <EmptyWorkspaceSetup availability={availability} onAdd={addAgents} />
+                // Only once the restored agents have spawned: before that the
+                // workspace is empty because it hasn't started, not because
+                // it has no agents, and adding here would race the spawn.
+                activeWorkspace?.spawned
+                  ? <EmptyWorkspaceSetup availability={availability} onAdd={addAgents} />
+                  : null
               ) : terminals.map((t, i) => (
                 <TerminalPane
                   key={t.id}

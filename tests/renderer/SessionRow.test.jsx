@@ -25,18 +25,32 @@ describe('SessionRow', () => {
     expect(screen.getByText('Agent 01')).toBeTruthy()
   })
 
-  it('marks the logo running, done, or exited from status', () => {
+  it('shows status as a dot on the right and keeps the logo unstyled', () => {
     const { rerender, container } = render(
       <SessionRow term={TERM} status="running" isFocused={false} onSelect={() => {}} />
     )
-    expect(container.querySelector('.sb-session-logo.running')).toBeTruthy()
+    expect(container.querySelector('.sb-session-dot.running')).toBeTruthy()
+    expect(container.querySelector('.sb-session-logo').className).toBe('sb-session-logo')
 
     rerender(<SessionRow term={TERM} status="done" isFocused={false} onSelect={() => {}} />)
-    expect(container.querySelector('.sb-session-logo.done')).toBeTruthy()
+    expect(container.querySelector('.sb-session-dot.done')).toBeTruthy()
 
     rerender(<SessionRow term={TERM} status="exited" isFocused={false} onSelect={() => {}} />)
-    expect(container.querySelector('.sb-session-logo.exited')).toBeTruthy()
-    expect(container.querySelector('.sb-session-dot')).toBeNull()
+    expect(container.querySelector('.sb-session-dot.exited')).toBeTruthy()
+    expect(container.querySelector('.sb-session').className).toContain('exited')
+  })
+
+  it('shows the agent type and branch on a second line', () => {
+    const { container, rerender } = render(
+      <SessionRow term={TERM} status="running" isFocused={false} onSelect={() => {}} />
+    )
+    expect(container.querySelector('.sb-session-sub').textContent).toBe('Claude')
+
+    rerender(<SessionRow term={{ ...TERM, branch: 'cs/repo/ab12' }} status="running" isFocused={false} onSelect={() => {}} />)
+    expect(container.querySelector('.sb-session-sub').textContent).toBe('Claude · ab12')
+
+    rerender(<SessionRow term={{ ...TERM, shell: 'codex', branch: 'cs/repo/ab12' }} status="exited" isFocused={false} onSelect={() => {}} />)
+    expect(container.querySelector('.sb-session-sub').textContent).toBe('Codex · exited')
   })
 
   it('shows the agent logo for the shell', () => {
@@ -51,10 +65,11 @@ describe('SessionRow', () => {
     expect(c2.querySelector('.sb-session-logo svg').getAttribute('aria-label')).toBe('Codex')
   })
 
-  it('falls back to a dot for a shell without a logo', () => {
+  it('draws no logo for a shell without one but still shows its status', () => {
     const { container } = render(
       <SessionRow term={{ ...TERM, shell: 'other' }} status="running" isFocused={false} onSelect={() => {}} />
     )
+    expect(container.querySelector('.sb-session-logo svg')).toBeNull()
     expect(container.querySelector('.sb-session-dot.running')).toBeTruthy()
   })
 

@@ -6,7 +6,7 @@
   margin: 6px 0 4px;   /* sides come from .grid-col, like .iso-notice */
   background: var(--cs-bg-surface);
   border: 1px solid var(--cs-border);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   font-family: var(--cs-font-ui);
   animation: lwIn 220ms ease-out both;
@@ -95,7 +95,7 @@
   padding: 0 10px;
   background: transparent;
   border: 1px solid var(--cs-border-mid);
-  border-radius: 6px;
+  border-radius: 9px;
   font: inherit;
   font-size: 11.5px;
   color: var(--cs-text-secondary);

@@ -57,7 +57,7 @@
   --cs-font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "Cascadia Code", "Consolas", monospace;
 
   /* Layout */
-  --cs-radius:     10px;
+  --cs-radius:     15px;
   --cs-toolbar-h:  42px;
   --cs-header-h:   40px;
   --cs-transition: 0.15s ease;
@@ -68,7 +68,7 @@
   --cs-editor-default-frac:  0.45;
 
   /* xterm — solid hex values; alpha lives on the layer above */
-  --cs-term-bg:        #141414;
+  --cs-term-bg:        #0f0f0f;
   --cs-term-fg:        #d9d9da;
   --cs-term-cursor:    #d9d9da;
   --cs-term-selection: rgba(255, 255, 255, 0.12);
@@ -130,7 +130,7 @@ code, kbd, samp, pre {
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
 
 @keyframes fadeIn {

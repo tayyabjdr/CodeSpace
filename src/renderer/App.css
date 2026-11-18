@@ -6,17 +6,18 @@
   background: var(--cs-bg-base);
 }
 
-/* Outer canvas inset. 13px here rather than 19 because the children each
-   add their own 6: the rail's margin on the left and bottom, the grid's
-   padding on the right and bottom. Every outer edge therefore lands on 19px
-   while the rail-to-pane gutter stays 19 too (13 rail margin + 6 grid
-   padding). Top is deliberately 0 — the titlebar spans the window, and the
-   6px below it comes from the rail and grid themselves. */
+/* Outer canvas inset. The children each add their own 6: the rail's margin
+   on the left and bottom, the grid's padding on the right and bottom.
+   Left lands on 19px (13 + 6), the titlebar logo's left edge. Right lands on
+   16px (10 + 6), the right edge of the window close ×, so the panes end
+   exactly under it. The rail-to-pane gutter stays 19 (13 rail margin + 6
+   grid padding). Top is deliberately 0 — the titlebar spans the window, and
+   the 6px below it comes from the rail and grid themselves. */
 .app-body {
   flex: 1;
   display: flex;
   min-height: 0;
-  padding: 0 13px 13px;
+  padding: 0 10px 13px 13px;
   background: var(--cs-bg-base);
 }
 
@@ -128,7 +129,7 @@
     linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%),
     var(--cs-bg-elevated);
   border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 9px;
+  border-radius: 14px;
   padding: 9px 16px 9px 13px;
   cursor: pointer;
   box-shadow:

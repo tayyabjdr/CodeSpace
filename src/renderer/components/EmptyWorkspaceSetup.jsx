@@ -1,117 +1,109 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import AppIcon from './AppIcon.jsx'
-import { gridShape, cellStyle } from '../grid-layout.js'
+import { AgentStepper, ArrowIcon, MAX_AGENTS, TerminalPreview } from './Onboarding.jsx'
 import './Onboarding.css'
 
-function TerminalPreview({ count }) {
-  const shape = gridShape(count)
-  const { cols, rows } = shape
-  return (
-    <div
-      className="ob-preview"
-      style={{
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-        gridTemplateRows: `repeat(${rows}, 1fr)`
-      }}
-    >
-      {Array.from({ length: count }).map((_, i) => (
-        <span key={i} className="ob-preview-cell" style={cellStyle(shape, i, count)} />
-      ))}
-    </div>
-  )
-}
-
-// Same full-area layout as Onboarding (embedded mode), but only shows the
-// agent count grid + split control — no name/dir/isolation fields.
+// Same full-area layout as Onboarding (embedded mode), but only the layout
+// tiles and the Claude/Codex steppers: no name, folder or isolation fields.
+// Built from Onboarding's own pieces so the two screens can't drift apart.
 // Calls onAdd({ claude, codex }) instead of creating a new workspace.
 export default function EmptyWorkspaceSetup({ availability, onAdd }) {
   const [selectedCount, setSelectedCount] = useState(2)
   const [codexShare, setCodexShare] = useState(0)
 
-  useEffect(() => {
-    if (availability.codex && !availability.claude) setCodexShare(selectedCount)
-    else setCodexShare(0)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    setCodexShare(prev => Math.max(0, Math.min(selectedCount, prev)))
-  }, [selectedCount])
-
-  const claudeShare = selectedCount - codexShare
+  // With only one CLI installed every pane is that CLI, whatever the layout.
   const bothAvailable = availability.claude && availability.codex
+  const codexCount = bothAvailable
+    ? Math.min(codexShare, selectedCount)
+    : (availability.codex && !availability.claude ? selectedCount : 0)
+  const claudeCount = selectedCount - codexCount
 
-  const handleAdd = () => {
-    const counts = bothAvailable
-      ? { claude: claudeShare, codex: codexShare }
-      : { claude: availability.claude ? selectedCount : 0, codex: availability.codex ? selectedCount : 0 }
-    onAdd(counts)
+  const addAgent = (shell) => {
+    if (selectedCount >= MAX_AGENTS) return
+    if (shell === 'codex') setCodexShare(codexCount + 1)
+    setSelectedCount(selectedCount + 1)
   }
+  const removeAgent = (shell) => {
+    if (selectedCount <= 1) return
+    if (shell === 'codex') {
+      if (codexCount <= 0) return
+      setCodexShare(codexCount - 1)
+    } else if (claudeCount <= 0) {
+      return
+    }
+    setSelectedCount(selectedCount - 1)
+  }
+
+  const handleAdd = () => onAdd({ claude: claudeCount, codex: codexCount })
+
+  const addLabel = `Add ${selectedCount} ${selectedCount === 1 ? 'agent' : 'agents'}`
 
   return (
     <div className="onboarding ob-embedded">
       <div className="ob-shell">
         <header className="ob-brand">
           <span className="ob-mark" aria-hidden>
-            <AppIcon size={48} />
+            <AppIcon size={44} />
           </span>
           <h1 className="ob-wordmark">CodeSpace</h1>
-          <p className="ob-tagline">Multi-agent workspace</p>
+          <p className="ob-tagline">This workspace has no agents. Choose some to start.</p>
         </header>
 
-        <div className="ob-col" style={{ maxWidth: 340, width: '100%', alignSelf: 'center' }}>
+        <div className="ob-col" style={{ maxWidth: 360, width: '100%', alignSelf: 'center' }}>
           <div className="ob-field">
             <div className="ob-label-row">
-              <span className="ob-label">Agents</span>
-              <span className="ob-label-meta">{String(selectedCount).padStart(2, '0')}</span>
+              <span className="ob-label">Layout</span>
+              <span className="ob-label-meta">
+                {selectedCount} {selectedCount === 1 ? 'pane' : 'panes'}
+              </span>
             </div>
-            <div className="ob-cards">
-              {Array.from({ length: 8 }, (_, i) => i + 1).map(n => (
-                <button
-                  key={n}
-                  type="button"
-                  className={`ob-card${selectedCount === n ? ' active' : ''}`}
-                  onClick={() => setSelectedCount(n)}
-                  aria-label={`${n} agent${n !== 1 ? 's' : ''}`}
-                >
-                  <TerminalPreview count={n} />
-                </button>
-              ))}
+            <div className="ob-cards" role="radiogroup" aria-label="Number of agents">
+              {Array.from({ length: MAX_AGENTS }, (_, i) => i + 1).map(n => {
+                const active = selectedCount === n
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    className={`ob-card${active ? ' active' : ''}`}
+                    onClick={() => setSelectedCount(n)}
+                    aria-label={`${n} ${n === 1 ? 'agent' : 'agents'}`}
+                  >
+                    <TerminalPreview count={n} claude={active ? claudeCount : n} />
+                    <span className="ob-card-num" aria-hidden>{n}</span>
+                  </button>
+                )
+              })}
             </div>
+          </div>
 
-            {bothAvailable && (
-              <div className="ob-split">
-                <div className="ob-split-title">
-                  <span>{claudeShare} Claude</span>
-                  <span className="ob-split-dot">·</span>
-                  <span>{codexShare} Codex</span>
-                </div>
-                <div className="ob-split-bar" role="group" aria-label="Split agents between Claude and Codex">
-                  <button
-                    type="button"
-                    className="ob-split-seg ob-split-claude"
-                    onClick={() => setCodexShare(s => Math.max(0, s - 1))}
-                    disabled={claudeShare <= 0}
-                    title="More Claude (fewer Codex)"
-                  >
-                    − Claude
-                  </button>
-                  <button
-                    type="button"
-                    className="ob-split-seg ob-split-codex"
-                    onClick={() => setCodexShare(s => Math.min(selectedCount, s + 1))}
-                    disabled={codexShare >= selectedCount}
-                    title="More Codex (fewer Claude)"
-                  >
-                    + Codex
-                  </button>
-                </div>
+          <div className="ob-field">
+            <span className="ob-label">Agents</span>
+            {bothAvailable ? (
+              <div className="ob-steppers">
+                <AgentStepper
+                  shell="claude"
+                  label="Claude"
+                  value={claudeCount}
+                  canDec={claudeCount > 0 && selectedCount > 1}
+                  canInc={selectedCount < MAX_AGENTS}
+                  onDec={() => removeAgent('claude')}
+                  onInc={() => addAgent('claude')}
+                />
+                <AgentStepper
+                  shell="codex"
+                  label="Codex"
+                  value={codexCount}
+                  canDec={codexCount > 0 && selectedCount > 1}
+                  canInc={selectedCount < MAX_AGENTS}
+                  onDec={() => removeAgent('codex')}
+                  onInc={() => addAgent('codex')}
+                />
               </div>
-            )}
-
-            {!bothAvailable && (
+            ) : (
               <p className="ob-split-hint">
-                Only <code>{availability.claude ? 'claude' : 'codex'}</code> detected — all agents will be {availability.claude ? 'Claude' : 'Codex'}.
+                Only <code>{availability.claude ? 'claude' : 'codex'}</code> was found on this machine, so every pane runs {availability.claude ? 'Claude' : 'Codex'}.
               </p>
             )}
           </div>
@@ -119,7 +111,8 @@ export default function EmptyWorkspaceSetup({ availability, onAdd }) {
 
         <div className="ob-footer">
           <button type="button" className="ob-launch" onClick={handleAdd}>
-            Add {selectedCount} agent{selectedCount !== 1 ? 's' : ''}
+            <span>{addLabel}</span>
+            <ArrowIcon />
           </button>
           <p className="ob-hint">
             Ctrl+T <span className="ob-dot">·</span> new

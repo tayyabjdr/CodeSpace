@@ -27,7 +27,7 @@
 // - Nothing pushes.
 
 import { spawn } from 'child_process'
-import { existsSync, lstatSync, mkdirSync, writeFileSync, appendFileSync, unlinkSync, rmSync, rmdirSync, mkdtempSync } from 'fs'
+import { existsSync, lstatSync, statSync, readFileSync, mkdirSync, writeFileSync, appendFileSync, unlinkSync, rmSync, rmdirSync, mkdtempSync } from 'fs'
 import { tmpdir } from 'os'
 import { join, resolve, dirname } from 'path'
 import { execGit, withRepoLock, readMeta, writeMeta, entryWorktreePath, repoKey } from './worktree-manager.js'
@@ -193,6 +193,38 @@ function changedFiles(dir) {
     if (xy[0] === 'R' || xy[0] === 'C') i++
   }
   return files
+}
+
+// Lines added and removed against `base`, counting uncommitted edits too.
+// `git diff <base>` covers commits plus the working tree for tracked files;
+// new untracked files are counted by reading them, skipping big or binary
+// ones, so a fresh file the agent hasn't committed still shows its lines.
+const UNTRACKED_LINE_LIMIT = 1024 * 1024
+function diffLines(dir, base) {
+  let insertions = 0
+  let deletions = 0
+  for (const entry of git(dir, ['diff', '--numstat', '-z', base]).split('\0')) {
+    const m = /^(\d+|-)\t(\d+|-)\t/.exec(entry)
+    if (!m) continue
+    if (m[1] !== '-') insertions += Number(m[1])
+    if (m[2] !== '-') deletions += Number(m[2])
+  }
+  const status = git(dir, ['status', '--porcelain', '-z', '--untracked-files=all']).split('\0')
+  for (const p of status) {
+    if (!p.startsWith('?? ')) continue
+    try {
+      const file = join(dir, p.slice(3))
+      if (statSync(file).size > UNTRACKED_LINE_LIMIT) continue
+      const buf = readFileSync(file)
+      if (buf.includes(0)) continue
+      if (buf.length === 0) continue
+      let lines = 0
+      for (const b of buf) if (b === 10) lines++
+      if (buf[buf.length - 1] !== 10) lines++
+      insertions += lines
+    } catch {}
+  }
+  return { insertions, deletions }
 }
 
 function countRange(dir, from, to = 'HEAD') {
@@ -730,7 +762,7 @@ export function createMergeQueue({ runCheck, runInstall, onStatus = () => {}, ti
   function info({ repoDir, agentId }) {
     let target = null
     try { target = currentBranch(repoDir) } catch {}
-    const empty = { ahead: 0, files: 0, dirty: false, target }
+    const empty = { ahead: 0, files: 0, dirty: false, insertions: 0, deletions: 0, target }
     try {
       const entry = readMeta(repoDir).agents[agentId]
       if (!entry) return empty
@@ -745,7 +777,9 @@ export function createMergeQueue({ runCheck, runInstall, onStatus = () => {}, ti
       const files = new Set(git(wt, ['diff', '--name-only', '-z', `${base}...HEAD`]).split('\0').filter(Boolean))
       const dirtyFiles = changedFiles(wt)
       for (const f of dirtyFiles) files.add(f)
-      return { ahead, files: files.size, dirty: dirtyFiles.length > 0, target }
+      let lines = { insertions: 0, deletions: 0 }
+      try { lines = diffLines(wt, base) } catch {}
+      return { ahead, files: files.size, dirty: dirtyFiles.length > 0, ...lines, target }
     } catch {
       return empty
     }

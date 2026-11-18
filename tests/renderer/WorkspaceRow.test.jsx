@@ -62,14 +62,17 @@ describe('WorkspaceRow', () => {
     expect(onSelect).toHaveBeenCalledWith('w1')
   })
 
-  it('shows the aggregate done dot only when collapsed', () => {
+  it('shows how many agents finished, only when collapsed', () => {
     const { container, rerender } = render(
-      <WorkspaceRow ws={WS} {...base} showDoneDot isExpanded={false} />
+      <WorkspaceRow ws={WS} {...base} doneCount={2} isExpanded={false} />
     )
-    expect(container.querySelector('.sb-item-dot')).toBeTruthy()
+    expect(container.querySelector('.sb-item-done').textContent).toBe('2 done')
 
-    rerender(<WorkspaceRow ws={WS} {...base} showDoneDot isExpanded />)
-    expect(container.querySelector('.sb-item-dot')).toBeNull()
+    rerender(<WorkspaceRow ws={WS} {...base} doneCount={2} isExpanded />)
+    expect(container.querySelector('.sb-item-done')).toBeNull()
+
+    rerender(<WorkspaceRow ws={WS} {...base} doneCount={0} isExpanded={false} />)
+    expect(container.querySelector('.sb-item-done')).toBeNull()
   })
 
   it('commits a nickname edit on Enter', async () => {

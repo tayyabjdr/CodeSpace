@@ -44,7 +44,7 @@ describe('CloseConfirm', () => {
   it('always asks before closing', () => {
     setup([])
     expect(screen.getByText('Close CodeSpace?')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Close CodeSpace' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Stay' })).toBeInTheDocument()
   })
 
@@ -77,22 +77,42 @@ describe('CloseConfirm', () => {
     setup([ws({ terminals: [], editor: { file: 'C:\\repo\\App.jsx', dirty: true } })])
     expect(screen.getByText(/Closing now means your unsaved edits to/)).toBeInTheDocument()
     expect(screen.getByText('App.jsx')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Close CodeSpace' })).toHaveClass('destructive')
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('destructive')
   })
 
   it('marks the confirm destructive when agents are running', () => {
     setup([ws({ terminals: term(1) })])
-    expect(screen.getByRole('button', { name: 'Close CodeSpace' })).toHaveClass('destructive')
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('destructive')
   })
 
   it('marks the confirm destructive when unsaved edits exist, even with no agents running', () => {
     setup([ws({ terminals: [], editor: { file: 'C:\\repo\\App.jsx', dirty: true } })])
-    expect(screen.getByRole('button', { name: 'Close CodeSpace' })).toHaveClass('destructive')
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('destructive')
   })
 
   it('is not destructive in the truly quiet case: no agents running, nothing dirty', () => {
     setup([ws({ terminals: [] })])
-    expect(screen.getByRole('button', { name: 'Close CodeSpace' })).not.toHaveClass('destructive')
+    expect(screen.getByRole('button', { name: 'Close' })).not.toHaveClass('destructive')
+  })
+
+  it('lists each workspace with agents when more than one is running, by nickname first', () => {
+    setup([
+      ws({ id: 'a', name: 'Desktop', terminals: term(5) }),
+      ws({ id: 'b', name: 'SocialsHub', nickname: 'Hub', terminals: term(8) }),
+      ws({ id: 'c', name: 'Idle' })
+    ])
+    const rows = [...document.querySelectorAll('.cc-row')].map(r => r.textContent)
+    expect(rows).toEqual(['Desktop5 agents', 'Hub8 agents'])
+  })
+
+  it('shows no list for a single workspace with nothing unsaved', () => {
+    setup([ws({ terminals: term(3) })])
+    expect(document.querySelector('.cc-list')).toBeNull()
+  })
+
+  it('marks an unsaved file on its workspace row', () => {
+    setup([ws({ terminals: term(1), editor: { file: 'C:\\repo\\App.jsx', dirty: true } })])
+    expect(document.querySelector('.cc-unsaved').textContent).toBe('App.jsx unsaved')
   })
 
   it('uses no em-dashes in its copy', () => {

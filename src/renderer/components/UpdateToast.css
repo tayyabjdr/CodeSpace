@@ -8,7 +8,7 @@
   padding: 10px 14px;
   background: var(--cs-bg-elevated);
   border: 1px solid var(--cs-border);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--cs-text-primary);
   font-family: var(--cs-font-ui);
   font-size: 13px;
@@ -38,7 +38,7 @@
   padding: 5px 10px;
   background: transparent;
   border: 1px solid var(--cs-border);
-  border-radius: 5px;
+  border-radius: 8px;
   color: var(--cs-text-primary);
   font-family: inherit;
   font-size: 12px;

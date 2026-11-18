@@ -27,7 +27,7 @@ const IsolatedGlyph = () => (
 )
 
 export default function WorkspaceRow({
-  ws, isActive, isExpanded, hasSessions, showDoneDot,
+  ws, isActive, isExpanded, hasSessions, doneCount = 0,
   onSelect, onToggleExpand, onDelete, onRenameNickname, onToggleIsolated
 }) {
   const [editing, setEditing] = useState(false)
@@ -81,7 +81,7 @@ export default function WorkspaceRow({
       data-sb-node
       data-sb-kind="workspace"
       data-sb-id={ws.id}
-      className={`sb-item${isActive ? ' active' : ''}${isDraft ? ' draft' : ''}`}
+      className={`sb-item${isActive ? ' active' : ''}${isDraft ? ' draft' : ''}${editing || ws.nickname ? ' has-nickname' : ''}`}
       onClick={() => onSelect(ws.id)}
       onDoubleClick={startEdit}
     >
@@ -127,8 +127,10 @@ export default function WorkspaceRow({
           same point, so the x lands exactly where the number was. Delete is
           absolute inside the slot, so the status row's flex gap never moves it. */}
       <span className="sb-item-status">
-        {showDoneDot && !isExpanded && (
-          <span className="sb-item-dot" title="An agent finished" aria-hidden />
+        {doneCount > 0 && !isExpanded && (
+          <span className="sb-item-done" title={doneCount === 1 ? 'An agent finished' : `${doneCount} agents finished`}>
+            {doneCount} done
+          </span>
         )}
         {ws.isolated && (
           <button

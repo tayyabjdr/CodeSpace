@@ -10,17 +10,49 @@
    reads correctly in both themes without needing a theme-scoped special
    case. */
 .sidebar {
-  width: 270px;
+  width: 360px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--cs-bg-sidebar);
   border: 1px solid var(--cs-border);
-  border-radius: 10px;
+  border-radius: 15px;
   margin: 6px 13px 6px 6px;
   overflow: hidden;
   min-height: 0;
   user-select: none;
+  transition:
+    width 220ms ease,
+    margin-left 220ms ease,
+    margin-right 220ms ease,
+    opacity 160ms ease,
+    border-color 220ms ease,
+    visibility 0s linear 0s;
+}
+
+/* Collapsed: the rail shrinks to nothing and the grid takes the width.
+   Content fades out ahead of the shrink so it never visibly squashes, and
+   visibility drops after the transition so its buttons leave the tab order. */
+.sidebar.is-collapsed {
+  width: 0;
+  margin-left: 0;
+  margin-right: 0;
+  opacity: 0;
+  /* Zero, not just transparent: two 1px borders would keep 2px of rail. */
+  border-width: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    width 220ms ease,
+    margin-left 220ms ease,
+    margin-right 220ms ease,
+    opacity 120ms ease,
+    border-color 220ms ease,
+    visibility 0s linear 220ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .sidebar.is-collapsed { transition: none; }
 }
 
 .sb-header-add {
@@ -32,7 +64,7 @@
   height: 22px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: 8px;
   color: var(--cs-icon-muted);
   cursor: pointer;
   transition: color var(--cs-transition), background var(--cs-transition), border-color var(--cs-transition);
@@ -52,7 +84,8 @@
   padding: 4px 8px 4px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  /* Between workspace blocks, so each reads as its own group. */
+  gap: 8px;
   min-height: 0;
 }
 
@@ -62,7 +95,7 @@
   align-items: flex-start;
   gap: 8px;                   /* was: 10px */
   padding: 8px 4px 8px 10px;  /* right 4px: the count/x slot centres under the header + */
-  border-radius: 7px;
+  border-radius: 11px;
   cursor: pointer;
   border: 1px solid transparent;
   transition:
@@ -79,6 +112,16 @@
 
 .sb-item:hover {
   background: var(--cs-bg-hover);
+}
+
+/* One-line rows centre on the row; two-line rows (with a nickname) keep the
+   chevron and count on the first line. */
+.sb-item:not(.has-nickname) { align-items: center; }
+.sb-item:not(.has-nickname) .sb-chevron,
+.sb-item:not(.has-nickname) .sb-chevron-spacer,
+.sb-item:not(.has-nickname) .sb-item-status {
+  padding-top: 0;
+  align-items: center;
 }
 
 /* The chevron is the row's leading element now that the active accent bar is
@@ -114,16 +157,20 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid transparent;
+  /* On every block, not just the active one: padding that only the active
+     block had made it 3px taller, pushing the blocks below it down on
+     every switch. Only the tint may change on activation. */
+  padding-bottom: 3px;
   transition:
     background var(--cs-transition),
     border-color var(--cs-transition);
 }
+/* A faint tint, no border: the workspace block should sit quieter than the
+   agents inside it. */
 .sb-group.active {
-  background: var(--cs-bg-active);
-  border-color: rgba(255, 255, 255, 0.07);
-  padding-bottom: 3px;
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .sb-item.active { background: transparent; }
@@ -136,7 +183,7 @@
 
 .sb-item-name {
   font-family: var(--cs-font-ui);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 500;
   letter-spacing: normal;
   color: var(--cs-text-tertiary);
@@ -164,7 +211,7 @@
 
 .sb-item-nickname {
   font-family: var(--cs-font-ui);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: normal;
   white-space: nowrap;
@@ -209,29 +256,21 @@
   padding-top: 1px;
 }
 
-.sb-item-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--cs-state-done);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.14);
-  transition: opacity var(--cs-transition);
-  animation: sbItemDotPulse 1.8s ease-in-out infinite;
+/* A collapsed workspace says how many of its agents finished. */
+.sb-item-done {
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 16px;
+  padding: 0 6px;
   margin-right: 2px;
-}
-
-/* Subtle breathe — the dot scales gently and its glow expands and
-   relaxes so a finished workspace catches the eye from across the rail
-   without ever feeling like flicker. */
-@keyframes sbItemDotPulse {
-  0%, 100% {
-    transform: scale(0.92);
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.14);
-  }
-  50% {
-    transform: scale(1.10);
-    box-shadow: 0 0 11px rgba(255, 255, 255, 0.14);
-  }
+  border-radius: 99px;
+  white-space: nowrap;
+  color: var(--cs-state-done);
+  background: color-mix(in srgb, var(--cs-state-done) 12%, transparent);
+  font-variant-numeric: tabular-nums;
+  transition: opacity var(--cs-transition);
+  animation: sbDoneIn 360ms ease both;
 }
 
 /* One fixed slot for the count and the delete x, both centred in it, so
@@ -258,7 +297,7 @@
 }
 
 .sb-item:hover .sb-item-count,
-.sb-item:hover .sb-item-dot {
+.sb-item:hover .sb-item-done {
   opacity: 0;
 }
 
@@ -315,7 +354,7 @@
 .sb-iso {
   display: inline-flex; align-items: center;
   padding: 0; margin: 0;
-  background: transparent; border: none; border-radius: 4px;
+  background: transparent; border: none; border-radius: 6px;
   cursor: default;
   opacity: 0.9;
   filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.14));
@@ -329,20 +368,107 @@
 }
 .sb-iso:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: 2px; }
 
+/* ── Agent card (focused isolated agent's branch) ─────────────── */
+
+.sb-card {
+  flex-shrink: 0;
+  margin: 6px 8px 2px;
+  padding: 10px;
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  animation: sbItemIn 0.22s ease both;
+}
+
+.sb-card-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.sb-card-icon { display: inline-flex; color: var(--cs-icon-muted); flex: 0 0 auto; }
+.sb-card-branch {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  color: var(--cs-text-secondary);
+}
+
+.sb-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  font-family: var(--cs-font-ui);
+  font-size: 11.5px;
+  color: var(--cs-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.sb-card-add { color: color-mix(in srgb, var(--cs-green) 80%, transparent); }
+.sb-card-del { color: color-mix(in srgb, var(--cs-red) 75%, transparent); }
+.sb-card-sep { color: var(--cs-text-dim); }
+
+.sb-card-status {
+  margin-top: 6px;
+  font-family: var(--cs-font-ui);
+  font-size: 11.5px;
+  color: var(--cs-text-secondary);
+}
+.sb-card-status[data-tone="success"] { color: var(--cs-green); }
+.sb-card-status[data-tone="failure"] { color: var(--cs-red); }
+
+.sb-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.sb-card-btn {
+  flex: 1;
+  height: 26px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+  font-family: var(--cs-font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--cs-transition), color var(--cs-transition), border-color var(--cs-transition), opacity var(--cs-transition);
+}
+.sb-card-btn.ghost {
+  background: transparent;
+  border-color: var(--cs-border-mid);
+  color: var(--cs-text-secondary);
+}
+.sb-card-btn.ghost:hover {
+  background: var(--cs-bg-hover);
+  color: var(--cs-text-primary);
+}
+.sb-card-btn.solid {
+  background: rgba(255, 255, 255, 0.92);
+  color: #0a0a0a;
+}
+.sb-card-btn.solid:hover:not(:disabled) { background: #fff; }
+.sb-card-btn:disabled { opacity: 0.35; cursor: default; }
+.sb-card-btn:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: 2px; }
+
 .sb-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 6px 8px 8px;
   flex-shrink: 0;
 }
+/* Icon-only, 20px gear in a 32px square. */
 .sb-footer-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--cs-text-dim);
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  color: var(--cs-text-tertiary);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -351,10 +477,13 @@
 }
 .sb-footer-btn:hover {
   color: var(--cs-text-primary);
-  border-color: var(--cs-border);
-  background: var(--cs-bg-elevated);
+  background: var(--cs-bg-hover);
 }
+.sb-footer-btn:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: 1px; }
+/* 7px + the footer's 8px puts the version 15px from the rail's right edge,
+   matching the gear's drawn left edge (8 padding + 1 border + 6 inset). */
 .sb-footer-version {
+  margin-right: 7px;
   font-size: 11px;
   color: var(--cs-text-dim);
   text-decoration: none;
@@ -364,16 +493,32 @@
 
 /* ── Session rows (tree level 2) ─────────────────────────────── */
 
+/* Agents hang off their workspace on a thin guide line that runs under the
+   chevron (row padding 10px + half the 16px chevron = 18px). The focused
+   agent brightens its own stretch of the line instead of getting a box. */
 .sb-session {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 10px 6px 32px;
-  border-radius: 6px;
+  align-items: flex-start;
+  gap: 8px;
+  margin-left: 26px;
+  padding: 6px 8px 6px 8px;
+  border-radius: 9px;
   cursor: pointer;
   white-space: nowrap;
   color: var(--cs-text-tertiary);
-  transition: background var(--cs-transition), color var(--cs-transition);
+  transition: background var(--cs-transition), color var(--cs-transition), opacity var(--cs-transition);
+}
+
+.sb-session::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  transition: background var(--cs-transition);
 }
 
 .sb-session:hover {
@@ -383,40 +528,86 @@
 
 .sb-session.focused {
   color: var(--cs-text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+.sb-session.focused::before {
+  top: 7px;
+  bottom: 7px;
+  background: rgba(255, 255, 255, 0.55);
 }
 
-.sb-session-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  flex: 0 0 5px;
-}
+/* An exited agent fades back; the hollow ring on the right says why. */
+.sb-session.exited { opacity: 0.5; }
+.sb-session.exited:hover { opacity: 0.8; }
 
-.sb-session-dot.running { background: var(--cs-state-running); }
-.sb-session-dot.done    { background: var(--cs-state-done); box-shadow: 0 0 5px rgba(255, 255, 255, 0.14); }
-/* Deliberately --cs-text-dim, not --cs-state-exited: in this tree the dot sits
-   beside running/done, where "no longer alive" reads better as dim than as a
-   warning colour. --cs-state-exited (amber) is reserved for the pane border,
-   where it is the only exit signal. Do not "fix" this to match the border. */
-.sb-session-dot.exited  { background: var(--cs-text-dim); }
-
+/* The mark is always white. Status lives in the dot on the right. */
 .sb-session-logo {
   display: inline-flex;
   align-items: center;
-  flex: 0 0 auto;
+  flex: 0 0 12px;
+  height: 16px;
   color: var(--cs-text-primary);
-  transition: color var(--cs-transition);
 }
-.sb-session-logo.done   { color: var(--cs-state-done); }
-.sb-session-logo.exited { color: var(--cs-term-yellow); }
+
+.sb-session-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
 .sb-session-name {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--cs-font-ui);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.sb-session-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--cs-font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--cs-text-muted);
+}
+.sb-session.focused .sb-session-sub,
+.sb-session:hover .sb-session-sub { color: var(--cs-text-tertiary); }
+
+.sb-session-status {
+  flex: 0 0 12px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Steady, not pulsing: looping motion reads as flicker on this palette. */
+.sb-session-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  transition: background var(--cs-transition), box-shadow var(--cs-transition);
+}
+.sb-session-dot.running { background: rgba(255, 255, 255, 0.55); }
+.sb-session-dot.done {
+  background: var(--cs-state-done);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--cs-state-done) 45%, transparent);
+  animation: sbDoneIn 360ms ease both;
+}
+.sb-session-dot.exited {
+  background: transparent;
+  border: 1px solid var(--cs-text-tertiary);
+}
+
+@keyframes sbDoneIn {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 /* ── Tools nav: Skills + Workspaces tabs ───────────────────────── */
@@ -438,11 +629,11 @@
   text-align: left;
   padding: 0 7px 0 10px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 11px;
   background: transparent;
   cursor: pointer;
   font-family: var(--cs-font-ui);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 500;
   letter-spacing: normal;
   color: var(--cs-text-tertiary);
@@ -472,6 +663,23 @@ button.sb-nav-item:hover .sb-nav-icon { color: var(--cs-icon-secondary); }
 
 .sb-nav-item.is-open .sb-nav-icon { color: var(--cs-icon-primary); }
 
-/* The Workspaces row is a heading for the list, not a toggle, so it has no
-   hover fill of its own; only its add button reacts. */
-.sb-header { cursor: default; }
+/* ── Workspaces section label ─────────────────────────────────── */
+
+/* Right padding 12px puts the 22px + button's centre 23px in from the rail's
+   inside edge: the same line as the counts (list 8 + group border 1 + row 4
+   + half the 20px slot) and the agent dots (8 + 1 + 8 + half of 12). */
+.sb-section {
+  display: flex;
+  align-items: center;
+  padding: 14px 12px 4px 16px;
+  flex-shrink: 0;
+}
+.sb-section-label {
+  flex: 1;
+  font-family: var(--cs-font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cs-text-muted);
+}

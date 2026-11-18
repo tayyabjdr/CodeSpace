@@ -22,6 +22,35 @@ export function closeSummary(workspaces = []) {
   return { agents, activeWorkspaces, dirty }
 }
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+// One row per workspace that has something to lose: its running agents and
+// any file with unsaved edits, so the user sees exactly what closing stops.
+function CloseDetails({ workspaces }) {
+  const rows = workspaces
+    .map(w => ({
+      id: w.id,
+      name: w.nickname || w.name,
+      agents: w?.terminals?.length ?? 0,
+      file: w?.editor?.dirty && w.editor.file ? basename(w.editor.file) : null
+    }))
+    .filter(r => r.agents > 0 || r.file)
+  if (rows.length === 0) return null
+  return (
+    <ul className="cc-list">
+      {rows.map(r => (
+        <li key={r.id} className="cc-row">
+          <span className="cc-name" title={r.name}>{r.name}</span>
+          <span className="cc-meta">
+            {r.file && <span className="cc-unsaved" title={`Unsaved edits to ${r.file}`}>{r.file} unsaved</span>}
+            {r.agents > 0 && <span className="cc-count">{plural(r.agents, 'agent')}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default function CloseConfirm({ workspaces, onCancel, onConfirm }) {
   const { agents, activeWorkspaces, dirty } = closeSummary(workspaces)
   const running = agents > 0
@@ -53,7 +82,8 @@ export default function CloseConfirm({ workspaces, onCancel, onConfirm }) {
     <ConfirmDialog
       title="Close CodeSpace?"
       message={message}
-      confirmLabel="Close CodeSpace"
+      details={activeWorkspaces > 1 || (running && dirty.length > 0) ? <CloseDetails workspaces={workspaces} /> : null}
+      confirmLabel="Close"
       cancelLabel="Stay"
       initialFocus="cancel"
       destructive={running || dirty.length > 0}

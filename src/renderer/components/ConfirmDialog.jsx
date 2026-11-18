@@ -5,6 +5,7 @@ import './ConfirmDialog.css'
 export default function ConfirmDialog({
   title = 'Confirm',
   message,
+  details,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   extraLabel,
@@ -59,6 +60,9 @@ export default function ConfirmDialog({
         </header>
 
         <p className="cd-message">{message}</p>
+
+        {/* Optional block under the message, e.g. a list of what's affected. */}
+        {details && <div className="cd-details">{details}</div>}
 
         <div className="cd-actions">
           {!hideCancel && (

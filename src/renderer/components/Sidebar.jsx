@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import WorkspaceRow from './WorkspaceRow.jsx'
-import SessionRow from './SessionRow.jsx'
+import SessionRow, { sessionLabel } from './SessionRow.jsx'
+import AgentCard from './AgentCard.jsx'
 import './Sidebar.css'
 
 const PlusGlyph = () => (
@@ -11,7 +12,7 @@ const PlusGlyph = () => (
 )
 
 const GearGlyph = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3" />
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </svg>
@@ -19,19 +20,13 @@ const GearGlyph = () => (
 
 const SkillsGlyph = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
-    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
-  </svg>
-)
-
-const WorkspacesGlyph = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 3l9 5-9 5-9-5z" />
-    <path d="M3 13l9 5 9-5" />
+    <path d="M2 4.5h6a4 4 0 0 1 4 4V20a3 3 0 0 0-3-3H2z" />
+    <path d="M22 4.5h-6a4 4 0 0 0-4 4V20a3 3 0 0 1 3-3h7z" />
   </svg>
 )
 
 export default function Sidebar({
+  collapsed = false,
   workspaces, activeId, expandedIds, doneTermIds, exitedPtyIds, focusedTerminalId,
   skillsOpen, onToggleSkills,
   onSelect, onToggleExpand, onSelectSession, onCreate, onDelete, onOpenSettings, onRenameNickname, onToggleIsolated
@@ -43,6 +38,13 @@ export default function Sidebar({
   }, [])
 
   const sessionsOf = (ws) => (ws.spawned ? (ws.terminals ?? []) : [])
+
+  // The agent card follows the focused agent of the active workspace, and
+  // only for an isolated workspace, where each agent has its own branch.
+  const activeWs = workspaces.find(w => w.id === activeId)
+  const cardTerm = activeWs?.isolated && activeWs.dir
+    ? sessionsOf(activeWs).find(t => t.id === focusedTerminalId && t.branch) ?? null
+    : null
 
   const statusOf = (term) => {
     if (exitedPtyIds?.has(term.ptyId)) return 'exited'
@@ -119,10 +121,11 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="sidebar">
-      {/* Skills and Workspaces share the .sb-nav-item tab look: icon, label,
-          same type and padding. Skills toggles its panel; the Workspaces row
-          heads the always-visible list below and carries the add button. */}
+    <aside
+      className={`sidebar${collapsed ? ' is-collapsed' : ''}`}
+      aria-hidden={collapsed || undefined}
+    >
+      {/* Skills is a tab that toggles its panel. */}
       <nav className="sb-nav" aria-label="Tools">
         <button
           type="button"
@@ -133,19 +136,21 @@ export default function Sidebar({
           <span className="sb-nav-icon" aria-hidden><SkillsGlyph /></span>
           <span className="sb-nav-label">Skills</span>
         </button>
-        <div className="sb-nav-item sb-header">
-          <span className="sb-nav-icon" aria-hidden><WorkspacesGlyph /></span>
-          <span className="sb-nav-label">Workspaces</span>
-          <button
-            type="button"
-            className="sb-header-add"
-            title="New workspace"
-            onClick={onCreate}
-          >
-            <PlusGlyph />
-          </button>
-        </div>
       </nav>
+
+      {/* A section label, not a tab: it heads the list and carries the add
+          button, so it shouldn't look like another Skills-style button. */}
+      <div className="sb-section">
+        <span className="sb-section-label">Workspaces</span>
+        <button
+          type="button"
+          className="sb-header-add"
+          title="New workspace"
+          onClick={onCreate}
+        >
+          <PlusGlyph />
+        </button>
+      </div>
 
       <div className="sb-list" role="tree" aria-label="Workspaces" ref={listRef}>
         {groups.map(group => (
@@ -161,7 +166,7 @@ export default function Sidebar({
                 isActive={node.ws.id === activeId}
                 isExpanded={!!expandedIds?.has(node.ws.id)}
                 hasSessions={sessionsOf(node.ws).length > 0}
-                showDoneDot={sessionsOf(node.ws).some(t => doneTermIds?.has(t.id))}
+                doneCount={sessionsOf(node.ws).filter(t => doneTermIds?.has(t.id) && !exitedPtyIds?.has(t.ptyId)).length}
                 onSelect={onSelect}
                 onToggleExpand={onToggleExpand}
                 onDelete={onDelete}
@@ -183,6 +188,17 @@ export default function Sidebar({
           </div>
         ))}
       </div>
+
+      {cardTerm && (
+        <AgentCard
+          key={cardTerm.id}
+          agentId={cardTerm.id}
+          ptyId={cardTerm.ptyId}
+          repoDir={activeWs.dir}
+          agentName={sessionLabel(cardTerm)}
+          branch={cardTerm.branch}
+        />
+      )}
 
       <div className="sb-footer">
         <button

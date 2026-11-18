@@ -40,7 +40,60 @@ export default function FinishControl(props) {
   return <FinishControlInner api={api} {...props} />
 }
 
-function FinishControlInner({ api, agentId, ptyId, repoDir, agentName }) {
+function FinishControlInner(props) {
+  const {
+    info, status, seq, view, state, counts, lockNote,
+    disabled, finishTitle, onMouseDown, onMouseLeave, onFinish
+  } = useFinish(props)
+
+  return (
+    <>
+      {counts && (
+        <>
+          <span className="fc-sep" aria-hidden>·</span>
+          <span className="fc-counts">{counts}</span>
+        </>
+      )}
+      {view && (
+        <>
+          <span className="fc-sep" aria-hidden>·</span>
+          <span
+            key={seq}
+            className="fc-status"
+            data-tone={view.tone}
+            title={view.title}
+          >
+            {view.label}
+          </span>
+        </>
+      )}
+      {lockNote && (
+        <>
+          <span className="fc-sep" aria-hidden>·</span>
+          <span className="fc-note" title="The lockfile changed. Running it for you could fail on Windows file locks from a live dev server.">
+            Run an install in the main folder.
+          </span>
+        </>
+      )}
+      <button
+        type="button"
+        className="fc-finish"
+        disabled={disabled}
+        title={finishTitle}
+        onMouseDown={onMouseDown}
+        onMouseLeave={onMouseLeave}
+        onClick={onFinish}
+      >
+        Finish
+      </button>
+    </>
+  )
+}
+
+// Everything behind a Finish button: the branch's counts, its merge status,
+// and the quiet-gated click. Shared by the pane's subheader and the sidebar's
+// agent card so both buttons behave identically. `api` is window.electronAPI.merge.
+export function useFinish({ api, agentId, ptyId, repoDir, agentName }) {
   const status = useMergeStatus(agentId)
   const quiet = useQuiet(ptyId, DONE_SILENCE_MS)
   const [info, setInfo] = useState(null)
@@ -99,46 +152,10 @@ function FinishControlInner({ api, agentId, ptyId, repoDir, agentName }) {
       .finally(() => setSubmitting(false))
   }
 
-  return (
-    <>
-      {counts && (
-        <>
-          <span className="fc-sep" aria-hidden>·</span>
-          <span className="fc-counts">{counts}</span>
-        </>
-      )}
-      {view && (
-        <>
-          <span className="fc-sep" aria-hidden>·</span>
-          <span
-            key={seq}
-            className="fc-status"
-            data-tone={view.tone}
-            title={view.title}
-          >
-            {view.label}
-          </span>
-        </>
-      )}
-      {lockNote && (
-        <>
-          <span className="fc-sep" aria-hidden>·</span>
-          <span className="fc-note" title="The lockfile changed. Running it for you could fail on Windows file locks from a live dev server.">
-            Run an install in the main folder.
-          </span>
-        </>
-      )}
-      <button
-        type="button"
-        className="fc-finish"
-        disabled={disabled}
-        title={finishTitle}
-        onMouseDown={onMouseDown}
-        onMouseLeave={() => setPressedQuiet(false)}
-        onClick={onFinish}
-      >
-        Finish
-      </button>
-    </>
-  )
+  const onMouseLeave = () => setPressedQuiet(false)
+
+  return {
+    info, status, seq, view, state, counts, lockNote,
+    disabled, finishTitle, onMouseDown, onMouseLeave, onFinish
+  }
 }

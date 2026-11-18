@@ -54,8 +54,8 @@ describe('Sidebar tree', () => {
       <Sidebar {...base} expandedIds={new Set(['w1'])} exitedPtyIds={new Set(['p2'])} />
     )
     const rows = container.querySelectorAll('.sb-session')
-    expect(rows[0].querySelector('.sb-session-logo').className).toContain('running')
-    expect(rows[1].querySelector('.sb-session-logo').className).toContain('exited')
+    expect(rows[0].querySelector('.sb-session-dot').className).toContain('running')
+    expect(rows[1].querySelector('.sb-session-dot').className).toContain('exited')
   })
 
   it('prefers exited over done when both apply', () => {
@@ -65,7 +65,7 @@ describe('Sidebar tree', () => {
         doneTermIds={new Set(['t1'])}
         exitedPtyIds={new Set(['p1'])} />
     )
-    const dot = container.querySelector('.sb-session .sb-session-logo')
+    const dot = container.querySelector('.sb-session .sb-session-dot')
     expect(dot.className).toContain('exited')
   })
 
@@ -76,9 +76,12 @@ describe('Sidebar tree', () => {
     expect(onSelectSession).toHaveBeenCalledWith('w2', 't3')
   })
 
-  it('shows the aggregate done dot on a collapsed workspace with a done agent', () => {
-    const { container } = render(<Sidebar {...base} doneTermIds={new Set(['t3'])} />)
-    expect(container.querySelectorAll('.sb-item-dot').length).toBe(1)
+  it('counts done agents on a collapsed workspace, leaving out exited ones', () => {
+    const { container, rerender } = render(<Sidebar {...base} doneTermIds={new Set(['t1', 't2', 't3'])} />)
+    expect([...container.querySelectorAll('.sb-item-done')].map(n => n.textContent)).toEqual(['2 done', '1 done'])
+
+    rerender(<Sidebar {...base} doneTermIds={new Set(['t1', 't2'])} exitedPtyIds={new Set(['p2'])} />)
+    expect([...container.querySelectorAll('.sb-item-done')].map(n => n.textContent)).toEqual(['1 done'])
   })
 
   it('moves focus down through the visible flattened list', async () => {
@@ -210,15 +213,32 @@ describe('Sidebar tree', () => {
     expect(nav.textContent).toBe('Skills')
 
     // Order matters: the nav sits above the Workspaces header, not below it.
-    const header = container.querySelector('.sb-header')
+    const header = container.querySelector('.sb-section')
     expect(nav.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('renders Skills and Workspaces as matching tabs with icons', () => {
+  it('renders Skills as the only tab and Workspaces as a section label with an add button', () => {
     const { container } = render(<Sidebar {...base} skillsOpen={false} onToggleSkills={() => {}} />)
     const tabs = [...container.querySelectorAll('.sb-nav-item')]
-    expect(tabs.map(t => t.querySelector('.sb-nav-label').textContent)).toEqual(['Skills', 'Workspaces'])
-    for (const t of tabs) expect(t.querySelector('.sb-nav-icon svg')).toBeTruthy()
+    expect(tabs.map(t => t.querySelector('.sb-nav-label').textContent)).toEqual(['Skills'])
+    expect(container.querySelector('.sb-section-label').textContent).toBe('Workspaces')
+    expect(container.querySelector('.sb-section button[title="New workspace"]')).toBeTruthy()
+  })
+
+  it('hides itself from assistive tech when collapsed', () => {
+    const { container, rerender } = render(<Sidebar {...base} />)
+    const aside = container.querySelector('aside')
+    expect(aside.className).not.toContain('is-collapsed')
+    expect(aside.getAttribute('aria-hidden')).toBeNull()
+
+    rerender(<Sidebar {...base} collapsed />)
+    expect(aside.className).toContain('is-collapsed')
+    expect(aside.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('labels the settings button', () => {
+    render(<Sidebar {...base} />)
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeTruthy()
   })
 
   it('calls onToggleSkills when the Skills row is clicked', async () => {

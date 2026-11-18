@@ -8,7 +8,7 @@ import { gridShape, cellStyle } from '../grid-layout.js'
 import { basename, parentLabel } from '../path-display.js'
 import './Onboarding.css'
 
-const MAX_AGENTS = 8
+export const MAX_AGENTS = 8
 
 const FolderIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -36,7 +36,7 @@ const PlusIcon = () => (
   </svg>
 )
 
-const ArrowIcon = () => (
+export const ArrowIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <line x1="5" y1="12" x2="19" y2="12" />
     <polyline points="13 6 19 12 13 18" />
@@ -45,7 +45,7 @@ const ArrowIcon = () => (
 
 // `claude` = how many panes run Claude. App spawns the Claude panes first, so
 // every cell after that is a Codex pane and gets the violet tint.
-function TerminalPreview({ count, claude = count }) {
+export function TerminalPreview({ count, claude = count }) {
   const shape = gridShape(count)
   const { cols, rows } = shape
   return (
@@ -69,7 +69,7 @@ function TerminalPreview({ count, claude = count }) {
 
 // One row per agent CLI: logo, name and a − n + stepper. The two counts add up
 // to the layout, so + on either one grows the grid by a pane.
-function AgentStepper({ shell, label, value, canDec, canInc, onDec, onInc }) {
+export function AgentStepper({ shell, label, value, canDec, canInc, onDec, onInc }) {
   return (
     <div className={`ob-stepper ob-stepper-${shell}${value > 0 ? ' on' : ''}`}>
       <span className="ob-stepper-logo"><AgentLogo shell={shell} size={14} /></span>

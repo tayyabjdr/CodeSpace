@@ -37,7 +37,16 @@ const CodeIcon = () => (
   </svg>
 )
 
-export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor }) {
+const SidebarIcon = ({ collapsed }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <line x1="9" y1="4" x2="9" y2="20" />
+    {!collapsed && <line x1="5.5" y1="8" x2="6.5" y2="8" />}
+    {!collapsed && <line x1="5.5" y1="11" x2="6.5" y2="11" />}
+  </svg>
+)
+
+export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor, sidebarCollapsed, onToggleSidebar }) {
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => window.electronAPI.onMaximizeChanged(setIsMaximized), [])
@@ -53,6 +62,18 @@ export default function Toolbar({ onAdd, agentCount, editorOpen, onToggleEditor 
           <AppIcon size={18} />
         </span>
         <span className="titlebar-name">CodeSpace</span>
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className={`titlebar-btn titlebar-sidebar-toggle${sidebarCollapsed ? '' : ' is-open'}`}
+            title={sidebarCollapsed ? 'Show sidebar (Ctrl+B)' : 'Hide sidebar (Ctrl+B)'}
+            aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+            aria-pressed={!sidebarCollapsed}
+            onClick={onToggleSidebar}
+          >
+            <SidebarIcon collapsed={sidebarCollapsed} />
+          </button>
+        )}
       </div>
 
       <div className="titlebar-controls">

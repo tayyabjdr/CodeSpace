@@ -17,10 +17,13 @@
 
 /* Left — identity */
 
+/* Nudged 4px down from the bar's centre line so the logo, name and sidebar
+   toggle get a little air above them. */
 .titlebar-left {
   display: flex;
   align-items: center;
   gap: 9px;
+  margin-top: 4px;
   -webkit-app-region: no-drag;
 }
 
@@ -57,7 +60,7 @@
   padding: 0 7px 0 9px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 6px;
+  border-radius: 9px;
   cursor: pointer;
   color: var(--cs-text-tertiary);
   transition: color var(--cs-transition), background var(--cs-transition), border-color var(--cs-transition);
@@ -92,7 +95,7 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom-width: 1.5px;
-  border-radius: 3px;
+  border-radius: 5px;
   padding: 1px 5px;
   line-height: 1;
   text-transform: uppercase;
@@ -125,7 +128,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 9px;
   color: var(--cs-icon-tertiary);
   cursor: pointer;
   transition: background var(--cs-transition), color var(--cs-transition);
@@ -136,11 +139,16 @@
   color: var(--cs-icon-primary);
 }
 
+/* Same active fill as the editor toggle while the sidebar is showing. */
+.titlebar-sidebar-toggle { margin-left: 4px; }
+
+.titlebar-sidebar-toggle.is-open,
 .titlebar-editor-toggle.is-open {
   color: var(--cs-text-secondary);
   background: rgba(255, 255, 255, 0.10);
 }
 
+.titlebar-sidebar-toggle.is-open:hover,
 .titlebar-editor-toggle.is-open:hover {
   background: rgba(255, 255, 255, 0.14);
   color: var(--cs-text-secondary);

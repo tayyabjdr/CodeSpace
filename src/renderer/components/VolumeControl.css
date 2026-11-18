@@ -17,7 +17,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 9px;
   color: var(--cs-icon-tertiary);
   cursor: pointer;
   transition: background var(--cs-transition), color var(--cs-transition);
