@@ -3,6 +3,7 @@ import { ONBOARDING_BOOT_DELAY_MS } from '../constants.js'
 import AppIcon from './AppIcon.jsx'
 import { ISOLATION_NOTES } from '../isolation-notice.js'
 import RecentDirectories from './RecentDirectories.jsx'
+import { gridShape, cellStyle } from '../grid-layout.js'
 import './Onboarding.css'
 
 const FolderIcon = () => (
@@ -18,25 +19,9 @@ const CloseIcon = () => (
   </svg>
 )
 
-// Mirrors App.jsx grid logic.
-// 1→1 · 2→2 · 3→3 · 4→2 · 5–6→3 · 7+→4 (max)
-function colsFor(n) {
-  if (n <= 1) return 1
-  if (n === 2) return 2
-  if (n === 3) return 3
-  if (n === 4) return 2
-  if (n <= 6) return 3
-  return 4
-}
-
-function gridShape(n) {
-  const cols = colsFor(n)
-  const rows = Math.ceil(n / cols)
-  return { cols, rows }
-}
-
 function TerminalPreview({ count }) {
-  const { cols, rows } = gridShape(count)
+  const shape = gridShape(count)
+  const { cols, rows } = shape
   return (
     <div
       className="ob-preview"
@@ -46,7 +31,7 @@ function TerminalPreview({ count }) {
       }}
     >
       {Array.from({ length: count }).map((_, i) => (
-        <span key={i} className="ob-preview-cell" />
+        <span key={i} className="ob-preview-cell" style={cellStyle(shape, i, count)} />
       ))}
     </div>
   )

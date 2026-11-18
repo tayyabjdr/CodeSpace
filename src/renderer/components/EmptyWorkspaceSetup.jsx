@@ -1,19 +1,11 @@
 import { useState, useEffect } from 'react'
 import AppIcon from './AppIcon.jsx'
+import { gridShape, cellStyle } from '../grid-layout.js'
 import './Onboarding.css'
 
-function colsFor(n) {
-  if (n <= 1) return 1
-  if (n === 2) return 2
-  if (n === 3) return 3
-  if (n === 4) return 2
-  if (n <= 6) return 3
-  return 4
-}
-
 function TerminalPreview({ count }) {
-  const cols = colsFor(count)
-  const rows = Math.ceil(count / cols)
+  const shape = gridShape(count)
+  const { cols, rows } = shape
   return (
     <div
       className="ob-preview"
@@ -23,7 +15,7 @@ function TerminalPreview({ count }) {
       }}
     >
       {Array.from({ length: count }).map((_, i) => (
-        <span key={i} className="ob-preview-cell" />
+        <span key={i} className="ob-preview-cell" style={cellStyle(shape, i, count)} />
       ))}
     </div>
   )

@@ -31,6 +31,7 @@ import { basename } from './path-resolver.js'
 import { focusSessionIn, withExpanded, liveAgentIdsFor } from './workspace-ops.js'
 import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
 import useCloseGuard from './hooks/useCloseGuard.js'
+import { gridShape, cellStyle } from './grid-layout.js'
 import './design-tokens.css'
 import './App.css'
 
@@ -1218,14 +1219,10 @@ function AppInner() {
       return next
     })
   }
-  const cols = anyFullscreen ? 1 : (
-    n <= 1 ? 1 :
-    n === 2 ? 2 :
-    n === 3 ? 3 :
-    n === 4 ? 2 :
-    n <= 6 ? 3 : 4
-  )
-  const rows = anyFullscreen ? 1 : Math.max(1, Math.ceil(n / cols))
+  // Fullscreen shows one pane in a 1×1 grid, so no pane may be placed by hand
+  // there: a span into column 3 would conjure extra implicit columns.
+  const shape = anyFullscreen ? { cols: 1, rows: 1, lastSpansColumn: false } : gridShape(n)
+  const { cols, rows } = shape
 
   return (
     <div className="app">
@@ -1299,9 +1296,10 @@ function AppInner() {
             >
               {terminals.length === 0 ? (
                 <EmptyWorkspaceSetup availability={availability} onAdd={addAgents} />
-              ) : terminals.map(t => (
+              ) : terminals.map((t, i) => (
                 <TerminalPane
                   key={t.id}
+                  cellStyle={cellStyle(shape, i, n)}
                   id={t.id}
                   ptyId={t.ptyId}
                   shell={t.shell}
