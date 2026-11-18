@@ -61,6 +61,12 @@ export function createSession(shell = 'powershell', cwd, cols, rows, extraEnv = 
   const env = {
     ...process.env,
     ...(skip ? { CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS: '1' } : {}),
+    // Claude's fullscreen renderer owns its own scrollback and redraws all of
+    // it on resize. The classic renderer can't: ConPTY only forwards the
+    // visible rows of a repaint, so text above the viewport stays wrapped at
+    // the old width. The user setting `"tui": "fullscreen"` does the same, but
+    // Claude can auto-disable that after failed starts; the env var overrides.
+    ...(shell === 'claude' ? { CLAUDE_CODE_NO_FLICKER: '1' } : {}),
     ...extraEnv
   }
   const resolvedCwd = cwd || process.env.USERPROFILE || process.cwd()

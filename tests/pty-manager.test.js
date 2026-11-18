@@ -52,6 +52,17 @@ describe('pty-manager', () => {
     expect(opts.env.PATH ?? opts.env.Path).toBeDefined() // still the inherited env
   })
 
+  it('createSession turns on Claude fullscreen for claude panes only', () => {
+    const before = process.env.CLAUDE_CODE_NO_FLICKER
+    delete process.env.CLAUDE_CODE_NO_FLICKER
+    try {
+      createSession('claude')
+      expect(pty.spawn.mock.calls.at(-1)[2].env.CLAUDE_CODE_NO_FLICKER).toBe('1')
+      createSession('powershell')
+      expect(pty.spawn.mock.calls.at(-1)[2].env.CLAUDE_CODE_NO_FLICKER).toBeUndefined()
+    } finally { if (before !== undefined) process.env.CLAUDE_CODE_NO_FLICKER = before }
+  })
+
   it('createSession without extraEnv adds no PORT', () => {
     const before = process.env.PORT
     delete process.env.PORT
