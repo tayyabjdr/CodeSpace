@@ -518,6 +518,45 @@ export async function wipeAll({ repoDir, liveAgentIds = [] }) {
   })
 }
 
+// The user chose to throw away work an earlier session left behind: one
+// leftover agent (folder, uncommitted changes, branch and its commits) or one
+// stranded agent branch. Never touches a live agent. The folder goes through
+// _closeImpl, so links are detached before anything is deleted.
+export async function discard({ repoDir, agentId, branch, liveAgentIds = [] }) {
+  return withRepoLock(repoDir, async () => {
+    if (agentId) {
+      if (liveAgentIds.includes(agentId)) return { ok: false, error: 'live' }
+      const entry = readMeta(repoDir).agents[agentId]
+      // Already cleaned up elsewhere: only the branch can be left. Removing it
+      // (or finding it gone) counts as discarded, so the row can go.
+      if (!entry) {
+        if (typeof branch !== 'string' || !branch.startsWith('cs/')) return { ok: true, gone: true }
+        const inUse = new Set(Object.values(readMeta(repoDir).agents).map(e => e.branch))
+        if (inUse.has(branch)) return { ok: false, error: 'in-use' }
+        if (!deleteAgentBranch(repoDir, branch)) return { ok: false, error: 'branch-delete-failed' }
+        return { ok: true, gone: true }
+      }
+      const res = await _closeImpl({ repoDir, agentId })
+      if (!res || res.ok === false) return res ?? { ok: false, error: 'cleanup-failed' }
+      deleteAgentBranch(repoDir, entry.branch)
+      return { ok: true }
+    }
+    if (typeof branch !== 'string' || !branch.startsWith('cs/')) return { ok: false, error: 'invalid-branch' }
+    const inUse = new Set(Object.values(readMeta(repoDir).agents).map(e => e.branch))
+    if (inUse.has(branch)) return { ok: false, error: 'in-use' }
+    if (!deleteAgentBranch(repoDir, branch)) return { ok: false, error: 'branch-delete-failed' }
+    return { ok: true }
+  })
+}
+
+// true when the branch is gone afterwards (deleted now, or already gone).
+function deleteAgentBranch(repoDir, branch) {
+  if (typeof branch !== 'string' || !branch.startsWith('cs/')) return false
+  try { execGit(['-C', repoDir, 'branch', '-D', branch]) } catch {}
+  try { execGit(['-C', repoDir, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`]); return false }
+  catch { return true }
+}
+
 export async function repairOrphans({ repoDir }) {
   return withRepoLock(repoDir, async () => {
     const m = readMeta(repoDir)

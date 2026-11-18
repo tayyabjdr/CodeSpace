@@ -1,7 +1,7 @@
 import { ipcMain, shell } from 'electron'
 import { statSync } from 'fs'
 import { isAbsolute, sep as PATH_SEP } from 'path'
-import { createSession, writeSession, resizeSession, killSession, isClaudeAvailable, isCodexAvailable } from './pty-manager.js'
+import { createSession, writeSession, resizeSession, killSession, killAllAndWait, isClaudeAvailable, isCodexAvailable } from './pty-manager.js'
 import * as editorFs from './editor-fs.js'
 import * as autoNamer from './auto-namer.js'
 import * as worktree from './worktree-manager.js'
@@ -43,6 +43,18 @@ export function registerHandlers(mainWindow) {
     onStatus: (status) => {
       if (windowAlive()) mainWindow.webContents.send('merge:status', status)
     }
+  })
+
+  // A reload (Ctrl+R, a dev full reload) starts a fresh page that knows
+  // nothing about the PTYs the old page made. Left alone they keep running,
+  // unseen, inside their agent folders, and Windows won't delete a folder a
+  // process is sitting in, so the new page's cleanup reports "Couldn't be
+  // removed". End them as the reload starts; folder cleanup waits for that.
+  let reloadKill = Promise.resolve()
+  mainWindow.webContents.on('did-start-navigation', (_e, _url, isInPlace, isMainFrame) => {
+    if (!isMainFrame || isInPlace) return
+    for (const ptyId of Array.from(ptyDisposables.keys())) disposeFor(ptyId)
+    reloadKill = killAllAndWait().catch(() => {})
   })
 
   function disposeFor(ptyId) {
@@ -272,10 +284,42 @@ export function registerHandlers(mainWindow) {
   ipcMain.handle('worktree:wipeAll', async (_e, args) => {
     if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
     try {
+      await reloadKill
       const result = await worktree.wipeAll(args)
       return { ok: true, kept: result?.kept ?? [], stranded: result?.stranded ?? [] }
     }
     catch (err) { return { error: err.code || 'unknown' } }
+  })
+
+  ipcMain.handle('worktree:discard', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir)) return { error: 'invalid-args' }
+    const { repoDir, agentId, branch, liveAgentIds } = args
+    if (agentId != null && typeof agentId !== 'string') return { error: 'invalid-args' }
+    if (branch != null && typeof branch !== 'string') return { error: 'invalid-args' }
+    if (!agentId && !branch) return { error: 'invalid-args' }
+    try {
+      await reloadKill
+      return await worktree.discard({
+        repoDir,
+        agentId: agentId || undefined,
+        branch: agentId ? undefined : branch,
+        liveAgentIds: Array.isArray(liveAgentIds) ? liveAgentIds.filter(x => typeof x === 'string') : []
+      })
+    } catch (err) { return { ok: false, error: err.code || 'unknown' } }
+  })
+
+  // Opens a leftover agent's folder in Explorer. The path comes from the
+  // repo's own agent list, never from the renderer.
+  ipcMain.handle('worktree:openFolder', async (_e, args) => {
+    if (!args || typeof args.repoDir !== 'string' || !isAbsolute(args.repoDir) || typeof args.agentId !== 'string') return { error: 'invalid-args' }
+    try {
+      const entry = worktree.readMeta(args.repoDir).agents[args.agentId]
+      if (!entry) return { error: 'missing' }
+      const p = worktree.entryWorktreePath(args.repoDir, args.agentId, entry)
+      if (!statSync(p).isDirectory()) return { error: 'missing' }
+      const err = await shell.openPath(p)
+      return err ? { error: 'open-failed', detail: err } : { ok: true }
+    } catch { return { error: 'missing' } }
   })
 
   ipcMain.handle('worktree:repairOrphans', async (_e, args) => {

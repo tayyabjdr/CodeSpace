@@ -109,7 +109,7 @@ describe('worktree-manager / ensureLocalExcludes', () => {
   })
 })
 
-import { readMeta, writeMeta, META_DEFAULT, create, checkDirty, close, closeAllForWorkspace, repairOrphans, wipeAll } from '../src/main/worktree-manager.js'
+import { readMeta, writeMeta, META_DEFAULT, create, checkDirty, close, closeAllForWorkspace, repairOrphans, wipeAll, discard } from '../src/main/worktree-manager.js'
 
 describe('worktree-manager / meta file', () => {
   let root, repoDir
@@ -420,5 +420,75 @@ describe('worktree-manager / safe wipes and removal', () => {
     git(repoDir, 'worktree', 'lock', r.path)
     await close({ repoDir, agentId: id })
     expect(existsSync(r.path)).toBe(false)
+  })
+})
+
+describe('worktree-manager / discard', () => {
+  let root, repoDir
+  const branchExists = (b) => execFileSync('git', ['-C', repoDir, 'branch', '--list', b], { encoding: 'utf8' }).includes(b)
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'cs-wt-discard-'))
+    repoDir = join(root, 'repo')
+    mkdirSync(repoDir)
+    execFileSync('git', ['init', '-q'], { cwd: repoDir })
+    execFileSync('git', ['-c', 'user.email=t@e', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'init'], { cwd: repoDir })
+  })
+  afterAll(() => { rmSync(root, { recursive: true, force: true }) })
+
+  it('deletes a kept dirty agent: folder, meta entry and its branch with commits', async () => {
+    const id = 'd1111111-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'w', agentId: id })
+    writeFileSync(join(r.path, 'c.txt'), 'c')
+    commitAll(r.path, 'c')
+    writeFileSync(join(r.path, 'draft.txt'), 'unsaved')
+    const wiped = await wipeAll({ repoDir })
+    expect(wiped.kept.map(k => k.agentId)).toContain(id)
+
+    const res = await discard({ repoDir, agentId: id })
+    expect(res).toEqual({ ok: true })
+    expect(existsSync(r.path)).toBe(false)
+    expect(readMeta(repoDir).agents[id]).toBeUndefined()
+    expect(branchExists(r.branch)).toBe(false)
+  })
+
+  it('refuses a live agent and touches nothing', async () => {
+    const id = 'd2222222-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'w', agentId: id })
+    const res = await discard({ repoDir, agentId: id, liveAgentIds: [id] })
+    expect(res).toEqual({ ok: false, error: 'live' })
+    expect(existsSync(r.path)).toBe(true)
+    await close({ repoDir, agentId: id })
+  })
+
+  it('deletes a stranded cs/ branch, and refuses branches outside cs/ or still in use', async () => {
+    const id = 'd3333333-0000-0000-0000-000000000000'
+    const r = await create({ repoDir, workspaceName: 'w', agentId: id })
+    writeFileSync(join(r.path, 's.txt'), 's')
+    commitAll(r.path, 's')
+    expect(await discard({ repoDir, branch: r.branch })).toEqual({ ok: false, error: 'in-use' })
+    const wiped = await wipeAll({ repoDir })
+    expect(wiped.stranded.map(s => s.branch)).toContain(r.branch)
+
+    expect(await discard({ repoDir, branch: 'master' })).toEqual({ ok: false, error: 'invalid-branch' })
+    expect(await discard({ repoDir, branch: r.branch })).toEqual({ ok: true })
+    expect(branchExists(r.branch)).toBe(false)
+  })
+
+  it('treats an agent that is already cleaned up as discarded', async () => {
+    expect(await discard({ repoDir, agentId: 'nope' })).toEqual({ ok: true, gone: true })
+  })
+
+  it('deletes the leftover branch of an agent whose folder and entry are already gone', async () => {
+    const id = 'aaaa1111-0000-0000-0000-000000000000'
+    execFileSync('git', ['-C', repoDir, 'branch', 'cs/gone/aaaa1111'])
+    expect(await discard({ repoDir, agentId: id, branch: 'cs/gone/aaaa1111' })).toEqual({ ok: true, gone: true })
+    expect(branchExists('cs/gone/aaaa1111')).toBe(false)
+  })
+
+  it('never deletes a non-CodeSpace branch for a gone agent', async () => {
+    const main = execFileSync('git', ['-C', repoDir, 'branch', '--show-current'], { encoding: 'utf8' }).trim()
+    expect(await discard({ repoDir, agentId: 'nope', branch: main })).toEqual({ ok: true, gone: true })
+    expect(branchExists(main)).toBe(true)
   })
 })

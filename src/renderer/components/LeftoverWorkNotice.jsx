@@ -1,7 +1,8 @@
 // Work an earlier session left behind in this repo: agent folders kept
 // because they had uncommitted changes or couldn't be removed, and agent
-// branches holding commits that never reached the main branch. Shown so the
-// user can find them; nothing here deletes anything.
+// branches holding commits that never reached the main branch. Each row can
+// copy its branch, open its folder, or be discarded; the parent confirms a
+// discard before anything is deleted.
 import './LeftoverWorkNotice.css'
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
@@ -25,7 +26,25 @@ function CopyButton({ branch }) {
   )
 }
 
-export default function LeftoverWorkNotice({ kept = [], stranded = [], onDismiss }) {
+function Actions({ row, onOpenFolder, onDiscard }) {
+  return (
+    <span className="lw-actions">
+      <CopyButton branch={row.branch} />
+      {onOpenFolder && row.agentId && row.path && !row.folderGone && (
+        <button type="button" className="lw-copy" title={`Open ${row.path}`} onClick={() => onOpenFolder(row)}>
+          Open folder
+        </button>
+      )}
+      {onDiscard && (
+        <button type="button" className="lw-copy lw-discard" title="Delete this work for good" onClick={() => onDiscard(row)}>
+          Discard
+        </button>
+      )}
+    </span>
+  )
+}
+
+export default function LeftoverWorkNotice({ kept = [], stranded = [], onDismiss, onOpenFolder, onDiscard }) {
   if (!kept.length && !stranded.length) return null
 
   return (
@@ -44,19 +63,25 @@ export default function LeftoverWorkNotice({ kept = [], stranded = [], onDismiss
           <li key={`kept-${k.agentId ?? k.path}`} className="lw-row">
             <div className="lw-main">
               <span className="lw-branch">{k.branch}</span>
-              <span className="lw-meta" title={k.detail || undefined}>{KEPT_LABEL[k.reason] ?? 'Kept'}</span>
+              <span className="lw-meta" title={k.detail || undefined}>
+                {k.discardFailed ? "Couldn't discard. Close anything using it, then try again"
+                  : k.folderGone ? 'Folder is already gone. Discard clears this row'
+                  : (KEPT_LABEL[k.reason] ?? 'Kept')}
+              </span>
               <span className="lw-path" title={k.path}>{k.path}</span>
             </div>
-            <CopyButton branch={k.branch} />
+            <Actions row={k} onOpenFolder={onOpenFolder} onDiscard={onDiscard} />
           </li>
         ))}
         {stranded.map(s => (
           <li key={`stranded-${s.branch}`} className="lw-row">
             <div className="lw-main">
               <span className="lw-branch">{s.branch}</span>
-              <span className="lw-meta">{plural(s.ahead, 'commit', 'commits')} not merged</span>
+              <span className="lw-meta">
+                {s.discardFailed ? "Couldn't discard this branch" : `${plural(s.ahead, 'commit', 'commits')} not merged`}
+              </span>
             </div>
-            <CopyButton branch={s.branch} />
+            <Actions row={s} onOpenFolder={onOpenFolder} onDiscard={onDiscard} />
           </li>
         ))}
       </ul>

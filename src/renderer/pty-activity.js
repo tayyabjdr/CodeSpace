@@ -13,6 +13,14 @@ import { DONE_SILENCE_MS } from './constants.js'
 const tracked = new Map() // ptyId -> { lastOutputAt, quiet, timer, detach, ms }
 const listeners = new Set()
 const inputAt = new Map() // ptyId -> last time the user typed or dropped into it
+const redrawGraceUntil = new Map() // ptyId -> until when output is a focus redraw
+
+// xterm sends ESC[I / ESC[O when a pane gains or loses focus, because Claude
+// turns on focus events (mode 1004). Claude answers by redrawing. That is not
+// work, so a quiet pane stays quiet through it: otherwise clicking away and
+// back would make Finish wait another 4000ms for nothing.
+const FOCUS_REPORT = /^(\x1b\[[IO])+$/
+export const FOCUS_REDRAW_GRACE_MS = 1000
 
 function notify() {
   for (const cb of listeners) cb()
@@ -43,6 +51,7 @@ export function track(ptyId, ms = DONE_SILENCE_MS) {
   state.detach = ptyPool.attach(ptyId, {
     onData: () => {
       if (replaying) return
+      if (state.quiet && Date.now() < (redrawGraceUntil.get(ptyId) ?? 0)) return
       state.lastOutputAt = Date.now()
       armQuietTimer(state)
       if (state.quiet) { state.quiet = false; notify() }
@@ -59,6 +68,7 @@ export function untrack(ptyId) {
   state.detach?.()
   tracked.delete(ptyId)
   inputAt.delete(ptyId)
+  redrawGraceUntil.delete(ptyId)
   notify()
 }
 
@@ -73,6 +83,17 @@ export function syncTracked(ptyIds) {
 // input counts even before output tracking has started.
 export function noteInput(ptyId) {
   if (ptyId) inputAt.set(ptyId, Date.now())
+}
+
+// Every write to a PTY. A focus report is the terminal talking, not the user:
+// it opens the redraw grace and does not count as input.
+export function noteWrite(ptyId, data) {
+  if (!ptyId) return
+  if (typeof data === 'string' && FOCUS_REPORT.test(data)) {
+    redrawGraceUntil.set(ptyId, Date.now() + FOCUS_REDRAW_GRACE_MS)
+    return
+  }
+  noteInput(ptyId)
 }
 
 export function lastInputAt(ptyId) {
@@ -96,5 +117,6 @@ export function useQuiet(ptyId, ms = DONE_SILENCE_MS) {
 export function _resetForTests() {
   for (const id of [...tracked.keys()]) untrack(id)
   inputAt.clear()
+  redrawGraceUntil.clear()
   listeners.clear()
 }

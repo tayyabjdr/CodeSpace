@@ -83,6 +83,7 @@ export default function WorkspaceRow({
       data-sb-id={ws.id}
       className={`sb-item${isActive ? ' active' : ''}${isDraft ? ' draft' : ''}`}
       onClick={() => onSelect(ws.id)}
+      onDoubleClick={startEdit}
     >
       {hasSessions ? (
         <button
@@ -91,6 +92,7 @@ export default function WorkspaceRow({
           tabIndex={-1}
           aria-label={isExpanded ? 'Collapse sessions' : 'Expand sessions'}
           onClick={(e) => { e.stopPropagation(); onToggleExpand(ws.id) }}
+          onDoubleClick={(e) => e.stopPropagation()}
         >
           <ChevronGlyph open={isExpanded} />
         </button>
@@ -115,28 +117,15 @@ export default function WorkspaceRow({
             aria-label="Edit nickname"
           />
         ) : ws.nickname ? (
-          <span
-            className="sb-item-nickname"
-            title={ws.nickname}
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={startEdit}
-          >
+          <span className="sb-item-nickname" title={ws.nickname}>
             {ws.nickname}
           </span>
-        ) : (
-          <span
-            className="sb-item-nickname-hint"
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={startEdit}
-          >
-            add nickname
-          </span>
-        )}
+        ) : null}
       </div>
 
-      {/* Delete stays a sibling of .sb-item-status, as today: it is
-          position:absolute against .sb-item and must not inherit the
-          status row's flex gap. */}
+      {/* The count and the delete button share one fixed slot, centred on the
+          same point, so the x lands exactly where the number was. Delete is
+          absolute inside the slot, so the status row's flex gap never moves it. */}
       <span className="sb-item-status">
         {showDoneDot && !isExpanded && (
           <span className="sb-item-dot" title="An agent finished" aria-hidden />
@@ -154,24 +143,27 @@ export default function WorkspaceRow({
               ? "Isolated agents. Close this workspace's agents to turn off."
               : 'Isolated agents. Click to turn off.'}
             onClick={(e) => { e.stopPropagation(); onToggleIsolated?.(ws.id, false) }}
+            onDoubleClick={(e) => e.stopPropagation()}
           >
             <IsolatedGlyph />
           </button>
         )}
-        <span className="sb-item-count" aria-hidden>{isDraft ? '✦' : count}</span>
+        <span className="sb-item-slot">
+          <span className="sb-item-count" aria-hidden>{isDraft ? '✦' : count}</span>
+          <button
+            className="sb-item-delete"
+            title="Delete workspace"
+            tabIndex={-1}
+            onClick={(e) => { e.stopPropagation(); onDelete(ws.id) }}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
+              <line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+            </svg>
+          </button>
+        </span>
       </span>
-
-      <button
-        className="sb-item-delete"
-        title="Delete workspace"
-        tabIndex={-1}
-        onClick={(e) => { e.stopPropagation(); onDelete(ws.id) }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
-          <line x1="6" y1="6" x2="18" y2="18" />
-          <line x1="18" y1="6" x2="6" y2="18" />
-        </svg>
-      </button>
     </div>
   )
 }

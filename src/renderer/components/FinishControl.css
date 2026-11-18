@@ -46,29 +46,34 @@
 
 .fc-finish {
   flex: 0 0 auto;
-  height: 14px;
-  padding: 0 5px;
+  align-self: stretch;          /* full height of the band */
+  padding: 0 10px;
   border: 0;
-  border-radius: 3px;
-  background: transparent;
+  border-radius: 0;
+  /* Ready to click: green, the app's "done" colour. Disabled goes grey. */
+  background: color-mix(in srgb, var(--cs-green) 16%, transparent);
   font-family: var(--cs-font-ui);
   font-size: 10.5px;
-  line-height: 14px;
-  color: var(--cs-text-secondary);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--cs-green);
   cursor: pointer;
   -webkit-app-region: no-drag;
   transition: background var(--cs-transition), color var(--cs-transition);
 }
 .fc-finish:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--cs-text-primary);
+  background: color-mix(in srgb, var(--cs-green) 26%, transparent);
+}
+.fc-finish:active:not(:disabled) {
+  background: color-mix(in srgb, var(--cs-green) 34%, transparent);
 }
 .fc-finish:focus-visible {
   outline: 1px solid var(--cs-text-tertiary);
-  outline-offset: 0;
+  outline-offset: -1px;
 }
 .fc-finish:disabled {
-  opacity: 0.35;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--cs-text-muted);
   cursor: default;
 }
 

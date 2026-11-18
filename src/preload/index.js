@@ -113,6 +113,8 @@ const api = {
     checkDirty:     (args) => ipcRenderer.invoke('worktree:checkDirty', args),
     wipeAll:        (args) => ipcRenderer.invoke('worktree:wipeAll', args),
     repairOrphans:  (args) => ipcRenderer.invoke('worktree:repairOrphans', args),
+    discard:        (args) => ipcRenderer.invoke('worktree:discard', args),
+    openFolder:     (args) => ipcRenderer.invoke('worktree:openFolder', args),
   },
 
   merge: {

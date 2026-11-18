@@ -122,3 +122,27 @@ export function killAllSessions() {
     killSession(id)
   }
 }
+
+// Kill every session and resolve once they have all exited (or timeoutMs
+// passed), plus a short settle for conpty to let go of each folder. Kills are
+// staggered: many conpty kills at once can seg-fault main on Windows. Used
+// when the window reloads, so the new page's cleanup can delete agent folders
+// these processes would otherwise still be sitting in.
+export function killAllAndWait({ staggerMs = 80, timeoutMs = 3000, settleMs = 300 } = {}) {
+  const ids = Array.from(sessions.keys())
+  if (ids.length === 0) return Promise.resolve(0)
+  const exits = ids.map((id, i) => new Promise((resolve) => {
+    const proc = sessions.get(id)
+    if (!proc || proc._exited) { sessions.delete(id); resolve(); return }
+    try { proc.onExit(() => resolve()) } catch { resolve() }
+    setTimeout(() => {
+      killSession(id)
+      // A proc that throws on kill may never report an exit; the timeout covers it.
+    }, i * staggerMs)
+  }))
+  let timer
+  const timeout = new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs + ids.length * staggerMs) })
+  return Promise.race([Promise.all(exits), timeout])
+    .then(() => { clearTimeout(timer); return new Promise(r => setTimeout(r, settleMs)) })
+    .then(() => ids.length)
+}

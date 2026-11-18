@@ -129,6 +129,63 @@ describe('FinishControl', () => {
     expect(merge.finish).toHaveBeenCalledWith({ repoDir: props.repoDir, agentId: 'a1', agentName: 'Agent 01' })
   })
 
+  it('a click still lands when pressing Finish makes the pane print', async () => {
+    const { container } = await renderQuiet()
+    const btn = finishBtn(container)
+    const down = fireEvent.mouseDown(btn)
+    expect(down).toBe(false) // default prevented: terminal keeps focus
+    act(() => { dataListeners.get('p1')('focus redraw') })
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(btn)
+    await flush()
+    expect(merge.finish).toHaveBeenCalledTimes(1)
+  })
+
+  it('stays ready through the redraw after the pane gains or loses focus', async () => {
+    const { container } = await renderQuiet()
+    const btn = finishBtn(container)
+    act(() => { activity.noteWrite('p1', '\x1b[O') })
+    act(() => { dataListeners.get('p1')('redraw') })
+    expect(btn.disabled).toBe(false)
+    act(() => { vi.advanceTimersByTime(300) })
+    act(() => { activity.noteWrite('p1', '\x1b[I') })
+    act(() => { dataListeners.get('p1')('redraw') })
+    expect(btn.disabled).toBe(false)
+    // A focus report is not the user typing.
+    expect(activity.lastInputAt('p1')).toBeNull()
+
+    // Past the grace, output is real work again.
+    act(() => { vi.advanceTimersByTime(1000) })
+    act(() => { dataListeners.get('p1')('working...') })
+    expect(btn.disabled).toBe(true)
+  })
+
+  it('real typing still counts as input and output after it still busies the pane', async () => {
+    const { container } = await renderQuiet()
+    act(() => { activity.noteWrite('p1', 'hello') })
+    expect(activity.lastInputAt('p1')).not.toBeNull()
+    act(() => { dataListeners.get('p1')('echo') })
+    expect(finishBtn(container).disabled).toBe(true)
+  })
+
+  it('a press while busy does not arm Finish, and leaving the button disarms it', async () => {
+    const { container } = await renderQuiet()
+    const btn = finishBtn(container)
+    act(() => { dataListeners.get('p1')('working...') })
+    fireEvent.mouseDown(btn)
+    expect(btn.disabled).toBe(true)
+
+    act(() => { vi.advanceTimersByTime(4000) })
+    await flush()
+    fireEvent.mouseDown(btn)
+    act(() => { dataListeners.get('p1')('more') })
+    fireEvent.mouseLeave(btn)
+    expect(btn.disabled).toBe(true)
+    fireEvent.click(btn)
+    await flush()
+    expect(merge.finish).not.toHaveBeenCalled()
+  })
+
   it('calls merge.info when the pane goes quiet and after each status change, without polling', async () => {
     render(<FinishControl {...props} />)
     await flush()

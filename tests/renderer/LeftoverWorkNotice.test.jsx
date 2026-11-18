@@ -68,4 +68,23 @@ describe('LeftoverWorkNotice', () => {
     const { container } = render(<LeftoverWorkNotice kept={kept} stranded={stranded} onDismiss={() => {}} />)
     expect(container.textContent).not.toContain('\u2014')
   })
+
+  it('offers Open folder on kept rows only, and Discard on every row', () => {
+    const onOpenFolder = vi.fn()
+    const onDiscard = vi.fn()
+    render(<LeftoverWorkNotice kept={kept} stranded={stranded} onDismiss={() => {}} onOpenFolder={onOpenFolder} onDiscard={onDiscard} />)
+    const opens = screen.getAllByText('Open folder')
+    expect(opens).toHaveLength(2)
+    expect(screen.getAllByText('Discard')).toHaveLength(4)
+    fireEvent.click(opens[0])
+    expect(onOpenFolder).toHaveBeenCalledWith(kept[0])
+    fireEvent.click(screen.getAllByText('Discard')[2])
+    expect(onDiscard).toHaveBeenCalledWith(stranded[0])
+  })
+
+  it('says when a discard failed', () => {
+    render(<LeftoverWorkNotice kept={[{ ...kept[0], discardFailed: true }]} stranded={[{ ...stranded[0], discardFailed: true }]} onDismiss={() => {}} onDiscard={() => {}} />)
+    expect(screen.getByText(/Couldn't discard. Close anything using it/)).toBeTruthy()
+    expect(screen.getByText("Couldn't discard this branch")).toBeTruthy()
+  })
 })

@@ -20,7 +20,8 @@ vi.mock('../src/main/pty-manager.js', () => ({
   createSession: vi.fn(),
   writeSession: vi.fn(),
   resizeSession: vi.fn(),
-  killSession: vi.fn()
+  killSession: vi.fn(),
+  killAllAndWait: vi.fn(async () => 0)
 }))
 
 vi.mock('../src/main/worktree-manager.js', () => ({
@@ -31,7 +32,10 @@ vi.mock('../src/main/worktree-manager.js', () => ({
   closeAllForWorkspace: vi.fn(async () => {}),
   checkDirty:     vi.fn(async () => ({ dirty: false })),
   canIsolate:     vi.fn(() => ({ ok: true, reason: null })),
-  wipeAll:        vi.fn(async () => ({ kept: [], stranded: [{ branch: 'cs/x/1', ahead: 2 }] }))
+  wipeAll:        vi.fn(async () => ({ kept: [], stranded: [{ branch: 'cs/x/1', ahead: 2 }] })),
+  discard:        vi.fn(async () => ({ ok: true })),
+  readMeta:       vi.fn(() => ({ agents: {} })),
+  entryWorktreePath: vi.fn(() => 'C:/nowhere')
 }))
 
 // The queue itself is tested in merge-queue.test.js; here only the wiring.
@@ -48,7 +52,7 @@ vi.mock('../src/main/merge-queue.js', () => ({
 vi.mock('../src/main/check-runner.js', () => ({ runCheck: vi.fn(), runInstall: vi.fn() }))
 
 import { ipcMain } from 'electron'
-import { createSession, writeSession, resizeSession, killSession } from '../src/main/pty-manager.js'
+import { createSession, writeSession, resizeSession, killSession, killAllAndWait } from '../src/main/pty-manager.js'
 import { registerHandlers } from '../src/main/ipc-handlers.js'
 import * as editorFs from '../src/main/editor-fs.js'
 import * as wt from '../src/main/worktree-manager.js'
@@ -272,6 +276,47 @@ describe('ipc-handlers / worktree', () => {
     expect(await fn({}, 'C:/repo')).toEqual({ ok: true, reason: null })
     expect(wt.canIsolate).toHaveBeenCalledWith('C:/repo')
     expect(await fn({}, 'rel')).toEqual({ ok: false, reason: 'not-a-repo' })
+  })
+
+  it('a reload kills the old PTYs and folder cleanup waits for that', async () => {
+    registerHandlers(mockWindow)
+    const nav = mockWindow.webContents.on.mock.calls.find(c => c[0] === 'did-start-navigation')[1]
+    let finishKill
+    killAllAndWait.mockImplementationOnce(() => new Promise(r => { finishKill = r }))
+
+    nav({}, 'http://x/', true, true) // in-place (hash change): nothing
+    nav({}, 'http://x/', false, false) // subframe: nothing
+    expect(killAllAndWait).not.toHaveBeenCalled()
+
+    nav({}, 'http://x/', false, true)
+    expect(killAllAndWait).toHaveBeenCalledTimes(1)
+
+    const wipe = getHandler('handle', 'worktree:wipeAll')({}, { repoDir: 'C:/repo', liveAgentIds: [] })
+    await Promise.resolve(); await Promise.resolve()
+    expect(wt.wipeAll).not.toHaveBeenCalled()
+    finishKill(2)
+    await wipe
+    expect(wt.wipeAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('worktree:discard validates and forwards an agent or a branch', async () => {
+    registerHandlers(mockWindow)
+    const fn = getHandler('handle', 'worktree:discard')
+    expect(await fn({}, { repoDir: 'rel', agentId: 'a' })).toEqual({ error: 'invalid-args' })
+    expect(await fn({}, { repoDir: 'C:/repo' })).toEqual({ error: 'invalid-args' })
+    expect(await fn({}, { repoDir: 'C:/repo', agentId: 5 })).toEqual({ error: 'invalid-args' })
+
+    expect(await fn({}, { repoDir: 'C:/repo', agentId: 'a1', branch: 'cs/x/1', liveAgentIds: ['b', 7] })).toEqual({ ok: true })
+    expect(wt.discard).toHaveBeenLastCalledWith({ repoDir: 'C:/repo', agentId: 'a1', branch: undefined, liveAgentIds: ['b'] })
+    await fn({}, { repoDir: 'C:/repo', branch: 'cs/x/1' })
+    expect(wt.discard).toHaveBeenLastCalledWith({ repoDir: 'C:/repo', agentId: undefined, branch: 'cs/x/1', liveAgentIds: [] })
+  })
+
+  it('worktree:openFolder only opens a folder from the agent list', async () => {
+    registerHandlers(mockWindow)
+    const fn = getHandler('handle', 'worktree:openFolder')
+    expect(await fn({}, { repoDir: 'C:/repo', agentId: 'unknown' })).toEqual({ error: 'missing' })
+    expect(await fn({}, { repoDir: 'C:/repo', path: 'C:/Windows' })).toEqual({ error: 'invalid-args' })
   })
 
   it('worktree:wipeAll returns kept and stranded and forwards liveAgentIds', async () => {

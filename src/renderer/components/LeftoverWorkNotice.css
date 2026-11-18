@@ -107,6 +107,16 @@
   border-color: var(--cs-border-hover);
   color: var(--cs-text-primary);
 }
+.lw-actions {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 6px;
+}
+.lw-discard:hover {
+  background: var(--cs-red-hover-bg);
+  border-color: transparent;
+  color: var(--cs-red-hover-fg);
+}
 .lw-copy:focus-visible,
 .lw-x:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: -2px; }
 

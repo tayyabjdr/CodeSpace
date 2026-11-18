@@ -318,7 +318,7 @@ export default function TerminalPane({ id, ptyId, shell, cwd, workspaceDir, agen
           {port && (
             // The PORT this agent's dev servers should use, so isolated
             // agents running the same app don't fight over one port.
-            <span className="tp-port" title={`This agent's PORT is ${port}`}>port {port}</span>
+            <span className="tp-port" title={`This agent's PORT is ${port}`}>PORT {port}</span>
           )}
         </div>
       )}

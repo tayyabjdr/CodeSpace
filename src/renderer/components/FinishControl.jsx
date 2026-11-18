@@ -66,7 +66,13 @@ function FinishControlInner({ api, agentId, ptyId, repoDir, agentName }) {
   const running = state === 'queued' || state === 'testing'
   const target = info?.target ?? status?.target ?? null
   const nothingToMerge = !info || (info.ahead === 0 && !info.dirty)
-  const disabled = submitting || running || !quiet || nothingToMerge || !target
+  const blocked = submitting || running || nothingToMerge || !target
+  // Set on mousedown when the pane was quiet at that moment. Pressing the
+  // button can make the pane print (the terminal losing focus, a redraw), and
+  // a button that turns disabled between mousedown and mouseup swallows the
+  // click. So quiet is judged at the press, not at the release.
+  const [pressedQuiet, setPressedQuiet] = useState(false)
+  const disabled = blocked || (!quiet && !pressedQuiet)
 
   const counts = countsLabel(info)
   const lockNote = state === 'merged' && status.lockfileChanged
@@ -75,9 +81,18 @@ function FinishControlInner({ api, agentId, ptyId, repoDir, agentName }) {
   if (!target) finishTitle = info ? 'The main folder is on a detached HEAD' : 'Checking this branch'
   else finishTitle = `Test and merge into ${target}`
 
+  const onMouseDown = (e) => {
+    // Keep focus in the terminal, so pressing Finish doesn't send it a
+    // focus-out the agent answers by printing.
+    e.preventDefault()
+    if (e.button === 0 && !blocked && quiet) setPressedQuiet(true)
+  }
+
   const onFinish = (e) => {
     e.stopPropagation()
-    if (disabled) return
+    const ok = !blocked && (quiet || pressedQuiet)
+    setPressedQuiet(false)
+    if (!ok) return
     setSubmitting(true)
     Promise.resolve(api.finish({ repoDir, agentId, agentName }))
       .catch(() => {})
@@ -113,12 +128,13 @@ function FinishControlInner({ api, agentId, ptyId, repoDir, agentName }) {
           </span>
         </>
       )}
-      <span className="fc-sep" aria-hidden>·</span>
       <button
         type="button"
         className="fc-finish"
         disabled={disabled}
         title={finishTitle}
+        onMouseDown={onMouseDown}
+        onMouseLeave={() => setPressedQuiet(false)}
         onClick={onFinish}
       >
         Finish

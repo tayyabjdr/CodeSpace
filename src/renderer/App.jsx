@@ -321,7 +321,7 @@ function AppInner() {
       lastOutputAt: ptyActivity.lastOutputAt,
       lastInputAt: ptyActivity.lastInputAt
     })
-    const offWrites = ptyPool.onWrite((ptyId) => ptyActivity.noteInput(ptyId))
+    const offWrites = ptyPool.onWrite((ptyId, data) => ptyActivity.noteWrite(ptyId, data))
     return () => { offWrites(); offHandoffs(); offStatus() }
   }, [])
 
@@ -714,6 +714,7 @@ function AppInner() {
   const [dismissedNotices, setDismissedNotices] = useState(() => new Set())
   // repoDir -> { kept, stranded } from the start-of-session wipe; session-only.
   const [leftovers, setLeftovers] = useState({})
+  const [pendingDiscard, setPendingDiscard] = useState(null) // { dir, row }
   const isoProbe = (() => {
     const w = workspaces.find(x => x.id === activeId)
     return w && !w.unconfigured && !w.isolated && w.dir ? { id: w.id, dir: w.dir } : null
@@ -1168,6 +1169,55 @@ function AppInner() {
     if (!dir) return
     setLeftovers(prev => { const next = { ...prev }; delete next[dir]; return next })
   }
+  const openLeftoverFolder = (row) => {
+    const dir = activeWorkspace?.dir
+    if (!dir || !row?.agentId) return
+    window.electronAPI.worktree.openFolder({ repoDir: dir, agentId: row.agentId })
+      .catch(() => ({ error: 'unknown' }))
+      .then(res => {
+        if (res?.error !== 'missing') return
+        // The folder is gone already: say so instead of doing nothing.
+        setLeftovers(prev => {
+          const cur = prev[dir]
+          if (!cur) return prev
+          const mark = (list) => (list ?? []).map(r => (r.agentId === row.agentId ? { ...r, folderGone: true } : r))
+          return { ...prev, [dir]: { kept: mark(cur.kept), stranded: mark(cur.stranded) } }
+        })
+      })
+  }
+  const askDiscardLeftover = (row) => {
+    const dir = activeWorkspace?.dir
+    if (dir && row) setPendingDiscard({ dir, row })
+  }
+  const confirmDiscardLeftover = async () => {
+    const pending = pendingDiscard
+    setPendingDiscard(null)
+    if (!pending) return
+    const { dir, row } = pending
+    let res
+    try {
+      res = await window.electronAPI.worktree.discard({
+        repoDir: dir,
+        agentId: row.agentId,
+        branch: row.branch,
+        liveAgentIds: liveAgentIdsFor(workspaces, dir)
+      })
+    } catch { res = { ok: false } }
+    setLeftovers(prev => {
+      const cur = prev[dir]
+      if (!cur) return prev
+      const same = (r) => (row.agentId ? r.agentId === row.agentId : (!r.agentId && r.branch === row.branch))
+      const update = (list) => res?.ok
+        ? list.filter(r => !same(r))
+        : list.map(r => (same(r) ? { ...r, discardFailed: true } : r))
+      const kept = update(cur.kept ?? [])
+      const stranded = update(cur.stranded ?? [])
+      const next = { ...prev }
+      if (kept.length || stranded.length) next[dir] = { kept, stranded }
+      else delete next[dir]
+      return next
+    })
+  }
   const cols = anyFullscreen ? 1 : (
     n <= 1 ? 1 :
     n === 2 ? 2 :
@@ -1223,6 +1273,8 @@ function AppInner() {
                 kept={leftover.kept}
                 stranded={leftover.stranded}
                 onDismiss={dismissLeftover}
+                onOpenFolder={openLeftoverFolder}
+                onDiscard={askDiscardLeftover}
               />
             )}
             {noticeShown && (
@@ -1380,6 +1432,27 @@ function AppInner() {
       )}
 
       <LeftoverFoldersDialog folders={leftoverFolders} onClose={() => setLeftoverFolders(null)} />
+
+      {pendingDiscard && (
+        <ConfirmDialog
+          title="Discard this work?"
+          message={pendingDiscard.row.agentId ? (
+            <>
+              This deletes the agent folder <code>{pendingDiscard.row.path}</code>, any uncommitted changes in it, and the branch <code>{pendingDiscard.row.branch}</code> with its commits. It can't be undone.
+            </>
+          ) : (
+            <>
+              This deletes the branch <code>{pendingDiscard.row.branch}</code> and its {pendingDiscard.row.ahead === 1 ? 'commit' : `${pendingDiscard.row.ahead} commits`}, which never reached the main branch. It can't be undone.
+            </>
+          )}
+          confirmLabel="Discard"
+          cancelLabel="Cancel"
+          destructive
+          initialFocus="cancel"
+          onConfirm={confirmDiscardLeftover}
+          onCancel={() => setPendingDiscard(null)}
+        />
+      )}
 
       {pendingWorktreeClose && (
         <ConfirmDialog

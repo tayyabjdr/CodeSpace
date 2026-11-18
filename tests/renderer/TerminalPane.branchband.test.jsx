@@ -58,7 +58,7 @@ describe('TerminalPane branch band', () => {
     const { container } = render(<TerminalPane {...props} branch="cs/a1f2" port={4101} />)
     const band = container.querySelector('.pane-subheader')
     expect(band.textContent).toContain('cs/a1f2')
-    expect(band.textContent).toContain('port 4101')
+    expect(band.textContent).toContain('PORT 4101')
   })
 
   it('band shows no port when the agent has none', () => {
