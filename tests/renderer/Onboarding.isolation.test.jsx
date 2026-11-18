@@ -15,7 +15,7 @@ function setup(dir = 'D:/repo') {
 const toggle = () => screen.getByRole('checkbox')
 
 async function launch() {
-  await userEvent.click(screen.getByRole('button', { name: 'Initialize' }))
+  await userEvent.click(screen.getByRole('button', { name: /^Launch/ }))
   await waitFor(() => {}, { timeout: 50 })
 }
 
@@ -48,7 +48,7 @@ describe('Onboarding isolation default', () => {
     await screen.findByText("This folder isn't a git repo, so agents will share it.")
     expect(toggle().checked).toBe(false)
     expect(toggle().disabled).toBe(true)
-    expect(screen.getByRole('button', { name: 'Initialize' }).disabled).toBe(false)
+    expect(screen.getByRole('button', { name: /^Launch/ }).disabled).toBe(false)
     await launch()
     await waitFor(() => expect(onLaunch).toHaveBeenCalled(), { timeout: 2000 })
     expect(onLaunch.mock.calls[0][3]).toBe(false)
@@ -71,7 +71,7 @@ describe('Onboarding isolation default', () => {
   it('shows no note while the check is pending, and launch stays usable', async () => {
     canIsolate.mockReturnValue(new Promise(() => {}))
     setup()
-    expect(screen.getByRole('button', { name: 'Initialize' }).disabled).toBe(false)
+    expect(screen.getByRole('button', { name: /^Launch/ }).disabled).toBe(false)
     expect(document.querySelector('.ob-isolation-note')).toBeNull()
     expect(toggle().checked).toBe(false)
   })

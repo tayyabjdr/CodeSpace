@@ -73,7 +73,7 @@
   align-items: stretch;
   gap: 32px;
   width: 100%;
-  max-width: 760px;
+  max-width: 800px;
   padding: 48px 40px;
   -webkit-app-region: no-drag;
 }
@@ -234,7 +234,7 @@
 .ob-dir-path {
   font-family: var(--cs-font-ui);
   font-size: 10px;
-  color: var(--cs-text-muted);
+  color: var(--cs-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -330,24 +330,136 @@
 }
 
 .ob-card.active .ob-preview-cell {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
-/* Stagger the cells in active state for a subtle layered feel */
-.ob-card.active .ob-preview-cell:nth-child(1) { animation: cellPulse 1.6s ease-in-out infinite; }
-.ob-card.active .ob-preview-cell:nth-child(2) { animation: cellPulse 1.6s ease-in-out infinite 0.08s; }
-.ob-card.active .ob-preview-cell:nth-child(3) { animation: cellPulse 1.6s ease-in-out infinite 0.16s; }
-.ob-card.active .ob-preview-cell:nth-child(4) { animation: cellPulse 1.6s ease-in-out infinite 0.24s; }
-.ob-card.active .ob-preview-cell:nth-child(5) { animation: cellPulse 1.6s ease-in-out infinite 0.32s; }
-.ob-card.active .ob-preview-cell:nth-child(6) { animation: cellPulse 1.6s ease-in-out infinite 0.4s; }
-.ob-card.active .ob-preview-cell:nth-child(7) { animation: cellPulse 1.6s ease-in-out infinite 0.48s; }
-.ob-card.active .ob-preview-cell:nth-child(8) { animation: cellPulse 1.6s ease-in-out infinite 0.56s; }
-
-@keyframes cellPulse {
-  0%, 100% { background: rgba(255, 255, 255, 0.18); }
-  50%      { background: rgba(255, 255, 255, 0.28); }
+/* Codex panes in the selected layout, so the mix is visible in the preview */
+.ob-card.active .ob-preview-cell.codex {
+  background: rgba(196, 181, 253, 0.2);
+  border-color: var(--cs-violet-border);
 }
+
+/* Pane count in the corner — the 5 to 8 layouts look alike without it */
+.ob-card-num {
+  position: absolute;
+  right: 5px;
+  bottom: 3px;
+  font-family: var(--cs-font-mono, var(--cs-font-ui));
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--cs-text-muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition: color var(--cs-transition);
+}
+
+.ob-card:hover .ob-card-num { color: var(--cs-text-tertiary); }
+.ob-card.active .ob-card-num { color: var(--cs-text-primary); }
+
+.ob-card { padding: 12px 14px 15px; }
+
+.ob-card:focus-visible {
+  outline: none;
+  border-color: var(--cs-border-focus);
+}
+
+/* Agent steppers */
+
+.ob-steppers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ob-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 10px;
+  background: hsl(0 0% 6%);
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 8px;
+  transition: border-color var(--cs-transition);
+}
+
+.ob-stepper-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--cs-text-tertiary);
+  flex-shrink: 0;
+  transition: color var(--cs-transition);
+}
+
+.ob-stepper.on .ob-stepper-logo { color: var(--cs-text-secondary); }
+.ob-stepper-codex.on .ob-stepper-logo { color: var(--cs-violet); }
+
+.ob-stepper-name {
+  flex: 1;
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--cs-text-tertiary);
+  transition: color var(--cs-transition);
+}
+
+.ob-stepper.on .ob-stepper-name { color: var(--cs-text-primary); }
+
+.ob-stepper-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ob-stepper-ctl button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cs-text-secondary);
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+
+.ob-stepper-ctl button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--cs-text-primary);
+}
+
+.ob-stepper-ctl button:focus-visible {
+  outline: none;
+  border-color: var(--cs-border-focus);
+}
+
+.ob-stepper-ctl button:disabled {
+  color: var(--cs-text-dim);
+  cursor: default;
+}
+
+.ob-stepper-value {
+  min-width: 22px;
+  text-align: center;
+  font-family: var(--cs-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cs-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ob-stepper:not(.on) .ob-stepper-value { color: var(--cs-text-tertiary); }
 
 /* Footer */
 
@@ -360,31 +472,48 @@
   animation-delay: 200ms;
 }
 
+/* Primary action: the one solid light element on the screen */
 .ob-launch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 200px;
   font-family: var(--cs-font-ui);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 10px 42px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: var(--cs-text-primary);
-  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 26px;
+  background: var(--cs-icon-primary);
+  border: 1px solid transparent;
+  color: var(--cs-bg-base);
+  border-radius: 999px;
   cursor: pointer;
+  box-shadow: 0 8px 28px rgba(255, 255, 255, 0.08);
   transition:
     background var(--cs-transition),
-    border-color var(--cs-transition),
+    box-shadow var(--cs-transition),
     transform 0.18s ease;
 }
 
+.ob-launch svg { transition: transform 0.2s ease; }
+
 .ob-launch:hover:not(:disabled) {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.22);
+  background: #ffffff;
+  box-shadow: 0 10px 32px rgba(255, 255, 255, 0.14);
   transform: translateY(-1px);
+}
+
+.ob-launch:hover:not(:disabled) svg { transform: translateX(2px); }
+
+.ob-launch:focus-visible {
+  outline: 2px solid var(--cs-border-focus);
+  outline-offset: 3px;
 }
 
 .ob-launch:disabled {
   opacity: 0.35;
   cursor: default;
+  box-shadow: none;
 }
 
 /* === Launching / boot animation === */
@@ -419,25 +548,10 @@
 .ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(7) { animation-delay: 360ms !important; }
 .ob-shell.ob-launching .ob-card.active .ob-preview-cell:nth-child(8) { animation-delay: 420ms !important; }
 
-/* Button takes on a moving sheen during launch */
 .ob-shell.ob-launching .ob-launch {
-  background: linear-gradient(
-    100deg,
-    rgba(255,255,255,0.06) 0%,
-    rgba(255, 255, 255, 0.14) 50%,
-    rgba(255,255,255,0.06) 100%
-  );
-  background-size: 200% 100%;
-  animation: launchSheen 1.4s ease-in-out infinite;
-  border-color: rgba(255, 255, 255, 0.22);
-  color: var(--cs-text-primary);
   cursor: progress;
   transform: none !important;
-}
-
-@keyframes launchSheen {
-  0%   { background-position: 200% 50%; }
-  100% { background-position: -100% 50%; }
+  opacity: 1;
 }
 
 .ob-launch-loading {
@@ -460,8 +574,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--cs-text-secondary);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.14);
+  background: currentColor;
   opacity: 0.35;
   animation: launchDot 0.95s ease-in-out infinite;
 }
@@ -485,15 +598,24 @@
 
 .ob-hint {
   font-family: var(--cs-font-ui);
-  font-size: 10.5px;
-  color: var(--cs-text-dim);
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  color: var(--cs-text-tertiary);
+  letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.ob-hint .ob-dot { color: var(--cs-text-muted); }
+.ob-hint kbd {
+  font-family: var(--cs-font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--cs-border-mid);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--cs-text-secondary);
+}
 
 .ob-sep {
   display: inline-block;
@@ -503,7 +625,11 @@
   margin: 0 6px;
 }
 
-.ob-isolation { margin-top: 16px; }
+.ob-isolation {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--cs-border);
+}
 .ob-toggle {
   display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
 }
@@ -524,67 +650,23 @@
 .ob-toggle input:checked + .ob-toggle-track::after { transform: translateX(14px); background: var(--cs-text-secondary); }
 .ob-toggle-text { display: flex; flex-direction: column; gap: 2px; }
 .ob-toggle-title { font-size: 13px; color: var(--cs-text-primary, #e6e9ef); }
-.ob-toggle-help { font-size: 11.5px; color: var(--cs-text-dim, #8c93a0); line-height: 1.45; }
+.ob-toggle-help { font-size: 11.5px; color: var(--cs-text-tertiary); line-height: 1.45; }
 .ob-toggle-help code {
   font-family: var(--cs-font-ui);
   font-size: 11px; padding: 0 4px; border-radius: 3px;
   background: var(--cs-bg-elevated, #11151b); color: var(--cs-text-primary, #e6e9ef);
 }
-.ob-isolation-note {
-  margin: 8px 0 0; padding: 8px 10px; border-radius: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--cs-border, #2b3038);
-  color: var(--cs-text-dim, #8c93a0); font-size: 12px; line-height: 1.45;
-}
+/* Not available for this folder: the title dims, but the reason stays readable */
 .ob-toggle:has(input:disabled) { cursor: default; }
-.ob-toggle input:disabled ~ .ob-toggle-text { opacity: 0.55; }
-
-/* Onboarding split control */
-.ob-split {
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ob-split-title {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  font-size: 12px;
-  color: var(--cs-text-dim, rgba(255,255,255,0.6));
-  font-family: var(--cs-font-ui);
-}
-.ob-split-dot { opacity: 0.5; }
-.ob-split-bar {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.ob-split-seg {
-  padding: 8px 10px;
-  font: inherit;
-  font-size: 12.5px;
-  background: var(--cs-bg-elevated);
-  color: var(--cs-text-primary, rgba(255,255,255,0.88));
-  border: 1px solid var(--cs-border-hover);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
-}
-.ob-split-seg:hover:not(:disabled) {
-  background: rgba(255,255,255,0.04);
-}
-.ob-split-seg:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.ob-split-claude { color: var(--cs-text-secondary); }
-.ob-split-codex  { color: var(--cs-violet, #c4b5fd); }
+.ob-toggle input:disabled + .ob-toggle-track { opacity: 0.5; }
+.ob-isolation.unavailable .ob-toggle-title { color: var(--cs-text-tertiary); }
+.ob-isolation.unavailable .ob-isolation-note { color: var(--cs-text-secondary); }
+.ob-toggle:has(input:focus-visible) .ob-toggle-track { border-color: var(--cs-border-focus); }
 
 .ob-split-hint {
-  margin-top: 12px;
   font-size: 12px;
-  color: var(--cs-text-dim, rgba(255,255,255,0.55));
+  line-height: 1.5;
+  color: var(--cs-text-tertiary);
 }
 .ob-split-hint code {
   background: rgba(255,255,255,0.06);
@@ -592,36 +674,35 @@
   border-radius: 3px;
 }
 
-/* === Recent directories === */
 
-.ob-recent-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+/* === Recent directories — one row per folder === */
+
+.ob-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .ob-recent-card {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-align: left;
-  background: hsl(0 0% 6%);
-  border: 1px solid var(--cs-border-mid);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 8px;
-  padding: 8px 9px;
+  padding: 6px 8px;
   cursor: pointer;
   min-width: 0;
   transition:
     background var(--cs-transition),
-    border-color var(--cs-transition),
-    transform 0.18s ease;
+    border-color var(--cs-transition);
 }
 
 .ob-recent-card:hover {
-  background: hsl(0 0% 8%);
-  border-color: var(--cs-border-hover);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.035);
+  border-color: var(--cs-border);
 }
 
 .ob-recent-card:focus-visible {
@@ -629,10 +710,10 @@
   border-color: var(--cs-border-focus);
 }
 
-/* Active = the card whose path matches the selected project directory. */
+/* Active = the row whose path matches the selected project folder. */
 .ob-recent-card.active {
-  background: hsl(0 0% 8%);
-  border-color: var(--cs-text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--cs-border-hover);
 }
 
 .ob-recent-folder {
@@ -644,21 +725,20 @@
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  color: var(--cs-text-secondary);
+  color: var(--cs-text-tertiary);
   flex-shrink: 0;
+  transition: color var(--cs-transition);
 }
 
-.ob-recent-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 1px;
-}
+.ob-recent-card:hover .ob-recent-folder,
+.ob-recent-card.active .ob-recent-folder { color: var(--cs-text-secondary); }
 
 .ob-recent-name {
+  flex: 0 1 auto;
+  max-width: 55%;
+  min-width: 0;
   font-family: var(--cs-font-ui);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--cs-text-secondary);
   white-space: nowrap;
@@ -666,10 +746,16 @@
   text-overflow: ellipsis;
 }
 
+.ob-recent-card.active .ob-recent-name { color: var(--cs-text-primary); }
+
+/* Parent folder, right after the name (shortened from the middle in JS). */
 .ob-recent-path {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-right: 24px;
   font-family: var(--cs-font-ui);
-  font-size: 9px;
-  color: var(--cs-text-muted);
+  font-size: 11px;
+  color: var(--cs-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -677,13 +763,14 @@
 
 .ob-recent-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: none;
   border-radius: 5px;
@@ -706,3 +793,7 @@
   background: var(--cs-red-hover-bg);
   color: var(--cs-red-hover-fg);
 }
+
+/* The name auto-fills from the folder, so it sits last and lines up with the
+   bottom of the agents card. */
+.ob-name-field { margin-top: auto; }
