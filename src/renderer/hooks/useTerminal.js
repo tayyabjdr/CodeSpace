@@ -8,7 +8,7 @@ import { FONT_RESIZE_DEBOUNCE_MS, PTY_RESIZE_DEBOUNCE_MS } from '../constants.js
 import { buildTerminalTheme } from '../terminal-theme.js'
 import { windowsPtyOption } from '../windows-pty.js'
 
-export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange, linkOpts, themeId) {
+export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange, linkOpts, themeId, port) {
   const [error, setError] = useState(null)
   const [exitCode, setExitCode] = useState(null)
   const ptyIdRef = useRef(ptyId)
@@ -177,7 +177,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
         if (!id) {
           // Spawn at the renderer's measured size so Claude's banner doesn't
           // wrap to 80 cols on first paint.
-          id = await ptyPool.createPty(shell, cwd, termId, term.cols, term.rows)
+          id = await ptyPool.createPty(shell, cwd, termId, term.cols, term.rows, port)
           ptyIdRef.current = id
           onPtyReadyRef.current?.(id)
         }

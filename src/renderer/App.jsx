@@ -4,12 +4,16 @@ import Toolbar from './components/Toolbar.jsx'
 import TerminalPane from './components/TerminalPane.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
+import LeftoverFoldersDialog from './components/LeftoverFoldersDialog.jsx'
 import CloseConfirm from './components/CloseConfirm.jsx'
 import EditorResizer from './components/EditorResizer.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
 import AgentTypePicker from './components/AgentTypePicker.jsx'
 import EmptyWorkspaceSetup from './components/EmptyWorkspaceSetup.jsx'
+import IsolationNotice from './components/IsolationNotice.jsx'
+import LeftoverWorkNotice from './components/LeftoverWorkNotice.jsx'
+import { isolationNotice, nextAgentCounter, mergeRetryFailures, closeFailureMessage, leftoverFromCloseAll } from './isolation-notice.js'
 import SkillsPanel from './components/SkillsPanel.jsx'
 import SkillsPanelResizer from './components/SkillsPanelResizer.jsx'
 import { loadPanelWidth, savePanelWidth, clampPanelWidth, SKILLS_PANEL_DEFAULT_PX } from './skills-state.js'
@@ -18,10 +22,13 @@ import { applyTheme, DEFAULT_THEME } from './theme.js'
 import * as ptyPool from './pty-pool.js'
 import * as doneTracker from './done-tracker.js'
 import * as autoNamer from './auto-namer.js'
+import * as ptyActivity from './pty-activity.js'
+import { startMergeStatus, onMergeEvent, forgetStatus } from './merge-status.js'
+import { startHandoffs } from './merge-handoff.js'
 import { defaultEditorState, mergeEditor, EDITOR_DEFAULT_FRAC } from './editor-state.js'
 import { checkOpenable } from './open-file.js'
 import { basename } from './path-resolver.js'
-import { focusSessionIn, withExpanded } from './workspace-ops.js'
+import { focusSessionIn, withExpanded, liveAgentIdsFor } from './workspace-ops.js'
 import { PERSIST_DEBOUNCE_MS, AGENT_TYPES } from './constants.js'
 import useCloseGuard from './hooks/useCloseGuard.js'
 import './design-tokens.css'
@@ -118,6 +125,7 @@ function AppInner() {
   // Dirty-close prompt for an isolated agent's worktree.
   // shape: { wsId, termId, branch, agentName }
   const [pendingWorktreeClose, setPendingWorktreeClose] = useState(null)
+  const [leftoverFolders, setLeftoverFolders] = useState(null) // [{ agentId, path, detail }] from a failed workspace cleanup
   // Dirty-prompt: triggered when the user opens another file / closes the
   // editor / switches workspace while the active editor has unsaved changes.
   // shape: { kind: 'open-file' | 'close-pane' | 'switch-workspace', payload }
@@ -132,36 +140,50 @@ function AppInner() {
   const [skillsPanelWidth, setSkillsPanelWidth] = useState(() => loadPanelWidth())
 
   const persistTimerRef = useRef(null)
+  // No save may fire after the app has unmounted.
+  useEffect(() => () => clearTimeout(persistTimerRef.current), [])
   const desktopPathRef = useRef('')
 
   const materializeAgents = useCallback(async (workspace, items, startNum) => {
     const agents = []
+    const failures = []
+    const warnings = []
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const id = makeId()
       let cwd = workspace.dir
       let branch = null
+      let port = null
       if (workspace.isolated) {
-        const r = await window.electronAPI.worktree.create({
-          repoDir: workspace.dir,
-          workspaceName: workspace.name,
-          agentId: id
-        })
-        if (r?.error) {
+        let r
+        try {
+          r = await window.electronAPI.worktree.create({
+            repoDir: workspace.dir,
+            workspaceName: workspace.name,
+            agentId: id
+          })
+        } catch (err) {
+          r = { error: 'unknown', detail: err?.message }
+        }
+        if (!r || r.error) {
           console.error('worktree.create failed', r)
+          // Never fall back to the shared folder: surface it and let the user retry.
+          failures.push({ item, error: r?.error ?? 'unknown', detail: r?.detail ?? r?.error ?? 'unknown error' })
           continue
         }
         cwd = r.path
         branch = r.branch
+        port = Number.isInteger(r.port) ? r.port : null
+        if (Array.isArray(r.warnings)) warnings.push(...r.warnings)
       }
       agents.push({
         id,
         shell: item.shell,
         agentNum: startNum + i,
-        cwd, ptyId: null, autoName: null, branch
+        cwd, ptyId: null, autoName: null, branch, port
       })
     }
-    return agents
+    return { agents, failures, warnings }
   }, [])
 
   // Load persisted workspaces + defaults on first mount.
@@ -181,6 +203,8 @@ function AppInner() {
         agentCounts: w.agentCounts ?? { claude: w.agentCount ?? 0, codex: 0 },
         nickname: w.nickname ?? null,
         terminals: [],          // session-only — lazy spawn
+        failures: [],           // session-only — failed worktree creates
+        warnings: [],           // session-only — worktree setup warnings
         agentCounter: 0,
         focusedTerminalId: null,
         fullscreenPaneId: null,
@@ -236,7 +260,13 @@ function AppInner() {
         workspaces: persistable.map(w => {
           const claude = w.terminals.filter(t => t.shell === 'claude').length
           const codex  = w.terminals.filter(t => t.shell === 'codex').length
-          const live = w.spawned ? { claude, codex } : (w.agentCounts ?? { claude: 0, codex: 0 })
+          const failed = w.failures ?? []
+          const live = w.spawned
+            ? {
+                claude: claude + failed.filter(f => f.item?.shell === 'claude').length,
+                codex: codex + failed.filter(f => f.item?.shell === 'codex').length
+              }
+            : (w.agentCounts ?? { claude: 0, codex: 0 })
           return {
             id: w.id, name: w.name, dir: w.dir,
             agentCounts: live,
@@ -267,7 +297,33 @@ function AppInner() {
     }
     doneTracker.syncTracked(map)
     autoNamer.syncTracked(map, pinned)
+    ptyActivity.syncTracked([...map.values()])
   }, [workspaces, loaded])
+
+  // agentId -> { ptyId, shell } for the failure handoff, across every
+  // workspace, so a hidden pane still hears about its failed Finish.
+  const agentsByIdRef = useRef(new Map())
+  useEffect(() => {
+    const next = new Map()
+    for (const w of workspaces) {
+      for (const t of (w.terminals ?? [])) next.set(t.id, { ptyId: t.ptyId, shell: t.shell })
+    }
+    for (const id of agentsByIdRef.current.keys()) if (!next.has(id)) forgetStatus(id)
+    agentsByIdRef.current = next
+  }, [workspaces])
+
+  // One merge-status subscription for the whole app; panes read from the store.
+  useEffect(() => {
+    const offStatus = startMergeStatus(window.electronAPI?.merge)
+    const offHandoffs = startHandoffs({
+      onMergeEvent,
+      resolveAgent: (agentId) => agentsByIdRef.current.get(agentId) ?? null,
+      lastOutputAt: ptyActivity.lastOutputAt,
+      lastInputAt: ptyActivity.lastInputAt
+    })
+    const offWrites = ptyPool.onWrite((ptyId, data) => ptyActivity.noteWrite(ptyId, data))
+    return () => { offWrites(); offHandoffs(); offStatus() }
+  }, [])
 
   useEffect(() => {
     return autoNamer.subscribe((termId, name) => {
@@ -333,26 +389,29 @@ function AppInner() {
         // Wipe them; branches with commits survive. Dirty worktrees (uncommitted
         // work, e.g. the user lost power last session) are preserved on disk
         // and surfaced here so the work isn't silently destroyed.
+        // Every workspace on this repo may already have live agents; never wipe those.
+        // Paths are compared normalised: D:/x and d:/x/ are one folder.
+        const liveAgentIds = liveAgentIdsFor(workspaces, w0.dir)
         try {
-          const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir })
-          if (r?.kept?.length) {
-            console.warn(
-              `[worktree] ${r.kept.length} worktree(s) from previous session had uncommitted changes and were preserved at:\n` +
-              r.kept.map(k => `  ${k.path}  (${k.branch})`).join('\n') +
-              `\nReview the changes there and either commit them on the branch or discard the directory.`
-            )
+          const r = await window.electronAPI.worktree.wipeAll({ repoDir: w0.dir, liveAgentIds })
+          const kept = Array.isArray(r?.kept) ? r.kept : []
+          const stranded = Array.isArray(r?.stranded) ? r.stranded : []
+          if (kept.length || stranded.length) {
+            setLeftovers(prev => ({ ...prev, [w0.dir]: { kept, stranded } }))
           }
         } catch {}
         if (cancelled) return
       }
       const items = countsToItems(w0.agentCounts)
-      const terminals = await materializeAgents(w0, items, 1)
+      const { agents: terminals, failures, warnings } = await materializeAgents(w0, items, 1)
       if (cancelled) return
       setWorkspaces(prev => prev.map(w => {
         if (w.id !== activeId || w.spawned) return w
         return {
           ...w,
           terminals,
+          failures,
+          warnings,
           agentCounter: items.length,
           spawned: true,
           focusedTerminalId: terminals[0]?.id ?? null
@@ -419,7 +478,7 @@ function AppInner() {
     if (!draft) return
     const provisional = { ...draft, name: resolvedName, dir, agentCounts: counts, isolated: !!isolated }
     const items = countsToItems(counts)
-    const terminals = await materializeAgents(provisional, items, 1)
+    const { agents: terminals, failures, warnings } = await materializeAgents(provisional, items, 1)
     setWorkspaces(prev => prev.map(w => {
       if (w.id !== activeId || !w.unconfigured) return w
       return {
@@ -429,6 +488,8 @@ function AppInner() {
         agentCounts: counts,
         isolated: !!isolated,
         terminals,
+        failures,
+        warnings,
         agentCounter: items.length,
         spawned: true,
         focusedTerminalId: terminals[0]?.id ?? null,
@@ -521,6 +582,7 @@ function AppInner() {
         const agentIds = (target.terminals ?? []).map(t => t.id)
         setTimeout(() => {
           window.electronAPI.worktree.closeAll({ repoDir: target.dir, agentIds })
+            .then(r => { const left = leftoverFromCloseAll(r); if (left.length) setLeftoverFolders(left) })
             .catch(err => console.error('worktree.closeAll failed', err))
         }, agentIds.length * 80 + 100)
       }
@@ -571,12 +633,14 @@ function AppInner() {
     if (!AGENT_TYPES.includes(shell)) return
     if (!availability[shell]) return
     const nextNum = w.agentCounter + 1
-    const [agent] = await materializeAgents(w, [{ shell }], nextNum)
-    if (!agent) return
+    const { agents: [agent], failures, warnings } = await materializeAgents(w, [{ shell }], nextNum)
+    if (!agent && failures.length === 0) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
       agentCounter: Math.max(x.agentCounter, nextNum),
-      terminals: [...x.terminals, agent]
+      terminals: agent ? [...x.terminals, agent] : x.terminals,
+      failures: [...(x.failures ?? []), ...failures],
+      warnings: [...(x.warnings ?? []), ...warnings]
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
 
@@ -593,14 +657,78 @@ function AppInner() {
     }
     if (items.length === 0) return
     const startNum = w.agentCounter + 1
-    const newAgents = await materializeAgents(w, items, startNum)
-    if (newAgents.length === 0) return
+    const { agents: newAgents, failures, warnings } = await materializeAgents(w, items, startNum)
+    if (newAgents.length === 0 && failures.length === 0) return
     setWorkspaces(prev => prev.map(x => x.id === activeId ? {
       ...x,
-      agentCounter: Math.max(x.agentCounter, startNum + newAgents.length - 1),
-      terminals: [...x.terminals, ...newAgents]
+      agentCounter: nextAgentCounter(x.agentCounter, startNum, items.length),
+      terminals: [...x.terminals, ...newAgents],
+      failures: [...(x.failures ?? []), ...failures],
+      warnings: [...(x.warnings ?? []), ...warnings]
     } : x))
   }, [activeId, workspaces, materializeAgents, availability])
+
+  // Switch a workspace between shared and separate folders. Only allowed with
+  // no live agents; it never spawns, agents added afterwards use the new mode.
+  const setWorkspaceIsolated = useCallback((wsId, isolated) => {
+    setWorkspaces(prev => prev.map(w => {
+      if (w.id !== wsId || w.unconfigured) return w
+      if ((w.terminals?.length ?? 0) > 0) return w
+      if (!!w.isolated === !!isolated) return w
+      return { ...w, isolated: !!isolated, failures: [], warnings: [] }
+    }))
+  }, [])
+
+  const retryingRef = useRef(new Set())
+  const [retryingId, setRetryingId] = useState(null)
+  // Retry only the failed items; successes join the same workspace.
+  const retryFailures = useCallback(async () => {
+    if (!activeId) return
+    const w = workspaces.find(x => x.id === activeId)
+    const failed = w?.failures ?? []
+    if (!w || failed.length === 0) return
+    if (retryingRef.current.has(activeId)) return
+    retryingRef.current.add(activeId)
+    setRetryingId(activeId)
+    const wsId = activeId
+    try {
+      const startNum = w.agentCounter + 1
+      const { agents, failures, warnings } = await materializeAgents(w, failed.map(f => f.item), startNum)
+      setWorkspaces(prev => prev.map(x => x.id === wsId ? {
+        ...x,
+        agentCounter: nextAgentCounter(x.agentCounter, startNum, failed.length),
+        terminals: [...x.terminals, ...agents],
+        failures: mergeRetryFailures(x.failures, failed, failures),
+        warnings: [...(x.warnings ?? []), ...warnings],
+        focusedTerminalId: x.focusedTerminalId ?? agents[0]?.id ?? null
+      } : x))
+    } finally {
+      retryingRef.current.delete(wsId)
+      setRetryingId(prev => (prev === wsId ? null : prev))
+    }
+  }, [activeId, workspaces, materializeAgents])
+
+  // Eligibility of the active workspace's folder, checked when its id/dir
+  // changes and only while it is not isolated. Never polled.
+  const [canIsoState, setCanIsoState] = useState(null) // { key, result }
+  const [dismissedNotices, setDismissedNotices] = useState(() => new Set())
+  // repoDir -> { kept, stranded } from the start-of-session wipe; session-only.
+  const [leftovers, setLeftovers] = useState({})
+  const [pendingDiscard, setPendingDiscard] = useState(null) // { dir, row }
+  const isoProbe = (() => {
+    const w = workspaces.find(x => x.id === activeId)
+    return w && !w.unconfigured && !w.isolated && w.dir ? { id: w.id, dir: w.dir } : null
+  })()
+  const isoProbeKey = isoProbe ? `${isoProbe.id}|${isoProbe.dir}` : null
+  useEffect(() => {
+    if (!isoProbe || !window.electronAPI?.worktree?.canIsolate) return
+    let cancelled = false
+    Promise.resolve(window.electronAPI.worktree.canIsolate(isoProbe.dir))
+      .then(result => { if (!cancelled && result) setCanIsoState({ key: isoProbeKey, result }) })
+      .catch(() => {})
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isoProbeKey])
 
   const openPicker = useCallback((anchor) => {
     if (!anchor) { setPickerState({ pos: null }); return }
@@ -687,6 +815,14 @@ function AppInner() {
     if (w.isolated) {
       // Fire-and-forget; main is single-writer and tolerates errors.
       window.electronAPI.worktree.close({ repoDir: w.dir, agentId: target.id })
+        .then(r => {
+          const msg = closeFailureMessage(r)
+          if (msg) {
+            // A new warning must be seen even if an earlier one was dismissed.
+            setDismissedNotices(prev => { const n = new Set(prev); n.delete(w.id); return n })
+            setWorkspaces(prev => prev.map(x => x.id === w.id ? { ...x, warnings: [...(x.warnings ?? []), msg] } : x))
+          }
+        })
         .catch(err => console.error('worktree.close failed', err))
     }
 
@@ -999,6 +1135,7 @@ function AppInner() {
             onConfirm={confirmClose}
           />
         )}
+        <LeftoverFoldersDialog folders={leftoverFolders} onClose={() => setLeftoverFolders(null)} />
       </>
     )
   }
@@ -1013,6 +1150,74 @@ function AppInner() {
   const fsEditor = fullscreenId === 'editor' && !!activeWorkspace?.editor?.open
   const anyFullscreen = !!fsTerminalId || fsEditor
   const n = terminals.length
+  const canIso = canIsoState && canIsoState.key === isoProbeKey ? canIsoState.result : null
+  const notice = activeWorkspace && !activeWorkspace.unconfigured
+    ? isolationNotice({
+        isolated: !!activeWorkspace.isolated,
+        canIso,
+        liveAgents: terminals.length,
+        failures: activeWorkspace.failures ?? [],
+        warnings: activeWorkspace.warnings ?? []
+      })
+    : { kind: null, actionEnabled: false }
+  const noticeShown = notice.kind && !anyFullscreen
+    && (notice.kind === 'spawn-failed' || !dismissedNotices.has(activeId))
+  const dismissNotice = () => setDismissedNotices(prev => new Set(prev).add(activeId))
+  const leftover = activeWorkspace && !anyFullscreen ? leftovers[activeWorkspace.dir] : null
+  const dismissLeftover = () => {
+    const dir = activeWorkspace?.dir
+    if (!dir) return
+    setLeftovers(prev => { const next = { ...prev }; delete next[dir]; return next })
+  }
+  const openLeftoverFolder = (row) => {
+    const dir = activeWorkspace?.dir
+    if (!dir || !row?.agentId) return
+    window.electronAPI.worktree.openFolder({ repoDir: dir, agentId: row.agentId })
+      .catch(() => ({ error: 'unknown' }))
+      .then(res => {
+        if (res?.error !== 'missing') return
+        // The folder is gone already: say so instead of doing nothing.
+        setLeftovers(prev => {
+          const cur = prev[dir]
+          if (!cur) return prev
+          const mark = (list) => (list ?? []).map(r => (r.agentId === row.agentId ? { ...r, folderGone: true } : r))
+          return { ...prev, [dir]: { kept: mark(cur.kept), stranded: mark(cur.stranded) } }
+        })
+      })
+  }
+  const askDiscardLeftover = (row) => {
+    const dir = activeWorkspace?.dir
+    if (dir && row) setPendingDiscard({ dir, row })
+  }
+  const confirmDiscardLeftover = async () => {
+    const pending = pendingDiscard
+    setPendingDiscard(null)
+    if (!pending) return
+    const { dir, row } = pending
+    let res
+    try {
+      res = await window.electronAPI.worktree.discard({
+        repoDir: dir,
+        agentId: row.agentId,
+        branch: row.branch,
+        liveAgentIds: liveAgentIdsFor(workspaces, dir)
+      })
+    } catch { res = { ok: false } }
+    setLeftovers(prev => {
+      const cur = prev[dir]
+      if (!cur) return prev
+      const same = (r) => (row.agentId ? r.agentId === row.agentId : (!r.agentId && r.branch === row.branch))
+      const update = (list) => res?.ok
+        ? list.filter(r => !same(r))
+        : list.map(r => (same(r) ? { ...r, discardFailed: true } : r))
+      const kept = update(cur.kept ?? [])
+      const stranded = update(cur.stranded ?? [])
+      const next = { ...prev }
+      if (kept.length || stranded.length) next[dir] = { kept, stranded }
+      else delete next[dir]
+      return next
+    })
+  }
   const cols = anyFullscreen ? 1 : (
     n <= 1 ? 1 :
     n === 2 ? 2 :
@@ -1048,6 +1253,7 @@ function AppInner() {
           onDelete={handleDeleteWorkspace}
           onOpenSettings={() => setSettingsOpen(true)}
           onRenameNickname={handleRenameNickname}
+          onToggleIsolated={setWorkspaceIsolated}
           skillsOpen={activePanel === 'skills'}
           onToggleSkills={() => handleSelectPanel('skills')}
         />
@@ -1061,6 +1267,29 @@ function AppInner() {
                 onNameChange={handleDraftNameChange}
               />
             ) : (
+            <div className="grid-col">
+            {leftover && (
+              <LeftoverWorkNotice
+                kept={leftover.kept}
+                stranded={leftover.stranded}
+                onDismiss={dismissLeftover}
+                onOpenFolder={openLeftoverFolder}
+                onDiscard={askDiscardLeftover}
+              />
+            )}
+            {noticeShown && (
+              <IsolationNotice
+                kind={notice.kind}
+                actionEnabled={notice.actionEnabled}
+                reason={canIso?.reason}
+                failures={activeWorkspace?.failures ?? []}
+                warnings={activeWorkspace?.warnings ?? []}
+                onSwitch={() => setWorkspaceIsolated(activeId, true)}
+                retrying={retryingId === activeId}
+                onRetry={retryFailures}
+                onDismiss={dismissNotice}
+              />
+            )}
             <div
               className="grid"
               style={{
@@ -1082,6 +1311,7 @@ function AppInner() {
                   name={t.name}
                   autoName={t.autoName}
                   branch={t.branch}
+                  port={t.port}
                   fontSize={activeWorkspace?.fontSize ?? 13}
                   onClose={removeTerminal}
                   onFocus={setFocusedId}
@@ -1098,6 +1328,7 @@ function AppInner() {
                   themeId={themeId}
                 />
               ))}
+            </div>
             </div>
             )}
           </div>
@@ -1185,6 +1416,11 @@ function AppInner() {
                 <> and discard your unsaved edits to <strong className="cd-emphasis">{basename(pendingDeleteWorkspace.editor.file)}</strong></>
               )}
               . You can't bring it back.
+              {pendingDeleteWorkspace.isolated && (
+                <span className="cd-note" style={{ display: 'block', marginTop: 8 }}>
+                  Agent folders with uncommitted changes are kept.
+                </span>
+              )}
             </>
           }
           confirmLabel="Delete"
@@ -1192,6 +1428,29 @@ function AppInner() {
           destructive
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
+        />
+      )}
+
+      <LeftoverFoldersDialog folders={leftoverFolders} onClose={() => setLeftoverFolders(null)} />
+
+      {pendingDiscard && (
+        <ConfirmDialog
+          title="Discard this work?"
+          message={pendingDiscard.row.agentId ? (
+            <>
+              This deletes the agent folder <code>{pendingDiscard.row.path}</code>, any uncommitted changes in it, and the branch <code>{pendingDiscard.row.branch}</code> with its commits. It can't be undone.
+            </>
+          ) : (
+            <>
+              This deletes the branch <code>{pendingDiscard.row.branch}</code> and its {pendingDiscard.row.ahead === 1 ? 'commit' : `${pendingDiscard.row.ahead} commits`}, which never reached the main branch. It can't be undone.
+            </>
+          )}
+          confirmLabel="Discard"
+          cancelLabel="Cancel"
+          destructive
+          initialFocus="cancel"
+          onConfirm={confirmDiscardLeftover}
+          onCancel={() => setPendingDiscard(null)}
         />
       )}
 

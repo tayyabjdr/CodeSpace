@@ -134,7 +134,8 @@
   align-items: center;
   padding: 0 0 0 10px;
   gap: 8px;
-  background: var(--cs-bg-elevated);
+  /* Same in every pane, focused or not. Focus shows on the border and label. */
+  background: rgba(255, 255, 255, 0.03);
   flex-shrink: 0;
   cursor: grab;
   transition: background var(--cs-transition);
@@ -142,10 +143,6 @@
 
 .pane-header:active {
   cursor: grabbing;
-}
-
-.pane.focused:not(.done) .pane-header {
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .status-dot {
@@ -371,6 +368,14 @@
 .tp-branch-icon { display: inline-flex; opacity: 0.85; flex: 0 0 auto; }
 .tp-branch-text {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.tp-port {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-family: var(--cs-font-mono);
+  font-size: 10px;
+  color: var(--cs-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Breadcrumb row directly below the title bar — a general breadcrumb band

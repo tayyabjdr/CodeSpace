@@ -61,7 +61,7 @@
   display: flex;              /* was: grid */
   align-items: flex-start;
   gap: 8px;                   /* was: 10px */
-  padding: 8px 10px;
+  padding: 8px 4px 8px 10px;  /* right 4px: the count/x slot centres under the header + */
   border-radius: 7px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -162,8 +162,7 @@
   min-width: 0;
 }
 
-.sb-item-nickname,
-.sb-item-nickname-hint {
+.sb-item-nickname {
   font-family: var(--cs-font-ui);
   font-size: 11.5px;
   font-weight: 400;
@@ -182,19 +181,6 @@
 .sb-item:hover .sb-item-nickname,
 .sb-item.active .sb-item-nickname {
   color: var(--cs-text-tertiary);
-}
-
-/* Empty-state hint — not rendered (display: none) at rest so the row stays
-   compact; revealed only while the row is hovered. The layout shift on hover
-   is intentional per the spec. */
-.sb-item-nickname-hint {
-  color: var(--cs-text-dim);
-  font-style: italic;
-  display: none;
-}
-
-.sb-item:hover .sb-item-nickname-hint {
-  display: block;
 }
 
 .sb-item-nickname-input {
@@ -219,7 +205,7 @@
 .sb-item-status {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   padding-top: 1px;
 }
 
@@ -248,6 +234,18 @@
   }
 }
 
+/* One fixed slot for the count and the delete x, both centred in it, so
+   the x replaces the number in exactly the same spot on hover. */
+.sb-item-slot {
+  position: relative;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .sb-item-count {
   font-family: var(--cs-font-ui);
   font-size: 11px;
@@ -255,8 +253,7 @@
   letter-spacing: 0.04em;
   color: var(--cs-text-muted);
   font-variant-numeric: tabular-nums;
-  min-width: 10px;
-  text-align: right;
+  line-height: 1;
   transition: opacity var(--cs-transition);
 }
 
@@ -285,13 +282,13 @@
   color: var(--cs-text-muted);
 }
 
-/* Delete — replaces status on hover */
+/* Delete — takes the count's place on hover, centred in the same slot */
 
 .sb-item-delete {
   position: absolute;
-  right: 8px;
-  top: 8px;
-  transform: none;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 20px;
   height: 20px;
   display: flex;
@@ -317,14 +314,20 @@
 
 .sb-iso {
   display: inline-flex; align-items: center;
+  padding: 0; margin: 0;
+  background: transparent; border: none; border-radius: 4px;
+  cursor: default;
   opacity: 0.9;
   filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.14));
   transition: opacity var(--cs-transition), filter var(--cs-transition);
 }
-.sb-iso:hover {
+/* Looks inert until hovered; only then does it read as a control. */
+.sb-iso:hover:not(:disabled) {
+  cursor: pointer;
   opacity: 1;
   filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22));
 }
+.sb-iso:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: 2px; }
 
 .sb-footer {
   display: flex;

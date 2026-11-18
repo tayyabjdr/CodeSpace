@@ -13,7 +13,7 @@ npm run dev            # electron-vite dev — hot reload (renderer); main/prelo
 npm run build          # build all three targets to out/
 npm run preview        # run the built app
 npm run package        # electron-builder → NSIS installer
-npm test               # vitest run (jsdom; tests/ dir is currently empty but infra is configured)
+npm test               # vitest run (jsdom by default; main-process tests opt into node with a `// @vitest-environment node` header)
 npm run test:watch     # vitest watch mode
 ```
 
@@ -28,6 +28,13 @@ Three processes, three source roots under `src/`:
 - `ipc-handlers.js` — registers `pty:create/write/resize/kill` channels. PTY data flows out via `webContents.send('pty:data:${id}')`.
 - `workspaces-store.js` — JSON persistence under `app.getPath('userData')/workspaces.json`.
 - `index.js` — `BrowserWindow` (1400×900, `frame: false`), window controls, clipboard IPC, `process.on('uncaughtException')` swallows known node-pty Windows errors so they don't pop dialogs.
+- **Isolated agents** (a workspace with `isolated: true` gives each agent its own git worktree):
+  - `worktree-manager.js` — create/close/wipe worktrees under `<parent>/.codespace-worktrees/<repo>/<agentId>` on branch `cs/<repo>/<id>`; meta in `.codespace/worktrees/.cs-meta.json`; every mutation runs inside `withRepoLock` (per-repo promise chain). Close keeps a branch that has commits not on the main branch.
+  - `worktree-setup.js` — links the main folder's `node_modules` into a worktree as a junction, copies `.env*`, and hands out a per-agent `PORT` (4100–4999, probed on 127.0.0.1, 0.0.0.0, ::1 and ::).
+  - `check-runner.js` — runs the repo's `test` (else `build`) script with absolute `cmd.exe`/`taskkill` paths, a timeout and tree kill; `runInstall` does a clean install when the lockfile changed.
+  - `merge-queue.js` — the Finish button: commit leftovers, rebase the agent's own commits onto the main branch, run the check, then fast-forward the main branch to exactly the tested commit. One job per repo at a time; status goes to the renderer on `merge:status`.
+  - `claude-trust.js` — marks each new agent folder trusted in Claude's `~/.claude.json` (honours `CLAUDE_CONFIG_DIR`) so Claude doesn't ask per agent, and removes the entry when the folder is deleted. Only ever touches paths under a CodeSpace worktree root, never writes a file it can't parse, writes via temp + rename. `tests/setup.js` points `CLAUDE_CONFIG_DIR` at a temp folder so tests never touch the real file.
+  - **Junction safety rule:** a worktree's `node_modules` is a junction to the main folder's. Any recursive delete (`rmSync`, `git worktree remove`, `git clean`) follows it on Windows and wipes the user's real dependencies. Always call `removeAllLinks` on the folder first, and if that walk fails, refuse to delete.
 
 **`src/preload/index.js`** — single `contextBridge.exposeInMainWorld('electronAPI', { ... })`. All renderer→main communication goes through this surface.
 

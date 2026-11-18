@@ -1,0 +1,91 @@
+/* Slim bar above the grid. White tiers only; amber is reserved for the
+   spawn-failed state, where something actually broke. One-shot entrance. */
+.iso-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* 4px below + the grid's 6px top padding = the grid's 10px gap between
+     cards, so the notice sits the same distance from the cards as they do
+     from each other. */
+  margin: 6px 0 4px;   /* sides come from .grid-col */
+  /* Built like a pane header: header height, and the dismiss button runs
+     flush to the right edge as a full-height square. */
+  min-height: var(--cs-header-h);
+  padding: 0 0 0 14px;
+  overflow: hidden;
+  background: var(--cs-bg-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: 8px;
+  font-family: var(--cs-font-ui);
+  font-size: 12.5px;
+  color: var(--cs-text-tertiary);
+  animation: isoNoticeIn 220ms ease-out both;
+}
+.iso-notice-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+  color: var(--cs-text-secondary);
+}
+.iso-notice-spawn-failed {
+  border-color: rgba(245, 158, 11, 0.32);
+}
+.iso-notice-spawn-failed .iso-notice-text { color: var(--cs-text-primary); }
+
+.iso-notice-btn {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--cs-border-mid);
+  border-radius: 6px;
+  color: var(--cs-text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--cs-transition), border-color var(--cs-transition), color var(--cs-transition);
+}
+.iso-notice-btn:hover:not(:disabled) {
+  background: var(--cs-bg-hover);
+  border-color: var(--cs-border-hover);
+}
+.iso-notice-btn:disabled {
+  color: var(--cs-text-muted);
+  cursor: not-allowed;
+}
+.iso-notice-btn:last-child { margin-right: 6px; }
+
+/* Mirrors .close-btn in TerminalPane.css. The negative left margin cancels
+   the row gap so the square meets the action button's breathing room. */
+.iso-notice-x {
+  flex-shrink: 0;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cs-header-h);
+  min-height: var(--cs-header-h);
+  margin-left: -6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--cs-text-primary);
+  opacity: 0.45;
+  cursor: pointer;
+  transition: color var(--cs-transition), background var(--cs-transition), opacity var(--cs-transition);
+}
+.iso-notice-x:hover {
+  background: var(--cs-red-hover-bg);
+  color: var(--cs-red-hover-fg);
+  opacity: 1;
+}
+.iso-notice-btn:focus-visible,
+.iso-notice-x:focus-visible { outline: 1px solid var(--cs-border-focus); outline-offset: -2px; }
+
+@keyframes isoNoticeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iso-notice { animation: none; }
+}

@@ -195,8 +195,8 @@ describe('Sidebar tree', () => {
 
   it('does not steal keys while a nickname is being edited', async () => {
     const onToggleExpand = vi.fn()
-    render(<Sidebar {...base} onToggleExpand={onToggleExpand} />)
-    await userEvent.dblClick(screen.getAllByText('add nickname', { selector: '.sb-item-nickname-hint' })[0])
+    const { container } = render(<Sidebar {...base} onToggleExpand={onToggleExpand} />)
+    await userEvent.dblClick(container.querySelector('[data-sb-kind="workspace"]'))
     const input = screen.getByLabelText('Edit nickname')
     await userEvent.type(input, 'ab')
     expect(input.value).toBe('ab')

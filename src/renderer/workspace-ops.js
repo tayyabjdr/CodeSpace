@@ -18,3 +18,24 @@ export function withExpanded(expandedIds, wsId) {
   if (expandedIds.has(wsId)) return expandedIds
   return new Set(expandedIds).add(wsId)
 }
+
+// Two spellings of one folder. Windows paths are case-insensitive and accept
+// either slash, and a trailing separator changes nothing. Lower-casing the
+// whole path can only make more workspaces match, which protects more live
+// agents from a wipe, never fewer.
+export function normalizeDir(dir) {
+  if (typeof dir !== 'string' || !dir) return ''
+  return dir.replace(/[\\/]+/g, '/').replace(/\/+$/, '').toLowerCase()
+}
+
+export function sameDir(a, b) {
+  const na = normalizeDir(a)
+  return na !== '' && na === normalizeDir(b)
+}
+
+// Every live agent id in any workspace on `dir`. wipeAll must never remove these.
+export function liveAgentIdsFor(workspaces, dir) {
+  return (workspaces ?? [])
+    .filter(w => sameDir(w.dir, dir))
+    .flatMap(w => (w.terminals ?? []).map(t => t.id))
+}

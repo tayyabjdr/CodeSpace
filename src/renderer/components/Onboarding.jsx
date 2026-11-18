@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ONBOARDING_BOOT_DELAY_MS } from '../constants.js'
 import AppIcon from './AppIcon.jsx'
+import { ISOLATION_NOTES } from '../isolation-notice.js'
 import RecentDirectories from './RecentDirectories.jsx'
 import './Onboarding.css'
 
@@ -64,8 +65,10 @@ export default function Onboarding({
   const [selectedCount, setSelectedCount] = useState(2)
   const [projectDir, setProjectDir] = useState(initialDir)
   const [launching, setLaunching] = useState(false)
-  const [isolated, setIsolated] = useState(false)
-  const [isRepo, setIsRepo] = useState(true)
+  // null while the eligibility check is in flight, so no note flashes.
+  const [canIso, setCanIso] = useState(null)
+  // The user's explicit toggle choice (null = never touched). Survives folder changes.
+  const [override, setOverride] = useState(null)
   const [availability, setAvailability] = useState({ claude: true, codex: true })
   const [codexShare, setCodexShare] = useState(0)
   const [recents, setRecents] = useState([])
@@ -98,11 +101,17 @@ export default function Onboarding({
   const claudeShare = selectedCount - codexShare
 
   useEffect(() => {
-    if (!projectDir) { setIsRepo(true); return }
+    setCanIso(null)
+    if (!projectDir) return
     let cancelled = false
-    window.electronAPI.worktree.isGitRepo(projectDir).then(v => { if (!cancelled) setIsRepo(!!v) })
+    window.electronAPI.worktree.canIsolate(projectDir)
+      .then(v => { if (!cancelled) setCanIso(v || { ok: false, reason: null }) })
+      .catch(() => { if (!cancelled) setCanIso({ ok: false, reason: null }) })
     return () => { cancelled = true }
   }, [projectDir])
+
+  const isolated = !!canIso?.ok && (override ?? true)
+  const isolationNote = canIso && !canIso.ok ? ISOLATION_NOTES[canIso.reason] : null
 
   // Tracks whether the user has typed in the name field directly. Folder-name
   // auto-fill should populate the input (so it's editable) but NOT bubble up
@@ -152,8 +161,7 @@ export default function Onboarding({
   const canLaunch =
     name.trim().length > 0 &&
     projectDir.length > 0 &&
-    !launching &&
-    (!isolated || isRepo)
+    !launching
 
   const handleLaunch = () => {
     if (!canLaunch) return
@@ -300,20 +308,19 @@ export default function Onboarding({
                 <input
                   type="checkbox"
                   checked={isolated}
-                  onChange={e => setIsolated(e.target.checked)}
+                  disabled={!canIso?.ok}
+                  onChange={e => setOverride(e.target.checked)}
                 />
                 <span className="ob-toggle-track" aria-hidden />
                 <span className="ob-toggle-text">
                   <span className="ob-toggle-title">Isolated agents</span>
                   <span className="ob-toggle-help">
-                    Each agent gets its own git branch and folder under <code>.codespace/worktrees/</code>. Requires a git repo.
+                    Each agent gets its own git branch and folder, so their changes can't collide.
                   </span>
                 </span>
               </label>
-              {isolated && projectDir && !isRepo && (
-                <p className="ob-isolation-error">
-                  This folder isn't a git repo. Run <code>git init</code> there, or turn off isolated agents.
-                </p>
+              {isolationNote && (
+                <p className="ob-isolation-note">{isolationNote}</p>
               )}
             </div>
           </section>

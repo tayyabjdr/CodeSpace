@@ -1,0 +1,86 @@
+/* Finish control, inline in the pane's 18px .pane-subheader band.
+   White opacity tiers throughout; accent colour only for the merged moment
+   (green) and the failure moments (the app's error yellow). */
+
+.fc-sep {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: var(--cs-text-muted);
+}
+
+.fc-counts {
+  flex: 0 0 auto;
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  color: var(--cs-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fc-status {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  color: var(--cs-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  animation: fc-fade-in 240ms ease-out both;
+}
+.fc-status[data-tone="success"] { color: var(--cs-green); }
+.fc-status[data-tone="failure"] { color: var(--cs-term-yellow); }
+
+.fc-note {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  color: var(--cs-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.fc-finish {
+  flex: 0 0 auto;
+  align-self: stretch;          /* full height of the band */
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  /* Ready to click: green, the app's "done" colour. Disabled goes grey. */
+  background: color-mix(in srgb, var(--cs-green) 16%, transparent);
+  font-family: var(--cs-font-ui);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--cs-green);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background var(--cs-transition), color var(--cs-transition);
+}
+.fc-finish:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cs-green) 26%, transparent);
+}
+.fc-finish:active:not(:disabled) {
+  background: color-mix(in srgb, var(--cs-green) 34%, transparent);
+}
+.fc-finish:focus-visible {
+  outline: 1px solid var(--cs-text-tertiary);
+  outline-offset: -1px;
+}
+.fc-finish:disabled {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--cs-text-muted);
+  cursor: default;
+}
+
+@keyframes fc-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fc-status { animation: none; }
+}

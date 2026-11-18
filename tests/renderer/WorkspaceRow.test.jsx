@@ -27,11 +27,6 @@ describe('WorkspaceRow', () => {
     expect(screen.getByText('shell redesign')).toBeTruthy()
   })
 
-  it('shows the add-nickname hint when there is no nickname', () => {
-    render(<WorkspaceRow ws={{ ...WS, nickname: null }} {...base} />)
-    expect(screen.getByText('add nickname')).toBeTruthy()
-  })
-
   it('shows the live terminal count for a spawned workspace', () => {
     render(<WorkspaceRow ws={WS} {...base} />)
     expect(screen.getByText('3')).toBeTruthy()
@@ -107,6 +102,30 @@ describe('WorkspaceRow', () => {
     expect(onRenameNickname).not.toHaveBeenCalled()
   })
 
+  it('opens the nickname editor on a double-click anywhere on the row, with no hover hint', async () => {
+    const onRenameNickname = vi.fn()
+    const noNick = { ...WS, nickname: null }
+    const { container } = render(<WorkspaceRow ws={noNick} {...base} onRenameNickname={onRenameNickname} />)
+    expect(container.textContent).not.toContain('add nickname')
+    await userEvent.dblClick(screen.getByText('CodeSpace'))
+    const input = screen.getByLabelText('Edit nickname')
+    await userEvent.type(input, 'fresh{Enter}')
+    expect(onRenameNickname).toHaveBeenCalledWith('w1', 'fresh')
+  })
+
+  it('double-clicking the delete button does not open the nickname editor', async () => {
+    render(<WorkspaceRow ws={WS} {...base} />)
+    await userEvent.dblClick(screen.getByTitle('Delete workspace'))
+    expect(screen.queryByLabelText('Edit nickname')).toBeNull()
+  })
+
+  it('puts the count and the delete button in the same slot', () => {
+    const { container } = render(<WorkspaceRow ws={WS} {...base} />)
+    const slot = container.querySelector('.sb-item-slot')
+    expect(slot.querySelector('.sb-item-count')).toBeTruthy()
+    expect(slot.querySelector('.sb-item-delete')).toBeTruthy()
+  })
+
   it('deletes via the button that occupies the count slot', async () => {
     const onDelete = vi.fn()
     render(<WorkspaceRow ws={WS} {...base} onDelete={onDelete} />)
@@ -120,5 +139,26 @@ describe('WorkspaceRow', () => {
 
     rerender(<WorkspaceRow ws={WS} {...base} isExpanded />)
     expect(container.querySelector('[role="treeitem"]').getAttribute('aria-expanded')).toBe('true')
+  })
+})
+
+describe('WorkspaceRow isolated glyph', () => {
+  const ISO = { ...WS, isolated: true, terminals: [], spawned: true }
+
+  it('turns isolation off without selecting the row when no agents are live', async () => {
+    const onToggleIsolated = vi.fn(); const onSelect = vi.fn()
+    render(<WorkspaceRow ws={ISO} {...base} onSelect={onSelect} onToggleIsolated={onToggleIsolated} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Isolated agents. Click to turn off.' }))
+    expect(onToggleIsolated).toHaveBeenCalledWith('w1', false)
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('is disabled with an explaining title while agents are live', async () => {
+    const onToggleIsolated = vi.fn()
+    render(<WorkspaceRow ws={{ ...ISO, terminals: [{ id: 't1' }] }} {...base} onToggleIsolated={onToggleIsolated} />)
+    const btn = screen.getByTitle(/Close this workspace's agents/)
+    expect(btn.disabled).toBe(true)
+    await userEvent.click(btn)
+    expect(onToggleIsolated).not.toHaveBeenCalled()
   })
 })

@@ -11,8 +11,8 @@ const api = {
   platform:  ptyHost.platform,
   osRelease: ptyHost.osRelease,
 
-  createPty: (shell, cwd, cols, rows) =>
-    ipcRenderer.invoke('pty:create', { shell, cwd, cols, rows }),
+  createPty: (shell, cwd, cols, rows, port) =>
+    ipcRenderer.invoke('pty:create', { shell, cwd, cols, rows, port }),
 
   writePty: (ptyId, data) =>
     ipcRenderer.send('pty:write', { ptyId, data }),
@@ -106,12 +106,26 @@ const api = {
   worktree: {
     isGitAvailable: () => ipcRenderer.invoke('worktree:isGitAvailable'),
     isGitRepo:      (dir) => ipcRenderer.invoke('worktree:isGitRepo', dir),
+    canIsolate:     (dir) => ipcRenderer.invoke('worktree:canIsolate', dir),
     create:         (args) => ipcRenderer.invoke('worktree:create', args),
     close:          (args) => ipcRenderer.invoke('worktree:close', args),
     closeAll:       (args) => ipcRenderer.invoke('worktree:closeAll', args),
     checkDirty:     (args) => ipcRenderer.invoke('worktree:checkDirty', args),
     wipeAll:        (args) => ipcRenderer.invoke('worktree:wipeAll', args),
     repairOrphans:  (args) => ipcRenderer.invoke('worktree:repairOrphans', args),
+    discard:        (args) => ipcRenderer.invoke('worktree:discard', args),
+    openFolder:     (args) => ipcRenderer.invoke('worktree:openFolder', args),
+  },
+
+  merge: {
+    finish: (args)    => ipcRenderer.invoke('merge:finish', args),
+    cancel: (agentId) => ipcRenderer.invoke('merge:cancel', agentId),
+    info:   (args)    => ipcRenderer.invoke('merge:info', args),
+    onStatus: (callback) => {
+      const handler = (_event, status) => callback(status)
+      ipcRenderer.on('merge:status', handler)
+      return () => ipcRenderer.removeListener('merge:status', handler)
+    },
   },
 
   onUpdateReady: (callback) => {

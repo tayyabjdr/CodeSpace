@@ -54,6 +54,18 @@ describe('TerminalPane branch band', () => {
     expect(band.textContent.trim()).toBe('cs/a1f2')
   })
 
+  it('band shows the port', () => {
+    const { container } = render(<TerminalPane {...props} branch="cs/a1f2" port={4101} />)
+    const band = container.querySelector('.pane-subheader')
+    expect(band.textContent).toContain('cs/a1f2')
+    expect(band.textContent).toContain('PORT 4101')
+  })
+
+  it('band shows no port when the agent has none', () => {
+    const { container } = render(<TerminalPane {...props} branch="cs/a1f2" port={null} />)
+    expect(container.querySelector('.pane-subheader').textContent).not.toContain('port')
+  })
+
   it('still copies the branch on click', () => {
     const { container } = render(<TerminalPane {...props} branch="cs/a1f2" />)
     container.querySelector('.tp-branch').click()
