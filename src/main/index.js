@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, dialog, clipboard, session, screen } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, dialog, clipboard, session, screen, shell } from 'electron'
 import { join } from 'path'
 import { homedir, release } from 'os'
 import { mkdirSync, readFileSync } from 'fs'
@@ -108,6 +108,21 @@ function createWindow() {
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // The renderer never gets a window of its own. Anything that calls
+  // window.open() — xterm's default OSC 8 hyperlink handler did, popping a
+  // small bare CodeSpace window next to the browser — is denied, and http(s)
+  // targets go to the OS browser instead. Same for in-place navigation.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url).catch(() => {})
+    return { action: 'deny' }
+  })
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url === win.webContents.getURL()) return
+    if (process.env['ELECTRON_RENDERER_URL'] && url.startsWith(process.env['ELECTRON_RENDERER_URL'])) return
+    event.preventDefault()
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url).catch(() => {})
+  })
 
   registerHandlers(win)
   installCloseGuard(win)

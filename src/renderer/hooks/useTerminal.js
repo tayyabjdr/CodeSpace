@@ -8,6 +8,17 @@ import { FONT_RESIZE_DEBOUNCE_MS, PTY_RESIZE_DEBOUNCE_MS } from '../constants.js
 import { buildTerminalTheme } from '../terminal-theme.js'
 import { windowsPtyOption } from '../windows-pty.js'
 
+// Claude CLI prints OSC 8 hyperlinks, and the same text also matches our own
+// URL provider, so one Ctrl+click can activate both. Open a given URL at most
+// once per click.
+let lastOpened = { url: '', at: 0 }
+function openUrlOnce(url) {
+  const now = Date.now()
+  if (url === lastOpened.url && now - lastOpened.at < 500) return
+  lastOpened = { url, at: now }
+  window.electronAPI?.openExternal?.(url)
+}
+
 export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onActivity, onUserInput, onPtyReady, fontSize, onFontSizeChange, linkOpts, themeId, port) {
   const [error, setError] = useState(null)
   const [exitCode, setExitCode] = useState(null)
@@ -17,6 +28,8 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
   const onPtyReadyRef = useRef(onPtyReady)
   const onFontSizeChangeRef = useRef(onFontSizeChange)
   const linkOptsRef = useRef(linkOpts)
+  const fontSizeRef = useRef(fontSize)
+  fontSizeRef.current = fontSize
 
   // Dimensions last pushed to the PTY. ConPTY's ResizePseudoConsole is
   // unconditional — it rewraps the console buffer and signals the child even
@@ -83,7 +96,9 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
       term = new Terminal({
         cursorBlink: true,
         cursorStyle: 'bar',
-        fontSize: 13,
+        // Start at the workspace's size. The sync effect above runs before the
+        // terminal exists on first mount, so it can't apply the initial value.
+        fontSize: fontSizeRef.current || 13,
         fontFamily: '"Geist Mono Variable", "Geist Mono", "Cascadia Code", monospace',
         lineHeight: 1.5,
         // Don't yank the viewport to the bottom on every keypress. While the
@@ -98,6 +113,16 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
         // mismatch is what duplicates lines and tears blank gaps into the
         // buffer on resize. Spread so xterm keeps its own default off Windows.
         ...(winPty ? { windowsPty: winPty } : {}),
+        // OSC 8 hyperlinks. xterm's default handler calls window.open(), which
+        // in Electron spawns a bare CodeSpace window. Send them to the OS
+        // browser instead, with the same Ctrl/Cmd-click rule as plain URLs.
+        linkHandler: {
+          activate: (event, uri) => {
+            if (!(event.ctrlKey || event.metaKey)) return
+            if (/^https?:\/\//i.test(uri)) openUrlOnce(uri)
+          },
+          allowNonHttpProtocols: false,
+        },
       })
 
       fitAddon = new FitAddon()
@@ -139,6 +164,13 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         term.scrollToBottom()
+        return false
+      }
+
+      // Ctrl+= / Ctrl++ / Ctrl+- → font size, same as Ctrl+wheel.
+      if (!e.altKey && (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '_')) {
+        e.preventDefault()
+        onFontSizeChangeRef.current?.(e.key === '-' || e.key === '_' ? -1 : 1)
         return false
       }
 
@@ -243,7 +275,12 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     let rafId = 0
     const onWheel = (e) => {
       if (!e.ctrlKey && !e.metaKey) return
+      // Listened for in the capture phase: xterm's own wheel handler calls
+      // stopPropagation (e.g. whenever the agent has mouse tracking on), so a
+      // bubbling listener here never saw the event. Stop it so xterm doesn't
+      // also scroll or forward the wheel to the PTY.
       e.preventDefault()
+      e.stopPropagation()
       pendingStep += e.deltaY > 0 ? -1 : 1
       if (rafId) return
       rafId = requestAnimationFrame(() => {
@@ -254,7 +291,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
       })
     }
     const wheelTarget = containerRef.current
-    wheelTarget.addEventListener('wheel', onWheel, { passive: false })
+    wheelTarget.addEventListener('wheel', onWheel, { passive: false, capture: true })
 
     return () => {
       cancelled = true
@@ -263,7 +300,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
       detach?.()
       dataDisposable?.dispose()
       ro?.disconnect()
-      wheelTarget?.removeEventListener('wheel', onWheel)
+      wheelTarget?.removeEventListener('wheel', onWheel, { capture: true })
       term?.dispose()
       // Note: PTY is NOT killed here. Workspace owns PTY lifecycle.
     }
@@ -328,7 +365,7 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
             text: url,
             activate: (event) => {
               if (!(event.ctrlKey || event.metaKey)) return
-              window.electronAPI?.openExternal?.(toAbsoluteUrl(url))
+              openUrlOnce(toAbsoluteUrl(url))
             },
             hover: () => {},
             leave: () => {},

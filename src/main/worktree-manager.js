@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, existsSync, renameSync, mkdirSync, readdir
 import { join, dirname, basename, resolve } from 'path'
 import { setupWorktree, removeAllLinks, pickPort, releasePort } from './worktree-setup.js'
 import { trustFolder, forgetFolder } from './claude-trust.js'
+import { killProcessesIn } from './process-reaper.js'
 
 let gitAvailable = null
 
@@ -365,6 +366,14 @@ async function _closeImpl({ repoDir, agentId }) {
     path: wtPath,
     detail: `Couldn't detach links from ${wtPath}: ${e?.message ?? e}`
   })
+
+  // Anything the agent left running in its folder (a dev server started from
+  // Claude's Bash tool outlives the pane's PTY) holds files open and writes
+  // new ones after the delete. Stop it first.
+  if (existsSync(wtPath)) {
+    const killed = await killProcessesIn(wtPath)
+    if (killed.length > 0) await sleep(REMOVE_RETRY_MS)
+  }
 
   // The agent's process was only just killed, so its files may still be held
   // for a moment. Retry a few times. Only a real directory is ever deleted,

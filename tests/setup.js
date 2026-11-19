@@ -14,3 +14,7 @@ import { mkdtempSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 process.env.CLAUDE_CONFIG_DIR = mkdtempSync(join(tmpdir(), 'cs-claude-config-'))
+
+// Closing an agent folder kills processes running out of it. Tests never list
+// or kill real processes.
+process.env.CODESPACE_DISABLE_PROCESS_REAPER = '1'
