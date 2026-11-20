@@ -3,7 +3,7 @@
   flex-direction: column;
   background: var(--cs-bg-elevated);
   border: 1px solid var(--cs-border-mid);
-  border-radius: 15px;
+  border-radius: var(--cs-radius);
   overflow: hidden;
   min-height: 0;
   box-shadow:
