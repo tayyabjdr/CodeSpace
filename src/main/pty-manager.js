@@ -35,11 +35,27 @@ export function isCodexAvailable() {
   return checkCodexAvailable()
 }
 
-function shellSpec(shell) {
+// An isolated agent has its own PORT in its environment, but Vite and other
+// tools ignore that variable and Claude doesn't know it's there. This tells
+// the agent to start dev servers on it. No apostrophes: it goes inside a
+// single-quoted PowerShell string.
+export function portPrompt(port) {
+  return `This is an isolated CodeSpace agent. Its dev server port is ${port}, ` +
+    `also in the PORT environment variable. Always start dev servers, previews ` +
+    `and local servers on port ${port}. Many tools such as Vite ignore PORT, so ` +
+    `pass the port explicitly, for example: npm run dev -- --port ${port} --strictPort. ` +
+    `Never fall back to another port or to the default; if ${port} is busy, ` +
+    `stop and say so. Other agents are using the other ports.`
+}
+
+const isPort = (p) => /^\d{1,5}$/.test(String(p ?? ''))
+
+function shellSpec(shell, port) {
   if (shell === 'cmd') return { file: 'cmd.exe', args: [] }
   if (shell === 'claude') {
     const skip = getCached().agents.dangerouslySkipPermissions
-    const cmd = skip ? 'claude --dangerously-skip-permissions' : 'claude'
+    let cmd = skip ? 'claude --dangerously-skip-permissions' : 'claude'
+    if (isPort(port)) cmd += ` --append-system-prompt '${portPrompt(port)}'`
     return { file: 'powershell.exe', args: ['-NoLogo', '-NoProfile', '-Command', cmd] }
   }
   if (shell === 'codex') {
@@ -55,7 +71,7 @@ const sessions = new Map()
 // extraEnv: variables added on top of the inherited environment, e.g. the
 // PORT an isolated pane gets. Callers validate it; this only merges.
 export function createSession(shell = 'powershell', cwd, cols, rows, extraEnv = {}) {
-  const { file, args } = shellSpec(shell)
+  const { file, args } = shellSpec(shell, extraEnv.PORT)
   const id = randomUUID()
   const skip = shell === 'claude' && getCached().agents.dangerouslySkipPermissions
   const env = {

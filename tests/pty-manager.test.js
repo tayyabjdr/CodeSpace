@@ -6,7 +6,7 @@ vi.mock('node-pty', () => ({
 }))
 
 import pty from 'node-pty'
-import { createSession, writeSession, resizeSession, killSession, killAllSessions, killAllAndWait } from '../src/main/pty-manager.js'
+import { portPrompt, createSession, writeSession, resizeSession, killSession, killAllSessions, killAllAndWait } from '../src/main/pty-manager.js'
 
 describe('pty-manager', () => {
   let mockProc
@@ -61,6 +61,19 @@ describe('pty-manager', () => {
       createSession('powershell')
       expect(pty.spawn.mock.calls.at(-1)[2].env.CLAUDE_CODE_NO_FLICKER).toBeUndefined()
     } finally { if (before !== undefined) process.env.CLAUDE_CODE_NO_FLICKER = before }
+  })
+
+  it('claude pane with a PORT is told to use it', () => {
+    createSession('claude', undefined, 80, 24, { PORT: '4101' })
+    const cmd = pty.spawn.mock.calls.at(-1)[1].at(-1)
+    expect(cmd).toContain(`--append-system-prompt '${portPrompt('4101')}'`)
+    expect(portPrompt('4101')).toContain('--port 4101 --strictPort')
+    expect(portPrompt('4101')).not.toContain("'") // would break the PowerShell quoting
+  })
+
+  it('claude pane without a PORT gets no port prompt', () => {
+    createSession('claude')
+    expect(pty.spawn.mock.calls.at(-1)[1].at(-1)).not.toContain('--append-system-prompt')
   })
 
   it('createSession without extraEnv adds no PORT', () => {

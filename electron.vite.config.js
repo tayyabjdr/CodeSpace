@@ -18,6 +18,12 @@ export default defineConfig({
     // assets from @fontsource-variable/* fail to load and the UI falls back to
     // system fonts. Allow the parent CodeSpace checkout too.
     server: {
+      // Inside an isolated CodeSpace agent, PORT is that agent's own port;
+      // strictPort so it fails loudly instead of drifting onto another
+      // agent's port. Outside one, Vite's default behaviour is unchanged.
+      ...(process.env.PORT
+        ? { port: Number(process.env.PORT), strictPort: true }
+        : {}),
       fs: {
         // When running dev inside a .codespace worktree, node_modules lives
         // in the parent repo, outside the worktree's serving allow list.
