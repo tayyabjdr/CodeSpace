@@ -138,6 +138,7 @@ const api = {
 
   openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
   openLocalHtml: (absPath) => ipcRenderer.send('shell:openLocalHtml', absPath),
+  openLocalMedia: (absPath) => ipcRenderer.send('shell:openLocalMedia', absPath),
 }
 
 try {

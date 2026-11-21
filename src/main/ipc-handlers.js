@@ -11,7 +11,10 @@ import { runCheck, runInstall } from './check-runner.js'
 
 import { PORT_MIN, PORT_MAX } from './worktree-setup.js'
 
-const isPanePort = (p) => Number.isInteger(p) && p >= PORT_MIN && p <= PORT_MAX
+// Files Ctrl+click may hand to the OS viewer: images, PDF, audio, video.
+const MEDIA_EXT_RE = /\.(png|jpe?g|gif|bmp|webp|avif|ico|svg|tiff?|heic|pdf|mp4|mov|webm|mkv|avi|mp3|wav|flac|ogg|m4a)$/i
+
+const isPanePort =(p) => Number.isInteger(p) && p >= PORT_MIN && p <= PORT_MAX
 
 function isValidCwd(cwd) {
   if (typeof cwd !== 'string' || cwd.length === 0) return false
@@ -198,6 +201,23 @@ export function registerHandlers(mainWindow) {
     const err = await shell.openPath(absPath)
     if (err && process.env.NODE_ENV !== 'production') {
       console.warn('[ipc] openLocalHtml failed:', err)
+    }
+  })
+
+  // Open a local image / PDF / audio / video file in the OS's default viewer —
+  // the Ctrl+click target for media paths the text editor can't show. An
+  // allowlist of viewer formats, so this can never launch an executable or
+  // script, and only for absolute paths to files that exist.
+  ipcMain.on('shell:openLocalMedia', async (_event, absPath) => {
+    if (typeof absPath !== 'string' || absPath.length === 0 || absPath.length > 1024) return
+    if (!MEDIA_EXT_RE.test(absPath)) return
+    if (!isAbsolute(absPath)) return
+    try {
+      if (!statSync(absPath).isFile()) return
+    } catch { return }
+    const err = await shell.openPath(absPath)
+    if (err && process.env.NODE_ENV !== 'production') {
+      console.warn('[ipc] openLocalMedia failed:', err)
     }
   })
 

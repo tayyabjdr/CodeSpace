@@ -7,6 +7,17 @@ import { resolvePath } from '../path-resolver.js'
 import { FONT_RESIZE_DEBOUNCE_MS, PTY_RESIZE_DEBOUNCE_MS } from '../constants.js'
 import { buildTerminalTheme } from '../terminal-theme.js'
 import { windowsPtyOption } from '../windows-pty.js'
+import { logicalLineAt, spanToRange, spanCrossesRows } from '../wrapped-line.js'
+import { isProbablyText } from '../text-file.js'
+
+// Adapts the xterm buffer to the {text, isWrapped} rows wrapped-line.js reads.
+function rowGetter(term) {
+  return (y) => {
+    if (y < 0) return null
+    const line = term.buffer.active.getLine(y)
+    return line ? { text: line.translateToString(true), isWrapped: line.isWrapped } : null
+  }
+}
 
 // Claude CLI prints OSC 8 hyperlinks, and the same text also matches our own
 // URL provider, so one Ctrl+click can activate both. Open a given URL at most
@@ -343,25 +354,19 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
       return /^https?:\/\//i.test(url) ? url : `https://${url}`
     }
 
-    function getBufferLine(y) {
-      const line = term.buffer.active.getLine(y - 1)
-      return line ? line.translateToString(true) : ''
-    }
-
     const disposable = term.registerLinkProvider({
       provideLinks(bufferLineNumber, callback) {
-        const text = getBufferLine(bufferLineNumber)
+        // Match against the row joined with the rows it wraps into, so a URL
+        // the agent's TUI broke across lines is still one link.
+        const { text, cells } = logicalLineAt(rowGetter(term), bufferLineNumber - 1, term.cols)
         const links = []
         for (const m of text.matchAll(URL_RE)) {
           const url = trimUrl(m[0])
           if (!url) continue
-          const start = m.index
-          const end = start + url.length
+          const range = spanToRange(cells, m.index, m.index + url.length, bufferLineNumber - 1)
+          if (!range) continue
           links.push({
-            range: {
-              start: { x: start + 1, y: bufferLineNumber },
-              end:   { x: end,       y: bufferLineNumber }
-            },
+            range,
             text: url,
             activate: (event) => {
               if (!(event.ctrlKey || event.metaKey)) return
@@ -384,21 +389,47 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
     if (!termRef.current || !ptyId) return
     const term = termRef.current
 
-    function getBufferLine(y) {
-      const line = term.buffer.active.getLine(y - 1)
-      return line ? line.translateToString(true) : ''
-    }
-
     const disposable = term.registerLinkProvider({
-      provideLinks(bufferLineNumber, callback) {
-        const text = getBufferLine(bufferLineNumber)
-        const matches = parsePathsInLine(text)
+      async provideLinks(bufferLineNumber, callback) {
+        const y = bufferLineNumber - 1
+        const getRow = rowGetter(term)
+        const rowText = getRow(y)?.text ?? ''
+        const logical = logicalLineAt(getRow, y, term.cols)
+
+        // Paths the agent's TUI broke across rows. Joining rows is a guess,
+        // so a joined match only counts if the file is really there —
+        // otherwise this row falls back to its own single-row matches.
+        const joined = []
+        if (logical.first !== logical.last) {
+          for (const m of parsePathsInLine(logical.text)) {
+            if (!spanCrossesRows(logical.cells, m.start, m.end)) continue
+            const range = spanToRange(logical.cells, m.start, m.end, y)
+            if (!range) continue
+            try {
+              const resolved = await resolvePath(
+                m.raw,
+                linkOptsRef.current?.cwdRef?.current,
+                linkOptsRef.current?.workspaceDirRef?.current,
+                window.electronAPI?.editor
+              )
+              if (!resolved || !(await window.electronAPI?.editor?.pathExists?.(resolved.path))) continue
+            } catch { continue }
+            joined.push({ m, range })
+          }
+        }
+        // Columns a joined link covers on this row, to drop row matches under it.
+        const joinedCols = joined.map(({ range }) => [
+          range.start.y === bufferLineNumber ? range.start.x : 1,
+          range.end.y === bufferLineNumber ? range.end.x : Infinity,
+        ])
+        const onRow = parsePathsInLine(rowText)
+          .map(m => ({ m, range: { start: { x: m.start + 1, y: bufferLineNumber }, end: { x: m.end, y: bufferLineNumber } } }))
+          .filter(({ range }) => !joinedCols.some(([a, b]) => range.start.x <= b && range.end.x >= a))
+
+        const matches = [...joined, ...onRow]
         if (matches.length === 0) return callback(undefined)
-        callback(matches.map(m => ({
-          range: {
-            start: { x: m.start + 1, y: bufferLineNumber },
-            end:   { x: m.end,       y: bufferLineNumber }
-          },
+        callback(matches.map(({ m, range }) => ({
+          range,
           text: m.raw,
           activate: async (event) => {
             if (!(event.ctrlKey || event.metaKey)) return
@@ -415,6 +446,12 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
             // "open in editor" behaviour so source viewing still works.
             if (event.shiftKey && /\.html?$/i.test(resolved.path)) {
               window.electronAPI?.openLocalHtml?.(resolved.path)
+              return
+            }
+            // Images, PDFs and other media can't be shown in the text editor —
+            // open them in the OS's default viewer instead.
+            if (!isProbablyText(resolved.path)) {
+              window.electronAPI?.openLocalMedia?.(resolved.path)
               return
             }
             if (!opts?.onOpenFile) return

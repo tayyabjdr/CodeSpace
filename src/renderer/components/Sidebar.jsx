@@ -4,6 +4,9 @@ import SessionRow, { sessionLabel } from './SessionRow.jsx'
 import AgentCard from './AgentCard.jsx'
 import './Sidebar.css'
 
+// How long a drag has to rest on a workspace before it opens.
+const SPRING_OPEN_MS = 500
+
 const PlusGlyph = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
     <line x1="12" y1="5" x2="12" y2="19" />
@@ -38,6 +41,48 @@ export default function Sidebar({
   }, [])
 
   const sessionsOf = (ws) => (ws.spawned ? (ws.terminals ?? []) : [])
+
+  // Spring-loaded workspaces: while dragging a file or skill, holding it over
+  // another workspace's block opens that workspace so the drop can land in
+  // one of its panes. Pane-swap drags are excluded — a pane can't be swapped
+  // into a different workspace. The sidebar never accepts the drop itself.
+  const [dragHoverId, setDragHoverId] = useState(null)
+  const springTimerRef = useRef(null)
+  const clearSpring = () => {
+    clearTimeout(springTimerRef.current)
+    springTimerRef.current = null
+    setDragHoverId(null)
+  }
+  useEffect(() => {
+    const end = () => clearSpring()
+    window.addEventListener('dragend', end)
+    window.addEventListener('drop', end)
+    return () => {
+      window.removeEventListener('dragend', end)
+      window.removeEventListener('drop', end)
+      clearTimeout(springTimerRef.current)
+    }
+  }, [])
+  const isSpringDrag = (e) => {
+    const types = Array.from(e.dataTransfer?.types ?? [])
+    return types.length > 0 && !types.includes('application/x-codespace-terminal')
+  }
+  const handleGroupDragOver = (e, wsId) => {
+    if (!isSpringDrag(e)) return
+    if (wsId === activeId) { if (dragHoverId) clearSpring(); return }
+    if (dragHoverId === wsId) return
+    clearTimeout(springTimerRef.current)
+    setDragHoverId(wsId)
+    springTimerRef.current = setTimeout(() => {
+      springTimerRef.current = null
+      setDragHoverId(null)
+      onSelect(wsId)
+    }, SPRING_OPEN_MS)
+  }
+  const handleGroupDragLeave = (e, wsId) => {
+    if (e.currentTarget.contains(e.relatedTarget)) return
+    if (dragHoverId === wsId) clearSpring()
+  }
 
   // The agent card follows the focused agent of the active workspace, and
   // only for an isolated workspace, where each agent has its own branch.
@@ -156,7 +201,9 @@ export default function Sidebar({
         {groups.map(group => (
           <div
             key={'group' + group.ws.id}
-            className={`sb-group${group.ws.id === activeId ? ' active' : ''}`}
+            className={`sb-group${group.ws.id === activeId ? ' active' : ''}${group.ws.id === dragHoverId ? ' drag-hover' : ''}`}
+            onDragOver={(e) => handleGroupDragOver(e, group.ws.id)}
+            onDragLeave={(e) => handleGroupDragLeave(e, group.ws.id)}
           >
           {group.nodes.map(({ node, i }) => (
           <div key={node.kind + node.id} onKeyDown={(e) => handleKeyDown(e, i)}>

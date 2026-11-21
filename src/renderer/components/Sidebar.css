@@ -173,6 +173,13 @@
   background: rgba(255, 255, 255, 0.035);
 }
 
+/* A drag resting on this workspace — it opens after a short hold. */
+.sb-group.drag-hover {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: var(--cs-border-hover);
+  transition: background 200ms ease, border-color 200ms ease;
+}
+
 .sb-item.active { background: transparent; }
 .sb-group.active .sb-item:hover,
 .sb-group.active .sb-session:hover {
