@@ -8,6 +8,24 @@ describe('parsePathsInLine', () => {
     expect(r[0]).toMatchObject({ path: 'C:\\Users\\TJ\\foo.ts', line: null, col: null })
   })
 
+  it('keeps spaces in Windows folder names as part of the path', () => {
+    const r = parsePathsInLine('to D:\\PC Backup\\backup-checklist.md. It has tick boxes')
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({ path: 'D:\\PC Backup\\backup-checklist.md', start: 3 })
+    const p = parsePathsInLine('run C:\\Program Files\\Git\\bin\\git.exe now')
+    expect(p[0]).toMatchObject({ path: 'C:\\Program Files\\Git\\bin\\git.exe' })
+  })
+
+  it('does not swallow prose after a path that has no spaces', () => {
+    const r = parsePathsInLine('open C:\\src\\foo.ts and see bar\\baz.md too')
+    expect(r.map(m => m.path)).toEqual(['C:\\src\\foo.ts', 'bar\\baz.md'])
+  })
+
+  it('folderSpaces: false gives the old space-free matches', () => {
+    const r = parsePathsInLine('to D:\\PC Backup\\backup-checklist.md.', { folderSpaces: false })
+    expect(r.map(m => m.path)).toEqual(['Backup\\backup-checklist.md'])
+  })
+
   it('captures :line suffix on Windows path', () => {
     const r = parsePathsInLine('error at C:\\src\\foo.ts:42')
     expect(r[0]).toMatchObject({ path: 'C:\\src\\foo.ts', line: 42, col: null })

@@ -396,6 +396,18 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
         const rowText = getRow(y)?.text ?? ''
         const logical = logicalLineAt(getRow, y, term.cols)
 
+        const exists = async (raw) => {
+          try {
+            const resolved = await resolvePath(
+              raw,
+              linkOptsRef.current?.cwdRef?.current,
+              linkOptsRef.current?.workspaceDirRef?.current,
+              window.electronAPI?.editor
+            )
+            return !!resolved && !!(await window.electronAPI?.editor?.pathExists?.(resolved.path))
+          } catch { return false }
+        }
+
         // Paths the agent's TUI broke across rows. Joining rows is a guess,
         // so a joined match only counts if the file is really there —
         // otherwise this row falls back to its own single-row matches.
@@ -405,24 +417,26 @@ export default function useTerminal(termId, ptyId, shell, cwd, containerRef, onA
             if (!spanCrossesRows(logical.cells, m.start, m.end)) continue
             const range = spanToRange(logical.cells, m.start, m.end, y)
             if (!range) continue
-            try {
-              const resolved = await resolvePath(
-                m.raw,
-                linkOptsRef.current?.cwdRef?.current,
-                linkOptsRef.current?.workspaceDirRef?.current,
-                window.electronAPI?.editor
-              )
-              if (!resolved || !(await window.electronAPI?.editor?.pathExists?.(resolved.path))) continue
-            } catch { continue }
+            if (!(await exists(m.raw))) continue
             joined.push({ m, range })
           }
+        }
+
+        // A path with spaces in its folder names ("D:\PC Backup\x.md") is a
+        // guess too: keep it only if the file exists, otherwise use the
+        // space-free matches for that stretch of the row.
+        const rowMatches = []
+        const plain = parsePathsInLine(rowText, { folderSpaces: false })
+        for (const m of parsePathsInLine(rowText)) {
+          if (!m.raw.includes(' ') || await exists(m.raw)) { rowMatches.push(m); continue }
+          rowMatches.push(...plain.filter(p => p.start >= m.start && p.end <= m.end))
         }
         // Columns a joined link covers on this row, to drop row matches under it.
         const joinedCols = joined.map(({ range }) => [
           range.start.y === bufferLineNumber ? range.start.x : 1,
           range.end.y === bufferLineNumber ? range.end.x : Infinity,
         ])
-        const onRow = parsePathsInLine(rowText)
+        const onRow = rowMatches
           .map(m => ({ m, range: { start: { x: m.start + 1, y: bufferLineNumber }, end: { x: m.end, y: bufferLineNumber } } }))
           .filter(({ range }) => !joinedCols.some(([a, b]) => range.start.x <= b && range.end.x >= a))
 

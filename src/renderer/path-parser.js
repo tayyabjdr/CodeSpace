@@ -9,6 +9,17 @@
 
 const TRAIL_PUNCT_RE = /[.,;:)\]>]+$/
 
+// Windows absolute path whose folder names may contain spaces
+// ("D:\PC Backup\x.md", "C:\Program Files\…"). A spaced run only counts when a
+// separator follows it, and a word ending in a file extension can't sit inside
+// one, so "C:\a.ts and see b\c.md" stays two paths. File names stay
+// space-free. Spaces make this a guess, so callers should check the file
+// exists and fall back to `{ folderSpaces: false }` when it doesn't.
+const WIN_ABS_SPACED = {
+  name: 'win-abs',
+  re: /\b[A-Za-z]:[\\/](?:[^\s:"<>|?*\\/]+(?:(?<!\.[A-Za-z0-9]{1,8}) +[^\s:"<>|?*\\/]+)*[\\/])*[^\s:"<>|?*\\/]+\.[A-Za-z0-9]{1,8}(?![A-Za-z0-9])(?::\d+)?(?::\d+)?/g,
+}
+
 const PATTERNS = [
   {
     name: 'win-abs',
@@ -27,12 +38,13 @@ const PATTERNS = [
 
 const SUFFIX_RE = /:(\d+)(?::(\d+))?$/
 
-export function parsePathsInLine(text) {
+export function parsePathsInLine(text, { folderSpaces = true } = {}) {
   if (typeof text !== 'string' || text.length === 0) return []
   const out = []
   const claimed = new Array(text.length).fill(false)
+  const patterns = folderSpaces ? [WIN_ABS_SPACED, ...PATTERNS] : PATTERNS
 
-  for (const { re } of PATTERNS) {
+  for (const { re } of patterns) {
     re.lastIndex = 0
     let m
     while ((m = re.exec(text)) !== null) {
