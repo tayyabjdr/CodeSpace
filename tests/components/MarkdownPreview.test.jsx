@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import MarkdownPreview, { renderMarkdown, resolveLocalLink } from '../../src/renderer/components/MarkdownPreview.jsx'
+import MarkdownPreview, { renderMarkdown, resolveLocalLink, findTaskMarkers } from '../../src/renderer/components/MarkdownPreview.jsx'
 import EditorPane from '../../src/renderer/components/EditorPane.jsx'
 
 describe('renderMarkdown', () => {
@@ -86,5 +86,40 @@ describe('EditorPane markdown view', () => {
   it('shows no toggle for non-markdown files', () => {
     render(<EditorPane {...props} file="C:\\x\\a.js" content="let a" />)
     expect(screen.queryByRole('button', { name: 'Preview' })).toBeNull()
+  })
+})
+
+describe('task list checkboxes', () => {
+  it('finds task markers in order, skipping fenced code', () => {
+    const src = '- [ ] a\n1. [x] b\n```\n- [ ] not me\n```\n> - [X] c\n- [ ]\n'
+    const m = findTaskMarkers(src)
+    expect(m.map(t => t.checked)).toEqual([false, true, true])
+    expect(m.map(t => src[t.pos])).toEqual([' ', 'x', 'X'])
+  })
+
+  it('enables the boxes and reports which one was clicked', () => {
+    const onToggleTask = vi.fn(() => true)
+    const { container } = render(
+      <MarkdownPreview file="C:\a\b.md" text={'- [ ] one\n- [x] two'} fontSize={13} onToggleTask={onToggleTask} />,
+    )
+    const boxes = container.querySelectorAll('input[type=checkbox]')
+    expect(boxes[1]).not.toBeDisabled()
+    fireEvent.click(boxes[1])
+    expect(onToggleTask).toHaveBeenCalledWith(1)
+  })
+
+  it('writes the toggle into the source and marks the file unsaved', () => {
+    const onDirtyChange = vi.fn()
+    const onSave = vi.fn()
+    const { container } = render(
+      <EditorPane file="C:\n\t.md" dirty={false} width={600} fontSize={13} loadState="content"
+        content={'- [ ] one\n- [x] two'} onSave={onSave} onDirtyChange={onDirtyChange} onClose={vi.fn()} />,
+    )
+    fireEvent.click(container.querySelectorAll('.md-preview-doc input[type=checkbox]')[0])
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true)
+    const boxes = container.querySelectorAll('.md-preview-doc input[type=checkbox]')
+    expect(boxes[0]).toBeChecked()
+    fireEvent.keyDown(container.querySelector('.md-preview'), { key: 's', ctrlKey: true })
+    expect(onSave).toHaveBeenCalledWith('- [x] one\n- [x] two')
   })
 })

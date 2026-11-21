@@ -261,6 +261,7 @@
   margin: 0 0.5em 0 -1.5em;
   vertical-align: -0.1em;
 }
+.md-preview-doc input[type=checkbox]:not(:disabled) { cursor: pointer; }
 .md-preview-doc strong { color: var(--cs-text-primary); font-weight: 600; }
 .md-preview-doc a {
   color: var(--cs-cyan);

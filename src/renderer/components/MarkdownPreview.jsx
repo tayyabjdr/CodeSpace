@@ -43,8 +43,36 @@ export function resolveLocalLink(file, href) {
   return segs.join('\\')
 }
 
+// Finds every GFM task marker ("- [ ] x", "1. [x] y", "> - [ ] z") in the
+// source, in document order, skipping fenced code blocks. Each entry is the
+// offset of the character between the brackets, so a toggle is a one-char
+// edit. The preview's checkboxes come out of marked in the same order.
+const TASK_RE = /^((?:[ \t]*>[ \t]?)*[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]+)\[([ xX])\](?=[ \t]+\S)/
+const FENCE_RE = /^(?:[ \t]*>[ \t]?)*[ \t]{0,3}(`{3,}|~{3,})/
+
+export function findTaskMarkers(text) {
+  const out = []
+  let fence = null
+  let offset = 0
+  for (const line of (text ?? '').split('\n')) {
+    const f = FENCE_RE.exec(line)
+    if (fence) {
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length) fence = null
+    } else if (f) {
+      fence = f[1]
+    } else {
+      const m = TASK_RE.exec(line)
+      if (m) out.push({ pos: offset + m[1].length + 1, checked: m[2] !== ' ' })
+    }
+    offset += line.length + 1
+  }
+  return out
+}
+
+const TASK_BOX_SELECTOR = 'li > input[type=checkbox]:first-child, li > p:first-child > input[type=checkbox]:first-child'
+
 const MarkdownPreview = forwardRef(function MarkdownPreview(
-  { file, text, fontSize, onOpenFile, hidden },
+  { file, text, fontSize, onOpenFile, onToggleTask, hidden },
   ref,
 ) {
   const html = useMemo(() => (hidden ? null : renderMarkdown(text)), [text, hidden])
@@ -61,9 +89,24 @@ const MarkdownPreview = forwardRef(function MarkdownPreview(
       seen.set(base, n + 1)
       h.id = n ? `${base}-${n}` : base
     })
-  }, [html])
+    // marked emits task checkboxes as disabled; make them clickable when
+    // there is somewhere to write the change back to.
+    if (onToggleTask) {
+      root.querySelectorAll(TASK_BOX_SELECTOR).forEach((box, i) => {
+        box.removeAttribute('disabled')
+        box.dataset.taskIndex = String(i)
+      })
+    }
+  }, [html, onToggleTask])
 
   const handleClick = (e) => {
+    const box = e.target.closest?.('input[type=checkbox][data-task-index]')
+    if (box) {
+      // The re-render from the updated source sets the box; if the source
+      // couldn't be matched, keep it as it was rather than lie.
+      if (!onToggleTask?.(Number(box.dataset.taskIndex))) e.preventDefault()
+      return
+    }
     const a = e.target.closest?.('a[href]')
     if (!a) return
     e.preventDefault()

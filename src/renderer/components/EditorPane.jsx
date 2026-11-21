@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { openSearchPanel } from '@codemirror/search'
 import useEditor, { PLAIN_MODE_THRESHOLD } from '../hooks/useEditor.js'
-import MarkdownPreview from './MarkdownPreview.jsx'
+import MarkdownPreview, { findTaskMarkers } from './MarkdownPreview.jsx'
 import { isProbablyText, rejectBody } from '../text-file.js'
 import './EditorPane.css'
 
@@ -80,6 +80,21 @@ export default function EditorPane({
 
   const viewRef = useRef(null)
   const previewRef = useRef(null)
+
+  // A checkbox clicked in the preview flips its "[ ]"/"[x]" in the source,
+  // through CodeMirror so it is undoable and marks the file unsaved.
+  const handleToggleTask = useCallback((index) => {
+    const v = viewRef.current
+    if (!v) return false
+    const doc = v.state.doc.toString()
+    const markers = findTaskMarkers(doc)
+    const boxes = previewRef.current?.querySelectorAll('input[data-task-index]').length
+    // Only trust the mapping when the source and the preview agree on count.
+    if (boxes !== markers.length || !markers[index]) return false
+    const { pos, checked } = markers[index]
+    v.dispatch({ changes: { from: pos, to: pos + 1, insert: checked ? ' ' : 'x' } })
+    return true
+  }, [])
   const pendingSearch = useRef(false)
 
   const setView = useCallback((v) => {
@@ -363,6 +378,7 @@ export default function EditorPane({
               text={liveText}
               fontSize={fontSize}
               hidden={!showPreview}
+              onToggleTask={handleToggleTask}
               onOpenFile={(path) => {
                 Promise.resolve(onDropFile?.(path)).then(why => { if (why) flashReject(basename(path), why) })
               }}
