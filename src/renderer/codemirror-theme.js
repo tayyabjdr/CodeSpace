@@ -41,6 +41,7 @@ export function buildTheme() {
   const c = TOKYO_NIGHT
   const fontMono = readToken('--cs-font-mono', 'ui-monospace, monospace')
   const bg       = readToken('--cs-bg-surface', '#141414')   // same as .xterm-container
+  const uiFont   = readToken('--cs-font-ui', 'system-ui, sans-serif')
 
   return EditorView.theme({
     '&': {
@@ -72,6 +73,70 @@ export function buildTheme() {
     '.cm-foldPlaceholder': { backgroundColor: 'transparent', border: 'none', color: c.comment },
     '.cm-tooltip': { backgroundColor: '#16161e', border: '1px solid #101014', color: c.fg },
     '&.cm-focused':         { outline: 'none' },
+
+    // Find / replace panel (Ctrl+F).
+    '.cm-panels': { backgroundColor: bg, color: c.fg, zIndex: 3 },
+    '.cm-panels.cm-panels-top': { borderBottom: '1px solid rgba(255, 255, 255, 0.08)' },
+    '.cm-panel.cm-search': {
+      padding: '8px 34px 8px 10px',
+      fontFamily: uiFont,
+      fontSize: '12px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: '6px',
+    },
+    '.cm-panel.cm-search br': { display: 'none' },
+    '.cm-panel.cm-search label': {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+      fontSize: '11.5px',
+      color: 'rgba(255, 255, 255, 0.55)',
+      margin: 0,
+      cursor: 'pointer',
+    },
+    '.cm-panel.cm-search input[type=checkbox]': { accentColor: '#67e8f9', margin: 0 },
+    '.cm-textfield': {
+      fontFamily: fontMono,
+      fontSize: '12px',
+      color: c.fg,
+      backgroundColor: 'rgba(255, 255, 255, 0.04)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '7px',
+      padding: '4px 8px',
+      margin: 0,
+      outline: 'none',
+      minWidth: '160px',
+    },
+    '.cm-textfield:focus': { borderColor: 'rgba(255, 255, 255, 0.28)' },
+    '.cm-button': {
+      fontFamily: uiFont,
+      fontSize: '11.5px',
+      color: 'rgba(255, 255, 255, 0.78)',
+      backgroundImage: 'none',
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '7px',
+      padding: '3px 10px',
+      margin: 0,
+      cursor: 'pointer',
+    },
+    '.cm-button:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#fff' },
+    '.cm-button:active': { backgroundImage: 'none', backgroundColor: 'rgba(255, 255, 255, 0.14)' },
+    '.cm-panel.cm-search [name=close]': {
+      position: 'absolute',
+      top: '6px',
+      right: '8px',
+      fontSize: '16px',
+      lineHeight: 1,
+      padding: '2px 6px',
+      color: 'rgba(255, 255, 255, 0.45)',
+      background: 'none',
+      border: 'none',
+      cursor: 'pointer',
+    },
+    '.cm-panel.cm-search [name=close]:hover': { color: '#fff' },
     '.cm-scroller':         { fontFamily: fontMono, lineHeight: '1.55' },
   }, { dark: true })
 }

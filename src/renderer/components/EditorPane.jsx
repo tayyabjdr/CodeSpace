@@ -3,7 +3,9 @@
 // so the layout/header/states can be verified independently.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { openSearchPanel } from '@codemirror/search'
 import useEditor, { PLAIN_MODE_THRESHOLD } from '../hooks/useEditor.js'
+import MarkdownPreview from './MarkdownPreview.jsx'
 import { isProbablyText, rejectBody } from '../text-file.js'
 import './EditorPane.css'
 
@@ -30,6 +32,18 @@ function pathParts(p) {
   return { dirs, name, clipped: segs.length > dirs.length }
 }
 
+// Markdown files open as a rendered document by default. The last choice
+// (preview or source) is remembered across files and sessions.
+const MD_VIEW_KEY = 'cs.editor.mdView'
+export const isMarkdownFile = (p) => /\.(md|markdown|mdx)$/i.test(p ?? '')
+
+function readMdView() {
+  try { return localStorage.getItem(MD_VIEW_KEY) === 'source' ? 'source' : 'preview' } catch { return 'preview' }
+}
+function writeMdView(v) {
+  try { localStorage.setItem(MD_VIEW_KEY, v) } catch { /* storage unavailable */ }
+}
+
 function basename(p) {
   if (!p) return ''
   const m = p.match(/[^\\/]+$/)
@@ -47,6 +61,69 @@ export default function EditorPane({
 }) {
   const handleReveal = useCallback(() => file && onRevealInFolder?.(file), [file, onRevealInFolder])
   const reason = errorReason ? REASON_COPY[errorReason] : null
+
+  // ── Markdown preview ────────────────────────────────────────────────────
+  const isMd = isMarkdownFile(file)
+  const [mdView, setMdView] = useState(readMdView)
+  // A Ctrl+click on `notes.md:42` means "take me to line 42", which only the
+  // source view can do — so a file opened at a line starts on the source.
+  const [lineOverride, setLineOverride] = useState(false)
+  useEffect(() => { setLineOverride(!!initialLine) }, [file, initialLine])
+  const showPreview = isMd && loadState === 'content' && mdView === 'preview' && !lineOverride
+
+  // The text the preview renders: the file as loaded, then every edit made in
+  // the source view. The CodeMirror view stays mounted underneath, so its
+  // undo history and unsaved edits survive flipping back and forth.
+  const [liveText, setLiveText] = useState(content ?? '')
+  useEffect(() => { setLiveText(content ?? '') }, [file, content])
+  const handleChange = useCallback((text) => { setLiveText(text); onChange?.(text) }, [onChange])
+
+  const viewRef = useRef(null)
+  const previewRef = useRef(null)
+  const pendingSearch = useRef(false)
+
+  const setView = useCallback((v) => {
+    setLineOverride(false)
+    setMdView(v)
+    writeMdView(v)
+  }, [])
+
+  // After a flip, put focus where the reader is now looking.
+  const prevShowPreview = useRef(showPreview)
+  useEffect(() => {
+    if (prevShowPreview.current === showPreview) return
+    prevShowPreview.current = showPreview
+    if (showPreview) { previewRef.current?.focus({ preventScroll: true }); return }
+    const v = viewRef.current
+    if (!v) return
+    v.requestMeasure()
+    if (pendingSearch.current) {
+      pendingSearch.current = false
+      openSearchPanel(v)
+    } else {
+      v.focus()
+    }
+  }, [showPreview])
+
+  const handlePaneKeyDown = (e) => {
+    if (!isMd || loadState !== 'content') return
+    const k = e.key.toLowerCase()
+    if (e.ctrlKey && e.shiftKey && !e.altKey && k === 'v') {
+      e.preventDefault()
+      setView(showPreview ? 'source' : 'preview')
+      return
+    }
+    if (!showPreview || !e.ctrlKey || e.shiftKey || e.altKey) return
+    if (k === 'f') {
+      // Find works on the source, so jump there with the search box open.
+      e.preventDefault()
+      pendingSearch.current = true
+      setView('source')
+    } else if (k === 's') {
+      e.preventDefault()
+      onSave?.(liveText)
+    }
+  }
 
   const [dragOver, setDragOver] = useState(false)
   const [reject, setReject] = useState(null)
@@ -110,6 +187,7 @@ export default function EditorPane({
       onDragOverCapture={handleDragOver}
       onDragLeaveCapture={handleDragLeave}
       onDropCapture={handleDrop}
+      onKeyDown={handlePaneKeyDown}
     >
       {file && (
         <div
@@ -146,6 +224,28 @@ export default function EditorPane({
           {isExternal &&<span className="editor-chip">EXTERNAL</span>}
           {isPlain && <span className="editor-chip">PLAIN</span>}
           <div className="editor-pane-actions">
+            {isMd && loadState === 'content' && (
+              <div className="editor-view-toggle" role="group" aria-label="Markdown view">
+                <button
+                  type="button"
+                  className={`editor-view-opt${showPreview ? ' is-active' : ''}`}
+                  aria-pressed={showPreview}
+                  title="Read as a document (Ctrl+Shift+V)"
+                  onClick={() => setView('preview')}
+                >
+                  Preview
+                </button>
+                <button
+                  type="button"
+                  className={`editor-view-opt${!showPreview ? ' is-active' : ''}`}
+                  aria-pressed={!showPreview}
+                  title="Edit the source (Ctrl+Shift+V)"
+                  onClick={() => setView('source')}
+                >
+                  Source
+                </button>
+              </div>
+            )}
             <button className="editor-icon-btn" title="Reveal in folder" onClick={handleReveal}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M14 5h5v5" />
@@ -242,18 +342,32 @@ export default function EditorPane({
       )}
 
       {file && loadState === 'content' && (
-        <div className="editor-body">
+        <div className={`editor-body${showPreview ? ' is-preview' : ''}`}>
           <EditorBody
             file={file}
             line={initialLine}
             content={content ?? ''}
             fontSize={fontSize}
             themeId={themeId}
+            hidden={showPreview}
+            viewHandle={viewRef}
             onSave={onSave}
             onDirtyChange={onDirtyChange}
-            onChange={onChange}
+            onChange={handleChange}
             onScroll={onScroll}
           />
+          {isMd && (
+            <MarkdownPreview
+              ref={previewRef}
+              file={file}
+              text={liveText}
+              fontSize={fontSize}
+              hidden={!showPreview}
+              onOpenFile={(path) => {
+                Promise.resolve(onDropFile?.(path)).then(why => { if (why) flashReject(basename(path), why) })
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -280,12 +394,17 @@ export default function EditorPane({
   )
 }
 
-function EditorBody({ file, line, content, fontSize, themeId, onSave, onDirtyChange, onChange, onScroll }) {
+function EditorBody({ file, line, content, fontSize, themeId, hidden, viewHandle, onSave, onDirtyChange, onChange, onScroll }) {
   const hostRef = useRef(null)
   const isPlain = (content?.length ?? 0) >= PLAIN_MODE_THRESHOLD
-  const { jumpToLine } = useEditor({ hostRef, file, content, isPlain, fontSize, themeId, onSave, onDirtyChange, onChange, onScroll })
+  const { viewRef, jumpToLine } = useEditor({ hostRef, file, content, isPlain, fontSize, themeId, onSave, onDirtyChange, onChange, onScroll })
 
   useEffect(() => { if (line) jumpToLine(line) }, [file, line]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={hostRef} className="editor-cm-host" />
+  // Hand the live view up so the pane can focus it / open its search box.
+  useEffect(() => {
+    if (viewHandle) viewHandle.current = viewRef.current
+  })
+
+  return <div ref={hostRef} className="editor-cm-host" hidden={hidden} />
 }

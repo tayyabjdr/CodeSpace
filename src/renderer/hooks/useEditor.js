@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { EditorState, Compartment } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { javascript } from '@codemirror/lang-javascript'
 import { json } from '@codemirror/lang-json'
 import { markdown } from '@codemirror/lang-markdown'
@@ -44,6 +45,12 @@ export default function useEditor({ hostRef, file, content, isPlain, fontSize, t
         extensions: [
           history(),
           drawSelection(),
+          // Long lines wrap at the pane edge instead of scrolling sideways.
+          EditorView.lineWrapping,
+          // Ctrl+F find (Enter / F3 next, Shift+Enter previous, replace in the
+          // same panel), docked at the top of the editor.
+          search({ top: true }),
+          isPlain ? [] : highlightSelectionMatches(),
           isPlain ? [] : highlightActiveLine(),
           isPlain ? [] : lineNumbers(),
           themeCompartmentRef.current.of([buildTheme(), buildHighlightStyle()]),
@@ -53,6 +60,7 @@ export default function useEditor({ hostRef, file, content, isPlain, fontSize, t
           })),
           keymap.of([
             { key: 'Mod-s', preventDefault: true, run: (v) => { onSave?.(v.state.doc.toString()); return true } },
+            ...searchKeymap,
             ...defaultKeymap,
             ...historyKeymap,
           ]),
