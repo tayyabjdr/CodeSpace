@@ -245,10 +245,20 @@
 .md-preview-doc li > ol { margin: 0.2em 0 0; }
 .md-preview-doc li::marker { color: var(--cs-text-muted); }
 /* GFM task lists: "- [ ]" / "- [x]" */
-.md-preview-doc li:has(> input[type=checkbox]) { list-style: none; margin-left: -1.3em; }
+/* Hanging indent: the li is padded by the checkbox's width + gap and the
+   checkbox is pulled back into that gutter, so wrapped lines line up with
+   the text, not with the checkbox. */
+.md-preview-doc li:has(> input[type=checkbox]),
+.md-preview-doc li:has(> p:first-child > input[type=checkbox]:first-child) {
+  list-style: none;
+  margin-left: -1.3em;
+  padding-left: 1.5em;
+}
 .md-preview-doc input[type=checkbox] {
   accent-color: var(--cs-green);
-  margin: 0 0.5em 0 0;
+  width: 1em;
+  height: 1em;
+  margin: 0 0.5em 0 -1.5em;
   vertical-align: -0.1em;
 }
 .md-preview-doc strong { color: var(--cs-text-primary); font-weight: 600; }
